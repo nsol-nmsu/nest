@@ -1,6 +1,6 @@
 all: update
 
-update: makeDir makeImnDir
+update: makeDir makeDir
 	cp ns3_imn_parser.cc ../scratch/
 	cp imnHelper.cc ../src/topology-read/imn_reader/
 	cp imnHelper.h ../src/topology-read/imn_reader/
@@ -8,7 +8,7 @@ update: makeDir makeImnDir
 	cp wscript ../src/topology-read/
 
 makeDir:
-	mkdir ../src/topology-read/imn_reader
+	mkdir -vp ../src/topology-read/imn_reader
 
 clean:
 	rm -f ../scratch/ns3_imn_parser.cc 
