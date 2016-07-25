@@ -160,14 +160,10 @@ int main (int argc, char *argv[]) {
 			
 			if(line.find("{") != string::npos){
 				track_curly_brackets++;
-				//cout << "{ at line "<< line_count << " : " << line << endl;
-				//cout << "# of curly brackets = " << track_curly_brackets << endl;
 			}
 			
 			if(line.find("}") != string::npos){
 				track_curly_brackets--;
-				//cout << "} at line "<< line_count << " : " << line << endl;
-				//cout << "# of curly brackets = " << track_curly_brackets << endl;
 			}
 			
 			if(track_curly_brackets != 0){ //if 0, then finished with current block, process next
@@ -214,18 +210,6 @@ int main (int argc, char *argv[]) {
 				
 				
 				}
-				
-				
-				
-				/*for(vector<string>::size_type i = 0; i != tokens.size(); i++){
-					//cout << "vector[" << i << "] = " << tokens[i] << endl;
-
-      		if(regex_search(tokens[i],r_match,node_names)){
-      			cout << "original: " << line << ", match : " << r_match[0] <<endl;
-
-					}
-
-				}*/
 				
 			
 			

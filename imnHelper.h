@@ -10,6 +10,10 @@
 #include <vector>
 #include <regex>
 
+#include "imnNode.h"
+#include "imnLink.h"
+
+
 
 
 using namespace std;

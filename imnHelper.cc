@@ -35,6 +35,7 @@ imnHelper::~imnHelper ()
 
 }
 
+//Method to remove leading spaces from string
 string imnHelper:: removeLeadSpaces(string s){
   string new_s;
   regex leading_spaces("[[:space:]]*(.+)");
@@ -47,6 +48,7 @@ string imnHelper:: removeLeadSpaces(string s){
   return new_s;
 }
 
+//method to split string by given delimiter and store in vector
 vector<string>& imnHelper:: split(string &s, string delim, std::vector<string> &elems) {
   string item;
   size_t pos = 0;
