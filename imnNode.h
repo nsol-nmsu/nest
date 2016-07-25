@@ -14,27 +14,27 @@ namespace ns3 {
 
 class imnNode
 {
-	public:
-		static TypeId GetTypeId (void); //recommended by ns-3 tutorial
-		
-		imnNode();
-		virtual ~imnNode(); //destructor
-		
+  public:
+    static TypeId GetTypeId (void); //recommended by ns-3 tutorial
+    
+    imnNode();
+    virtual ~imnNode(); //destructor
+    
     string name;
-		string type;
-		string model;
-		string coordinates;
-		vector<interface> interface_list;
-		
+    string type;
+    string model;
+    string coordinates;
+    vector<interface> interface_list;
+    
 
 };
 
 class interface
 {
   public:
-	  string interface_name;
-	  string ipv4_addr;
-	  string ipv6_addr;
+    string interface_name;
+    string ipv4_addr;
+    string ipv6_addr;
 }
 
 }
