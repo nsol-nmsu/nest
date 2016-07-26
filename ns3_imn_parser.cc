@@ -103,27 +103,35 @@ int main (int argc, char *argv[]) {
   nodes.Create(imn_container.node_count + imn_container.other_count);
 
 
-  while(!imn_container.imn_links.empty()){
-    while(!imn_container.imn_links[0].peer_list.empty()){
-      string type = imn_container.imn_links[0].type;
-      string peer = imn_container.imn_links[0].peer_list.back();
-      imn_container.imn_links[0].peer_list.pop_back();
+  regex number("[0-9]+");
+  smatch r_match;
+  //while(!imn_container.imn_links.empty()){
+  for(int i = 0; i < imn_container.imn_links.size(); i++){
+  cout << "outer for loop  " << i << endl;
+    while(!imn_container.imn_links.at(i).peer_list.empty()){
+      string type = imn_container.imn_links.at(i).type;
+      string peer = imn_container.imn_links.at(i).peer_list.back();
+      imn_container.imn_links.at(i).peer_list.pop_back();
 
       if(type.compare("p2p") == 0){
-        string peer2 = imn_container.imn_links[0].peer_list.back();
-        imn_container.imn_links[0].peer_list.pop_back();
+        string peer2 = imn_container.imn_links.at(i).peer_list.back();
+        imn_container.imn_links.at(i).peer_list.pop_back();
 
         int n1 = 0, n2 = 0;
-        for(int i = 0; i < imn_container.imn_nodes.size(); i++){
-          if(peer.compare(imn_container.imn_nodes.at(i).name)){
-            n1 = stoi(imn_container.imn_nodes.at(i).name[1]);
+        for(int k = 0; k < imn_container.imn_nodes.size(); k++){
+          if(peer.compare(imn_container.imn_nodes.at(k).name)){
+            regex_search(imn_container.imn_nodes.at(k).name,r_match,number);
+            n1 = stoi(r_match[0]);
+            //n1 = stoi(imn_container.imn_nodes.at(i).name[1]);
           }
-          else if(peer2.compare(imn_container.imn_nodes.at(i).name)){
-            n2 = stoi(imn_container.imn_nodes.at(i).name[1]);
+          else if(peer2.compare(imn_container.imn_nodes.at(k).name)){
+            regex_search(imn_container.imn_nodes.at(k).name,r_match,number);
+            n2 = stoi(r_match[0]);
+            //n2 = stoi(imn_container.imn_nodes.at(i).name[1]);
           }
           if(n1 != 0 && n2 != 0){
-            p2p.SetChannelAttribute("Delay", StringValue(imn_container.imn_links[0].delay));
-            p2p.SetDeviceAttribute("DataRate", StringValue(imn_container.imn_links[0].bandwidth));
+            p2p.SetChannelAttribute("Delay", StringValue(imn_container.imn_links.at(i).delay));
+            p2p.SetDeviceAttribute("DataRate", StringValue(imn_container.imn_links.at(i).bandwidth));
             p2p.Install(nodes.Get(n1), nodes.Get(n2));
             break;
           }
@@ -134,31 +142,12 @@ int main (int argc, char *argv[]) {
         }
       }
       else if(type.compare("wlan") == 0){
-        /*int n1 = 0, n2 = 0;
-        for(vector<int>::iterator it = imn_container.imn_nodes.begin(); it != imn_container.imn_nodes.end(); ++it){
-          if(peer.compare(imn_container.imn_nodes.name)){
-            n1 = stoi(imn_container.imn_nodes.name[1]);
-          }
-          else if(peer2.compare(imn_container.imn_nodes.name)){
-            n2 = stoi(imn_container.imn_nodes.name[1]);
-          }
-          if(n1 != 0 && n2 != 0){
-            p2p.SetChannelAttribute("Delay", StringValue(imn_container.imn_nodes.delay));
-            p2p.SetDeviceAttribute("DataRate", StringValue(imn_container.imn_nodes.bandwidth));
-            p2p.Install(nodes.Get(n1), nodes.Get(n2));
-            break;
-          }
-        }
-        if(n1 == 0 || n2 == 0){
-          cout << "P2P link could not be established with " << peer << " and " << peer2 << endl;
-          return -1;
-        }*/
+      //add stuff
       }
 
     }
-
   }
-  
+
   cout << "not in while loop" << endl;  
 
 }
