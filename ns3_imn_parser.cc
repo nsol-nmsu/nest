@@ -16,7 +16,6 @@
 #include "ns3/applications-module.h"
 
 
-
 #include "ns3/imnHelper.h" //custom created file to parse imn
 
 //thinds from namespace std
@@ -98,131 +97,14 @@ int main (int argc, char *argv[]) {
   //cmd.AddValue("csize","Size per content in MB", content_size);
   //cmd.AddValue("cache","Size of NDN caches in MB", cache_size);
   cmd.Parse (argc, argv);
-
-
-	///////////////////////////////////////////////////////////////////////////////////////
+  
+  
+  imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
+  
+  
+  
+  
 	
 	
-	//here we will create a loop to get blocks from imn
-	//imn file speperates definition of nodes(included are hubs, wifi, routers)
-	//in blocks with definitions inside {}
-	
-	topo_stream.open(topo_name.c_str(), std::ifstream::in);
-	int line_count = 0;
-	imnHelper imn_helper(topo_name.c_str());
-	imn_helper.readNode(); //generate statistics of file
-	nodes.Create(imn_helper.node_count); //generate nodes needed
-	
-	/*cout << "There are " << imn_helper.node_count << " routers." << endl;
-  cout << "There are " << imn_helper.other_count << " other nodes." << endl;
-  cout << "There are " << imn_helper.p2p_count << " point-to-point connected routers." << endl;
-  cout << "There are " << imn_helper.wifi_count << " wireless interfaces." << endl;
-  cout << "There are " << imn_helper.LAN_count << " LAN interfaces." << endl;
-  cout << "There are " << imn_helper.link_count << " links." << endl;
-	cout << "ending reading." << endl;
-	*/
-	/*for(vector<int>::size_type i = 0; i != imn_helper.wlan_devices.size(); i++){
-	  cout << "wlan is node " << imn_helper.wlan_devices[i] << endl;
-	}
-	for(vector<int>::size_type i = 0; i != imn_helper.csma_devices.size(); i++){
-	  cout << "csma is node " << imn_helper.csma_devices[i] << endl;
-	}*/
-	
-	
-	regex node_names("[{]*n[0-9]+[}]*"); //regex to match node names of type n + number ie n1,n2,..ect
-	regex number("[0-9]+"); //match number, use to extract node number
-	smatch r_match;
-	
-	int current_node_number = 0;
-	int current_node_pair = 0;
-	int install_node = 0;
-
-	
-	if(!topo_stream.is_open()){
-  	cerr << "Error: could not open imn file `" << topo_name << "`." << endl;
-  	return -1;
-  }
-  else{
-    //uint16_t last_ap_id = -1;
-    //Ssid ssid = Ssid("no-network");
-    
-  	cout << "Loading imn file `" << topo_name << "`..." << endl;
-  	
-		int track_curly_brackets = 0;  //keep track of curly brackets to know when block starts and ends
-		string line;
-		while(topo_stream.good()){		//file will be read line by line, try seperating by blocks
-			
-			//read line
-			std::getline(topo_stream,line);
-			
-			//remove leading space from line
-			line = imn_helper.removeLeadSpaces(line);
-			
-			if(line.find("{") != string::npos){
-				track_curly_brackets++;
-			}
-			
-			if(line.find("}") != string::npos){
-				track_curly_brackets--;
-			}
-			
-			if(track_curly_brackets != 0){ //if 0, then finished with current block, process next
-				
-				string temp_line = line;
-				vector<string> tokens = imn_helper.split(temp_line," "); //tokenize current string
-				if(tokens[0].compare("node") == 0 && tokens[tokens.size() - 1].compare("{") == 0 ){ //begining of block, get node number
-					
-					regex_search(tokens[1],r_match,number);
-					current_node_number = stoi(r_match[0]);
-					//cout << "current node: " << current_node_number << endl;
-				
-				}
-				if(tokens[0].compare("type") == 0){
-					if(tokens[1].compare("router") == 0){ 
-						install_node = 1;
-					}else{
-						install_node = 0;
-					}
-				}
-				//interface-peer {eth1 n4}
-				if(tokens[0].compare("interface-peer") == 0 && install_node == 1){ //install node
-					regex_search(tokens[tokens.size() - 1],r_match,number);
-					current_node_pair = stoi(r_match[0]);
-					int pair_exist = 0;
-					
-					for(vector<int>::size_type i = 0; i != imn_helper.wlan_devices.size(); i++){ //check if wifi node
-	  				//cout << "wlan is node " << imn_helper.wlan_devices[i] << endl;
-	  				if(current_node_pair == imn_helper.wlan_devices[i]){
-	  					cout << "install node " << current_node_number << " to wlan device " << current_node_pair << endl;
-	  					pair_exist = 1;
-	  				}
-	  				
-					}
-					for(vector<int>::size_type i = 0; i != imn_helper.csma_devices.size(); i++){
-						if(current_node_pair == imn_helper.csma_devices[i]){
-							cout << "install node " << current_node_number << " to csma device " << current_node_pair << endl;
-							pair_exist = 1;
-						}
-					}
-					if(pair_exist == 0){
-						cout << "install node " << current_node_number << " by p2p link to " << current_node_pair << endl;
-					}
-				
-				
-				}
-				
-			
-			
-			}
-			
-			
-		
-		line_count++;
-		} //finished processing imn file
-	
-	}
-	
-	
-	topo_stream.close();
 
 }

@@ -3,7 +3,7 @@
 
 #include "ns3/object.h"
 #include <string>
-#include "imnNode"
+#include "imnNode.h"
 
 
 using namespace std;

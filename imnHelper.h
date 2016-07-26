@@ -29,14 +29,13 @@ class imnHelper
     
     imnHelper(string file_name);
     virtual ~imnHelper(); //destructor
-    void readNode();
+    void readFile();
     vector<string> &split(string &s, string delim, vector<string> &elems);
     vector<string> split(string &s, string delim);
     string removeLeadSpaces(string s);
+    void print_file_stats();
     
     ifstream imunes_stream;
-    vector<int> wlan_devices;
-    vector<int> csma_devices;
     int bracket_count;
     int node_count;
     int other_count;
@@ -45,6 +44,9 @@ class imnHelper
     int LAN_count;
     int link_count;
     string fname;
+    
+    vector<imnNode> imn_nodes;
+    vector<imnLink> imn_links;
 
 };
 

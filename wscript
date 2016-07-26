@@ -9,6 +9,8 @@ def build(bld):
        'model/rocketfuel-topology-reader.cc',
        'helper/topology-reader-helper.cc',
        'imn_reader/imnHelper.cc',
+       'imn_reader/imnNode.cc',
+       'imn_reader/imnLink.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('topology-read')
@@ -25,6 +27,8 @@ def build(bld):
        'model/rocketfuel-topology-reader.h',
        'helper/topology-reader-helper.h',
        'imn_reader/imnHelper.h',
+       'imn_reader/imnNode.h',
+       'imn_reader/imnLink.h',
         ]
 
     if bld.env['ENABLE_EXAMPLES']:

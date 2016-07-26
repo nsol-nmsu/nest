@@ -12,6 +12,14 @@ using namespace std;
 
 namespace ns3 {
 
+class interface
+{
+  public:
+    string interface_name;
+    string ipv4_addr;
+    string ipv6_addr;
+};
+
 class imnNode
 {
   public:
@@ -29,13 +37,6 @@ class imnNode
 
 };
 
-class interface
-{
-  public:
-    string interface_name;
-    string ipv4_addr;
-    string ipv6_addr;
-}
 
 }
 

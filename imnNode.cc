@@ -4,7 +4,7 @@ namespace ns3{
 
 NS_OBJECT_ENSURE_REGISTERED (imnNode);
 
-TypeId imnHelper::GetTypeId (void)
+TypeId imnNode::GetTypeId (void)
 {
   static TypeId tid = TypeId ("ns3::imnNode")
     .SetParent<Object> ()
