@@ -43,6 +43,9 @@ class imnHelper
     int wifi_count;
     int LAN_count;
     int link_count;
+    int wlan_device_count;
+    int hub_count;
+    int lanswitch_count;
     string fname;
     
     vector<imnNode> imn_nodes;

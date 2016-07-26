@@ -25,8 +25,8 @@ class imnNode
   public:
     static TypeId GetTypeId (void); //recommended by ns-3 tutorial
     
-    imnNode();
-    virtual ~imnNode(); //destructor
+    imnNode(){}
+    virtual ~imnNode(){} //destructor
     
     string name;
     string type;

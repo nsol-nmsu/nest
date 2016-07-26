@@ -26,6 +26,9 @@ imnHelper::imnHelper(string file_name)
   wifi_count = 0;
   LAN_count = 0;
   link_count = 0;
+  wlan_device_count = 0;
+  hub_count = 0;
+  lanswitch_count=0;
   fname = file_name;
   readFile();
   print_file_stats();
@@ -41,10 +44,13 @@ void imnHelper::print_file_stats()
 {
   cout << "There are " << node_count << " routers." << endl;
   cout << "There are " << other_count << " other nodes." << endl;
-  cout << "There are " << p2p_count << " point-to-point connected routers." << endl;
+  cout << "There are " << p2p_count << " point-to-point links " << endl;
   cout << "There are " << wifi_count << " wireless interfaces." << endl;
   cout << "There are " << LAN_count << " LAN interfaces." << endl;
   cout << "There are " << link_count << " links." << endl;
+  cout << "There are " << wlan_device_count << " wlan devices." << endl;
+  cout << "There are " << hub_count << " hubs." << endl;
+  cout << "There are " << lanswitch_count << " LAN switches." << endl;
 
 }
 
@@ -70,7 +76,7 @@ vector<string>& imnHelper:: split(string &s, string delim, std::vector<string> &
     item = s.substr(0, pos);
     if(item.compare("") != 0 )
       elems.push_back(item);
-      s.erase(0, pos + delim.length());
+    s.erase(0, pos + delim.length());
   }
   elems.push_back(s);
   return elems;
@@ -87,15 +93,24 @@ vector<string> imnHelper:: split(string &s, string delim) {
 //READNODE
 //***********************
 void imnHelper::readFile(){
-  string ss;
+
   regex node_name("[{]*n[0-9]+[}]*"); //regex to match node names of type n + number ie n1,n2,..ect
   regex number("[0-9]+");
+  regex interface_name("eth[0-9]+");
+  regex i_exact("interface eth[0-9]+");
+
   smatch r_match;
-  int current_node_number = 0;
+  string current_node_name = "";
+  string current_type_name = "";
   int track_curly_brackets;
-  int create_flag = 0;
+  int size = 0;
+  //int create_flag = 0;
+  // { = 123 , } = 125
   
+  //cout << "opening file..."<< endl;
   imunes_stream.open(fname.c_str(), ifstream::in);
+  //cout << "file opened, now processing..."<< endl;
+  
   if(!imunes_stream.is_open()){
     cerr << "Error: Could not open IMUNES file" << endl;
     return;
@@ -105,102 +120,112 @@ void imnHelper::readFile(){
       string s;
       getline(imunes_stream, s);
 			
-			//remove leading space from line
-			s = removeLeadSpaces(s);
-			string temp_line = s;
-			
 			if(s.find("{") != string::npos){
 				track_curly_brackets++;
 			}
-			
 			if(s.find("}") != string::npos){
 				track_curly_brackets--;
 			}
       
-      if(track_curly_brackets != 0){
+      if(track_curly_brackets != 0){ 
       
-      
-      }else{
-        create_flag = 1;
-      }
-     
-      if(s.find("node") != string::npos && s[s.length() - 1] == '{'){
-        imnNode n;
-        regex_search(s,r_match,node_name);
-        n.name = r_match[0];
+        if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){
+          regex_search(s,r_match,node_name);
+          current_node_name.assign(r_match[0]);
+          current_type_name.assign("node");
+        }
         
-        getline(imunes_stream, ss);
-
-          if(ss.find("router") != string::npos){
-            n.type = "router";
-            getline(imunes_stream, ss);
-
-            if(ss.find("router") != string::npos){
-              n.model = "router";
-              node_count++;
-            }
-            else{
-              node_count++;
-              other_count++;
-              n.model = "other";
-            }
-            int flag = 2;
-            while(flag && imunes_stream.good()){
-              string ss2;
-              getline(imunes_stream, ss2);
-              if(ss2.find("interface-peer") == string::npos){
-                if(flag == 1)
-                  flag = 0;
-              }
-              else{
-                flag = 1;
-                p2p_count++;
-              }
-            }
-          }
-          else if(ss.find("wlan") != string::npos ){
-            int flag = 2;
-            wlan_devices.push_back(current_node_number);
-            while(flag && imunes_stream.good()){
-              string ss2;
-              getline(imunes_stream, ss2);
+        if(s.find("link") != string::npos && s[s.length() - 1] == 123 ){
+          regex_search(s,r_match,node_name);
+          current_node_name.assign(r_match[0]);
+          current_type_name.assign("link");
+        }
+        
+        //create link or node object based on type
+        if(s.find("type") != string::npos){
+        
+          if(s.find("router") != string::npos){ 
+            imnNode n;
+            size = imn_nodes.size();
+            imn_nodes.push_back(n);
+            imn_nodes[size].name = current_node_name;
+            imn_nodes[size].type = "router";
+            node_count++;
+            current_type_name.assign("node");
+          
+          }else if(s.find("wlan") != string::npos){
+            imnLink l;
+            size = imn_links.size();
+            imn_links.push_back(l);
+            imn_links[size].name = current_node_name;
+            imn_links[size].type = "wlan";
+            wlan_device_count++;
+            current_type_name.assign("link");
             
-              if(ss2.find("interface-peer") == string::npos){
-                if(flag == 1)
-                  flag = 0;
-              }
-              else{
-                flag = 1;
-                wifi_count++;
-              }
-            }
+          }else if(s.find("hub") != string::npos){
+            imnLink l;
+            size = imn_links.size();
+            imn_links.push_back(l);
+            imn_links[size].name = current_node_name;
+            imn_links[size].type = "hub";
+            hub_count++;
+            current_type_name.assign("link");
+          
+          }else if(s.find("lanswitch") != string::npos){
+            imnLink l;
+            size = imn_links.size();
+            imn_links.push_back(l);
+            imn_links[size].name = current_node_name;
+            imn_links[size].type = "lanswitch";
+            lanswitch_count++;
+            current_type_name.assign("link");
+          
           }
-          else if(ss.find("hub") != string::npos){
-            int flag = 2;
-            csma_devices.push_back(current_node_number);
-            while(flag && imunes_stream.good()){
-              string ss2;
-              getline(imunes_stream, ss2);
+        }
+        //assign model to node type, only node type has model
+        if(current_type_name.compare("node") == 0 && s.find("model") != string::npos){ 
+          if(s.find("router") != string::npos) //TODO check for more model types
+            imn_nodes[size].model = "router";
+          else
+            other_count++;
+        }
+        
+        if(regex_search(s,r_match,i_exact)){ //check if interface
+           cout << "exact line: " << s << endl;
+           regex_search(s,r_match,interface_name);
+           cout << "interface name: " << r_match[0] << endl;
+        
+        }
+        if(s.find("interface-peer")){
+          
+          
+        }
+           
+        
+        
+        
+      }else{
 
-              if(ss2.find("interface-peer") == string::npos){
-                if(flag == 1)
-                  flag = 0;
-              }
-              else{
-                flag = 1;
-                LAN_count++;
-              }
-            }
-          }
-        }
-        else if(s.find("link") != string::npos && s[s.length() - 1] == '{'){
-          link_count++;
-        }
       }
     }
-    p2p_count = link_count - wifi_count - LAN_count;
   }
-
+  
+  cout << "NODES: " << endl;
+  for(vector<imnNode>::size_type i = 0; i != imn_nodes.size(); i++){
+    cout << imn_nodes[i].name << endl;
+  }
+  cout << "\nLINKS: " << endl;
+  for(vector<imnLink>::size_type i = 0; i != imn_links.size(); i++){
+    cout << imn_links[i].name << endl;
+  }
+  
+  
+  //cout << "Done processing..." << endl;
+  imunes_stream.close();
+  //cout << "File closed" << endl;
 }
 
 
+
+
+} //end namespace ns3

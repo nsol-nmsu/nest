@@ -15,8 +15,8 @@ class imnLink
   public:
     static TypeId GetTypeId (void); //recommended by ns-3 tutorial
     
-    imnLink();
-    virtual ~imnLink(); //destructor
+    imnLink(){}
+    virtual ~imnLink(){} //destructor
     
     string name;
     string type;
