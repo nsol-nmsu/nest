@@ -100,32 +100,36 @@ int main (int argc, char *argv[]) {
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
 
-  nodes.Create(imn_container.node_count + imn_container.other_count);
+  nodes.Create(imn_container.node_count + imn_container.other_count + imn_container.wifi_count + imn_container.LAN_count);
 
 
   regex number("[0-9]+");
   smatch r_match;
+  int last_ap_id = -1;
+  Ssid ssid = Ssid("no-network");
+
   //while(!imn_container.imn_links.empty()){
   for(int i = 0; i < imn_container.imn_links.size(); i++){
-  cout << "outer for loop  " << i << endl;
-    while(!imn_container.imn_links.at(i).peer_list.empty()){
+  //cout << "outer for loop  " << i << endl;
+    //while(!imn_container.imn_links.at(i).peer_list.empty()){
+    for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
       string type = imn_container.imn_links.at(i).type;
-      string peer = imn_container.imn_links.at(i).peer_list.back();
-      imn_container.imn_links.at(i).peer_list.pop_back();
+      string peer = imn_container.imn_links.at(i).peer_list.at(j);//.back();
+      //imn_container.imn_links.at(i).peer_list.pop_back();
 
       if(type.compare("p2p") == 0){
-        string peer2 = imn_container.imn_links.at(i).peer_list.back();
-        imn_container.imn_links.at(i).peer_list.pop_back();
+        string peer2 = imn_container.imn_links.at(i).peer_list.at(++j);//.back();
+        //imn_container.imn_links.at(i).peer_list.pop_back();
 
         int n1 = 0, n2 = 0;
         for(int k = 0; k < imn_container.imn_nodes.size(); k++){
           if(peer.compare(imn_container.imn_nodes.at(k).name)){
-            regex_search(imn_container.imn_nodes.at(k).name,r_match,number);
+            regex_search(imn_container.imn_nodes.at(k).name, r_match, number);
             n1 = stoi(r_match[0]);
             //n1 = stoi(imn_container.imn_nodes.at(i).name[1]);
           }
           else if(peer2.compare(imn_container.imn_nodes.at(k).name)){
-            regex_search(imn_container.imn_nodes.at(k).name,r_match,number);
+            regex_search(imn_container.imn_nodes.at(k).name, r_match, number);
             n2 = stoi(r_match[0]);
             //n2 = stoi(imn_container.imn_nodes.at(i).name[1]);
           }
@@ -142,13 +146,44 @@ int main (int argc, char *argv[]) {
         }
       }
       else if(type.compare("wlan") == 0){
-      //add stuff
-      }
+        int n1 = 0, n2 = 0;
+        string peer = imn_container.imn_links.at(i).name;
+        regex_search(peer,r_match,number);
+        n1 = stoi(r_match[0]);
 
+        if(n1 != last_ap_id){
+          stringstream ssid_creator;
+          ssid_creator << "wifi-" << n1;
+          ssid = Ssid(ssid_creator.str().c_str());
+
+          wifiPhy.SetChannel(wifiChannel.Create());
+          wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
+          wifi_devices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n1)));
+          mobility.Install(nodes.Get(n1));
+          last_ap_id = n1;
+          cout << "Creating new wifi network " << ssid << " at n" << n1 << endl;
+        }
+
+        for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
+          string peer2 = imn_container.imn_links.at(i).peer_list.at(j);
+          regex_search(peer2,r_match,number);
+          n2 = stoi(r_match[0]);
+
+          wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "ActiveProbing", BooleanValue(false));
+          wifi_devices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n2)));
+          cout << "Adding node " << n2 << " to " << ssid << endl;
+          mobility.Install(nodes.Get(n2));
+        }
+      }
+      else if(type.compare("hub") == 0){
+
+
+
+
+      }
     }
   }
-
-  cout << "not in while loop" << endl;  
+  //cout << "not in for loop" << endl;  
 
 }
 
