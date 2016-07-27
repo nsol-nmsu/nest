@@ -13,6 +13,10 @@ TypeId imnNode::GetTypeId (void)
   return tid;
 }
 
+imnNode::imnNode()
+{
+
+}
 
 }
 

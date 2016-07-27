@@ -18,6 +18,7 @@ class interface
     string interface_name;
     string ipv4_addr;
     string ipv6_addr;
+    string mac_addr;
 };
 
 class imnNode
@@ -25,7 +26,7 @@ class imnNode
   public:
     static TypeId GetTypeId (void); //recommended by ns-3 tutorial
     
-    imnNode(){}
+    imnNode();
     virtual ~imnNode(){} //destructor
     
     string name;

@@ -34,6 +34,9 @@ class imnHelper
     vector<string> split(string &s, string delim);
     string removeLeadSpaces(string s);
     void print_file_stats();
+    void printInfo(imnNode n);
+    void printInfo(imnLink l);
+    void printAll();
     
     ifstream imunes_stream;
     int bracket_count;

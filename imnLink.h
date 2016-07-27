@@ -15,7 +15,7 @@ class imnLink
   public:
     static TypeId GetTypeId (void); //recommended by ns-3 tutorial
     
-    imnLink(){}
+    imnLink();
     virtual ~imnLink(){} //destructor
     
     string name;
@@ -24,7 +24,8 @@ class imnLink
     string bandwidth;
     string jitter;
     string delay;
-    string error;
+    string error; //ber for p2p in imn file
+    string duplicate; //for p2p link only
     string coordinates;
     vector<interface> interface_list;
     vector<string> peer_list;

@@ -13,6 +13,12 @@ TypeId imnLink::GetTypeId (void)
   return tid;
 }
 
+imnLink::imnLink()
+{
+
+}
+
+
 }
   //this is a test
   //
