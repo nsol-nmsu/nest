@@ -102,26 +102,32 @@ int main (int argc, char *argv[]) {
 
   nodes.Create(imn_container.node_count + imn_container.other_count + imn_container.wifi_count + imn_container.LAN_count);
 
+  CsmaHelper csma;
+  NetDeviceContainer csmaDevices;
+  InternetStackHelper stack;
 
   regex number("[0-9]+");
   smatch r_match;
   int last_ap_id = -1;
+  int n1 = 0, n2 = 0;
   Ssid ssid = Ssid("no-network");
+  string peer, peer2, type;
 
   //while(!imn_container.imn_links.empty()){
   for(int i = 0; i < imn_container.imn_links.size(); i++){
-  //cout << "outer for loop  " << i << endl;
+    //cout << "outer for loop  " << i << endl;
     //while(!imn_container.imn_links.at(i).peer_list.empty()){
     for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
-      string type = imn_container.imn_links.at(i).type;
-      string peer = imn_container.imn_links.at(i).peer_list.at(j);//.back();
+      type = imn_container.imn_links.at(i).type;
+      peer = imn_container.imn_links.at(i).peer_list.at(j);//.back();
       //imn_container.imn_links.at(i).peer_list.pop_back();
 
       if(type.compare("p2p") == 0){
-        string peer2 = imn_container.imn_links.at(i).peer_list.at(++j);//.back();
+        peer2 = imn_container.imn_links.at(i).peer_list.at(++j);//.back();
         //imn_container.imn_links.at(i).peer_list.pop_back();
 
-        int n1 = 0, n2 = 0;
+        n1 = 0;
+        n2 = 0;
         for(int k = 0; k < imn_container.imn_nodes.size(); k++){
           if(peer.compare(imn_container.imn_nodes.at(k).name)){
             regex_search(imn_container.imn_nodes.at(k).name, r_match, number);
@@ -137,6 +143,7 @@ int main (int argc, char *argv[]) {
             p2p.SetChannelAttribute("Delay", StringValue(imn_container.imn_links.at(i).delay));
             p2p.SetDeviceAttribute("DataRate", StringValue(imn_container.imn_links.at(i).bandwidth));
             p2p.Install(nodes.Get(n1), nodes.Get(n2));
+            cout << "Creating point-to-point connection with n" << n1 << " and n" << n2 << endl;
             break;
           }
         }
@@ -146,8 +153,9 @@ int main (int argc, char *argv[]) {
         }
       }
       else if(type.compare("wlan") == 0){
-        int n1 = 0, n2 = 0;
-        string peer = imn_container.imn_links.at(i).name;
+        n1 = 0;
+        n2 = 0;
+        peer = imn_container.imn_links.at(i).name;
         regex_search(peer,r_match,number);
         n1 = stoi(r_match[0]);
 
@@ -165,7 +173,7 @@ int main (int argc, char *argv[]) {
         }
 
         for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
-          string peer2 = imn_container.imn_links.at(i).peer_list.at(j);
+          peer2 = imn_container.imn_links.at(i).peer_list.at(j);
           regex_search(peer2,r_match,number);
           n2 = stoi(r_match[0]);
 
@@ -176,8 +184,26 @@ int main (int argc, char *argv[]) {
         }
       }
       else if(type.compare("hub") == 0){
+        n1 = 0;
+        n2 = 0;
+        peer = imn_container.imn_links.at(i).name;
+        regex_search(peer,r_match,number);
+        n1 = stoi(r_match[0]);
 
+        csma.SetChannelAttribute("DataRate", StringValue(imn_container.imn_links.at(i).bandwidth));
+        csma.SetChannelAttribute("Delay", StringValue(imn_container.imn_links.at(i).delay));
+        csma.Install(nodes.Get(n1));
 
+        cout << "Creating new hub network " << " named n" << n1 << endl;
+
+        for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
+          peer2 = imn_container.imn_links.at(i).peer_list.at(j);
+          regex_search(peer2,r_match,number);
+          n2 = stoi(r_match[0]);
+
+          csma.Install(nodes.Get(n2));
+          cout << "Adding node " << n2 << " to hub " << n1 << endl;
+        }
 
 
       }
