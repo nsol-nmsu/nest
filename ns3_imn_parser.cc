@@ -15,6 +15,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/applications-module.h"
 
+#include "ns3/netanim-module.h"
 
 #include "ns3/imnHelper.h" //custom created file to parse imn
 
@@ -217,27 +218,67 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
      // add different setup for landswitches
       n1 = 0;
       n2 = 0;
+
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
 
-      csma.SetChannelAttribute("DataRate", StringValue(imn_container.imn_links.at(i).bandwidth));
-      csma.SetChannelAttribute("Delay", StringValue(imn_container.imn_links.at(i).delay));
+      //csma.SetChannelAttribute("DataRate", DataRateValue(5000000));
+      //csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds(0)));
       csma.Install(nodes.Get(n1));
 
-      cout << "Creating new csma-switch(landswitch) network " << " named n" << n1 << endl;
+      cout << "Creating new switch network " << " named n" << n1 + 1 << endl;
 
       for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
+        int flag1 = 0, flag2 = 0;
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
-
+//cout << "extra link size " << imn_container.imn_links.at(i).extra_links.size() << endl;
+        for(int k = 0; k < imn_container.imn_links.at(i).extra_links.size(); k++){
+          string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
+          if(peer2.compare(peer2_check) != 0){
+//cout << peer2 << " " << peer2_check << endl;
+            continue;
+          }
+          if(imn_container.imn_links.at(i).extra_links.at(k).delay.empty() == 0){
+            csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(imn_container.imn_links.at(i).extra_links.at(k).delay))));
+          }
+          if(imn_container.imn_links.at(i).extra_links.at(k).bandwidth.empty() == 0){
+            csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
+          }
+        }
         csma.Install(nodes.Get(n2));
-        cout << "Adding node n" << n2 << " to switch " << n1 << endl;
+        cout << "Adding node n" << n2 + 1 << " to a csma(switch) n" << n1 + 1 << endl;
       }
     }
+  }//end of for loop
+
+  AnimationInterface anim("test.xml");
+  for(int i = 0; i < imn_container.total ; i++){
+    anim.SetConstantPosition(nodes.Get(i), (float)i, (float)i);
   }
-  //cout << "not in for loop" << endl;
+  anim.SetConstantPosition(nodes.Get(4), 5.0, 0);
+  anim.SetConstantPosition(nodes.Get(9), 8.0, 0);
+
+  Simulator::Stop (Seconds (9 + 1));
+
+  // traces
+  //ndn::L3RateTracer::InstallAll ((trace_prefix + "/rate-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.9999));
+  //L2RateTracer::InstallAll ((trace_prefix + "/drop-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.999));
+  //ndn::CsTracer::InstallAll ((trace_prefix + "/cs-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.9999));
+  //ndn::AppDelayTracer::InstallAll ((trace_prefix + "/app-delays-trace.txt").c_str());
+  //wifiPhy.EnablePcap ((trace_prefix + "/wifi.pcap").c_str(), wifi_devices);
+
+  Simulator::Run ();
+  Simulator::Destroy ();
+  
+  cout << "Done." << endl;
+
+  return 0;
+
 }
+
+
 
 
