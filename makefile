@@ -1,6 +1,12 @@
 all: update
 
-update: makeDir
+update: configure
+	cd .. && ./waf
+
+configure: copy
+	cd .. && CXXFLAGS="-std=c++11" ./waf configure
+
+copy: makeDir
 	cp ns3_imn_parser.cc ../scratch/
 	cp imnHelper.cc ../src/topology-read/imn_reader/
 	cp imnHelper.h ../src/topology-read/imn_reader/
@@ -18,8 +24,3 @@ clean:
 	rm -f ../scratch/ns3_imn_parser.cc 
 	rm -rf ../src/topology-read/imn_reader
 
-configure:
-	cd .. && CXXFLAGS="-std=c++11" ./waf configure
-
-compile:
-	cd .. && ./waf

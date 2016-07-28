@@ -254,12 +254,41 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     }
   }//end of for loop
 
-  AnimationInterface anim("test.xml");
-  for(int i = 0; i < imn_container.total ; i++){
-    anim.SetConstantPosition(nodes.Get(i), (float)i, (float)i);
+
+  //set node coordinates for NetAnim
+  for(int i = 0; i < imn_container.imn_nodes.size() ; i++){
+    int n = 0;
+    regex_search(imn_container.imn_nodes.at(i).name,r_match,number);
+    n = stoi(r_match[0]) - 1;
+
+    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_nodes.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
   }
-  //anim.SetConstantPosition(nodes.Get(4), 5.0, 0);
-  //anim.SetConstantPosition(nodes.Get(9), 8.0, 0);
+
+  //set hub/switch nodes coordinates
+  for(int i = 0; i < imn_container.imn_links.size() ; i++){
+    int n = 0;
+    if(imn_container.imn_links.at(i).type.compare("p2p") == 0){
+      continue;
+    }
+    if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
+      continue;
+    }
+    regex_search(imn_container.imn_links.at(i).name,r_match,number);
+    n = stoi(r_match[0]) - 1;
+
+    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
+  }
+
+  //set wlan node coordinates
+  AnimationInterface anim("test.xml");
+  for(int i = 0; i < imn_container.imn_links.size() ; i++){
+    int n = 0;
+    if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
+      regex_search(imn_container.imn_links.at(i).name,r_match,number);
+      n = stoi(r_match[0]) - 1;
+      anim.SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
+    }
+  }
 
   Simulator::Stop (Seconds (9 + 1));
 
