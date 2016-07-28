@@ -258,8 +258,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
   for(int i = 0; i < imn_container.total ; i++){
     anim.SetConstantPosition(nodes.Get(i), (float)i, (float)i);
   }
-  anim.SetConstantPosition(nodes.Get(4), 5.0, 0);
-  anim.SetConstantPosition(nodes.Get(9), 8.0, 0);
+  //anim.SetConstantPosition(nodes.Get(4), 5.0, 0);
+  //anim.SetConstantPosition(nodes.Get(9), 8.0, 0);
 
   Simulator::Stop (Seconds (9 + 1));
 
