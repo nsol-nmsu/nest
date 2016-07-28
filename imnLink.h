@@ -29,7 +29,7 @@ class imnLink
     vector<interface> interface_list;
     vector<string> peer_list;
     position coordinates;
-    vector<imnLink> extra_links;
+    vector<imnLink> extra_links; //holds link info for hub and switches
     
 
 };

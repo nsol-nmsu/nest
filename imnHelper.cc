@@ -33,6 +33,7 @@ imnHelper::imnHelper(string file_name)
   
   //read the file to set up imnHelper
   readFile();
+  total = node_count + wlan_device_count + hub_count + lanswitch_count;
   print_file_stats();
 
 }
@@ -205,7 +206,7 @@ void imnHelper::readFile(){
       
       if(track_curly_brackets != 0){ 
         
-        if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){
+        if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){ //compared with ascii of {
           regex_search(s,r_match,node_name);
           current_node_name.assign(r_match[0]);
           current_type.assign("node");
@@ -365,6 +366,7 @@ void imnHelper::readFile(){
             }//end of if(s.find("nodes")
           }
         }
+        
         //TODO consider asymetric links, sperated by {} in imn file
         if(s.find("bandwidth") != string::npos){
           if(regex_search(s,r_match,eq)){
@@ -431,10 +433,6 @@ void imnHelper::readFile(){
             imn_links.at(size).coordinates.y = t2;
           }
         }
-           
-        
-        
-        
       }else{
         inside_link = 0;
         link_already_set = 0;
