@@ -350,6 +350,8 @@ void imnHelper::readFile(){
                  imn_links.push_back(l);
                  imn_links.at(size).name = current_node_name; //TODO: Might want to name something else?
                  imn_links.at(size).type = "p2p";
+                 imn_links.at(size).peer_list.push_back(t);
+                 imn_links.at(size).peer_list.push_back(t2);
                  p2p_count++;
                  current_type.assign("link");
                  link_already_set = 1;
