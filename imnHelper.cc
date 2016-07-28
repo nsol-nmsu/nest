@@ -86,13 +86,26 @@ void imnHelper::printInfo(imnLink l){
   for(vector<string>::size_type i = 0; i != l.peer_list.size(); i++){
     cout << l.peer_list[i] << " " << endl;
   }
-  //TODO print out hub and lanswitch links seperatly?
-  cout << "Link bandwidth: " << l.bandwidth << endl;
-  cout << "Link range: " << l.range << endl;
-  cout << "Link jitter: " << l.jitter << endl;
-  cout << "Link delay: " << l.delay << endl;
-  cout << "Link error: " << l.error << endl;
-  cout << "Link duplicate: " << l.duplicate << endl;
+  if(l.type.compare("wlan") == 0 || l.type.compare("p2p") == 0){
+    cout << "Link bandwidth: " << l.bandwidth << endl;
+    cout << "Link range: " << l.range << endl;
+    cout << "Link jitter: " << l.jitter << endl;
+    cout << "Link delay: " << l.delay << endl;
+    cout << "Link error: " << l.error << endl;
+    cout << "Link duplicate: " << l.duplicate << endl;
+  }else{
+    for(vector<imnLink>::size_type i = 0; i != l.extra_links.size(); i++){
+      cout << "connection to " << l.extra_links[i].name << endl;
+      cout << "Link bandwidth: " << l.extra_links[i].bandwidth << endl;
+      cout << "Link jitter: " << l.extra_links[i].jitter << endl;
+      cout << "Link delay: " << l.extra_links[i].delay << endl;
+      cout << "Link error: " << l.extra_links[i].error << endl;
+      cout << "Link duplicate: " << l.extra_links[i].duplicate << endl;
+      for(vector<string>::size_type x = 0; x != l.extra_links[i].peer_list.size(); x++){
+        cout << "peer: " << l.extra_links[i].peer_list[x] << " " << endl;
+      }
+    }
+  }
   
   cout << "POSITION: " << endl;
   cout << "x: " << l.coordinates.x << " y: " << l.coordinates.y << endl;
@@ -154,31 +167,35 @@ vector<string> imnHelper:: split(string &s, string delim) {
 //***********************
 void imnHelper::readFile(){
 
-  regex node_name("[{]*n[0-9]+[}]*"); //regex to match node names of type n + number ie n1,n2,..ect
+
   regex link_name("l[0-9]+");
-  regex n_name("n[0-9]+");
+  regex node_name("n[0-9]+");
   regex number("[0-9]+");
   regex num_dec("[0-9]+[.]{0,1}[0-9]+");
   regex interface_name("eth[0-9]+");
   regex i_exact("interface eth[0-9]+");
   regex eq("[[:alpha:]]+[=]*[[:space:]]*[0-9]+");
   regex eq2("[[:alpha:]]+[=]*[[:space:]]*");
-
   smatch r_match;
+  
   string current_node_name = "";
   string current_type = "";
   int track_curly_brackets = 0;
-  int size = 0;
-  int icurrent = 0;
-  int inside_iblock = 0;
-  int inside_link = 0;
+  int size = 0;          //
+  int inside_iblock = 0; //interface block
+  int inside_link = 0;   //inside link block
   int link_already_set = 0;
+  int wlan_flag = 0;
   
-  int index = 0;
-  int p_link = 0;
-  int h = 0;
-  int ls = 0;
-  //int create_flag = 0;
+  string temp_bandwidth = "0";
+  string temp_jitter = "0";
+  string temp_delay = "0";
+  string temp_error = "0";
+  string temp_range = "0";
+  string temp_duplicate = "0";
+  string temp_peer1 = "";
+  string temp_peer2 = "";
+  
   // { = 123 , } = 125
   
   
@@ -217,8 +234,9 @@ void imnHelper::readFile(){
           current_node_name.assign(r_match[0]);
           current_type.assign("link");
           inside_link = 1;
+          link_count++;
         }
-        
+       
         //create link or node object based on type
         if(s.find("type") != string::npos){
         
@@ -239,6 +257,8 @@ void imnHelper::readFile(){
             imn_links.at(size).type = "wlan";
             wlan_device_count++;
             current_type.assign("link");
+            inside_link = 1;
+            wlan_flag = 1;
             
           }else if(s.find("hub") != string::npos){
             imnLink l;
@@ -322,101 +342,65 @@ void imnHelper::readFile(){
         //save all links corresponding to this link type( i.e all links to wlan device ect..)
         if(current_type.compare("link") == 0){ 
           if(s.find("interface-peer") != string::npos){
-            regex_search(s,r_match,n_name);
+            regex_search(s,r_match,node_name);
             imn_links.at(size).peer_list.push_back(r_match[0]);
             continue;
           }
-          if(inside_link == 1){
-            if(s.find("nodes") != string::npos){
-              string t,t2;
-              regex_search(s,r_match,n_name);
-              t = r_match[0];
-              string temp = r_match.suffix().str();
-              regex_search(temp,r_match,n_name);
-              t2 = r_match[0];
-              
-              for(vector<imnLink>::size_type i = 0; i != imn_links.size(); i++){
-                if(t.compare(imn_links[i].name) == 0 || t2.compare(imn_links[i].name) == 0){
-                  link_already_set = 1;
-                  if(imn_links[i].type.compare("wlan") == 0)
-                    break;
-                  if(imn_links[i].type.compare("hub") == 0){
-                    h = 1;
-                  }
-                  if(imn_links[i].type.compare("lanswitch") == 0){
-                    ls = 1;
-                  }
-                  index = i;
-                  break;
-                }
-              }
-              if(link_already_set == 0){ //process as p2p link
-                 imnLink l;
-                 size = int(imn_links.size());
-                 imn_links.push_back(l);
-                 imn_links.at(size).name = current_node_name; //TODO: Might want to name something else?
-                 imn_links.at(size).type = "p2p";
-                 imn_links.at(size).peer_list.push_back(t);
-                 imn_links.at(size).peer_list.push_back(t2);
-                 p2p_count++;
-                 current_type.assign("link");
-                 link_already_set = 1;
-                 p_link = 1;
-              }
-            }//end of if(s.find("nodes")
+        }
+        if(inside_link == 1 && s.compare("}") != 0){ //process entire link into temp variables
+          
+          //TODO consider asymetric links, sperated by {} in imn file
+          if(s.find("bandwidth") != string::npos){
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_bandwidth.assign(r_match.suffix().str());
+            }
           }
+          if(s.find("jitter") != string::npos){
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_jitter.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("delay") != string::npos){
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_delay.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("error") != string::npos){
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_error.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("ber") != string::npos){
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_error.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("range") != string::npos){//only in wifi
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_range.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("duplicate") != string::npos){//only in p2p link
+            if(regex_search(s,r_match,eq)){
+              regex_search(s,r_match,eq2);
+              temp_duplicate.assign(r_match.suffix().str());
+            }
+          }
+          if(s.find("nodes") != string::npos){//only in p2p link
+            regex_search(s,r_match,node_name);
+            temp_peer1.assign(r_match[0]);
+            string temp = r_match.suffix().str();
+            regex_search(temp,r_match,node_name);
+            temp_peer2.assign(r_match[0]);
+          } 
         }
         
-        //TODO consider asymetric links, sperated by {} in imn file
-        if(s.find("bandwidth") != string::npos){
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).bandwidth = temp;
-          }
-        }
-        if(s.find("jitter") != string::npos){
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).jitter = temp;
-          }
-        }
-        if(s.find("delay") != string::npos){
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).delay = temp;
-          }
-        }
-        if(s.find("error") != string::npos){
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).error = temp;
-          }
-        }
-        if(s.find("ber") != string::npos){
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).error = temp;
-          }
-        }
-        if(s.find("range") != string::npos){//only in wifi
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).range = temp;
-          }
-        }
-        if(s.find("duplicate") != string::npos){//only in p2p link
-          if(regex_search(s,r_match,eq)){
-            regex_search(s,r_match,eq2);
-            string temp = r_match.suffix().str();
-            imn_links.at(size).duplicate = temp;
-          }
-        }
         //save coordinates, might not exactly correspond to ns3 coordinates
         if(s.find("iconcoords") != string::npos){
           regex_search(s,r_match,num_dec);
@@ -433,12 +417,79 @@ void imnHelper::readFile(){
             imn_links.at(size).coordinates.y = t2;
           }
         }
-      }else{
+      }else{ //track_curly_brackets was 0
+        
+        if(inside_link == 1){ //create and store link
+          if(wlan_flag == 1){
+            cout << "begin wlan" << endl;
+            imn_links.at(size).bandwidth = temp_bandwidth;
+            imn_links.at(size).jitter = temp_jitter;
+            imn_links.at(size).delay = temp_delay;
+            imn_links.at(size).error = temp_error;
+            imn_links.at(size).range = temp_range;
+            imn_links.at(size).duplicate = temp_duplicate;
+            link_already_set = 1;
+            cout << "end wlan" << endl;
+          }
+          for(vector<imnLink>::size_type i = 0; i != imn_links.size(); i++){
+            if(temp_peer1.compare(imn_links[i].name) == 0 || temp_peer2.compare(imn_links[i].name) == 0){
+              link_already_set = 1;
+              if(imn_links[i].type.compare("wlan") == 0) //wlan, already set up
+                break;
+                   
+              if(imn_links[i].type.compare("hub") == 0 || imn_links[i].type.compare("lanswitch") == 0){
+                imnLink l;
+                l.name = current_node_name;
+                l.type = "connection";
+                l.bandwidth = temp_bandwidth;
+                l.jitter = temp_jitter;
+                l.delay = temp_delay;
+                l.error = temp_error;
+                l.range = temp_range;
+                l.duplicate = temp_duplicate;
+                
+                int lsize = int(imn_links.at(i).extra_links.size());
+                imn_links.at(i).extra_links.push_back(l);
+                
+                if(temp_peer1.compare(imn_links[i].name) == 0){ //get correct name of device and peer
+                  imn_links.at(i).extra_links.at(lsize).peer_list.push_back(temp_peer2);
+                }else{
+                  imn_links.at(i).extra_links.at(lsize).peer_list.push_back(temp_peer1);
+                }
+              }
+              break;
+            }
+          }
+          if(link_already_set == 0){ //process as p2p link
+            imnLink l;
+            l.name = current_node_name;
+            l.type = "p2p";
+            l.bandwidth = temp_bandwidth;
+            l.jitter = temp_jitter;
+            l.delay = temp_delay;
+            l.error = temp_error;
+            l.duplicate = temp_duplicate;
+            
+            size = int(imn_links.size());
+            imn_links.push_back(l);
+            imn_links.at(size).peer_list.push_back(temp_peer1);
+            imn_links.at(size).peer_list.push_back(temp_peer2);
+            p2p_count++;
+          }
+        }
+        
         inside_link = 0;
         link_already_set = 0;
-        p_link = 0;
-        h = 0;
-        ls = 0;
+        wlan_flag = 0;
+        
+        temp_bandwidth.assign("0");
+        temp_jitter.assign("0");
+        temp_delay.assign("0");
+        temp_error.assign("0");
+        temp_range.assign("0");
+        temp_duplicate.assign("0");
+        temp_peer1.assign("");
+        temp_peer2.assign("");
       }
     }
   }
