@@ -26,9 +26,10 @@ class imnLink
     string delay;
     string error; //ber for p2p in imn file
     string duplicate; //for p2p link only
-    string coordinates;
     vector<interface> interface_list;
     vector<string> peer_list;
+    position coordinates;
+    vector<imnLink> extra_links;
     
 
 };

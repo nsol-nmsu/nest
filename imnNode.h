@@ -21,6 +21,13 @@ class interface
     string mac_addr;
 };
 
+class position
+{
+  public:
+    float x;
+    float y;
+};
+
 class imnNode
 {
   public:
@@ -32,8 +39,8 @@ class imnNode
     string name;
     string type;
     string model;
-    string coordinates;
     vector<interface> interface_list;
+    position coordinates;
     
 
 };

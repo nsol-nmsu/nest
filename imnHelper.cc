@@ -67,8 +67,8 @@ void imnHelper::printInfo(imnNode n){
     cout << "ipv6 addr: " << n.interface_list[i].ipv6_addr << endl;
     cout << "mac addr: " << n.interface_list[i].mac_addr << endl;
   }
-  
-  
+  cout << "POSITION: " << endl;
+  cout << "x: " << n.coordinates.x << " y: " << n.coordinates.y << endl;
 }
 
 void imnHelper::printInfo(imnLink l){
@@ -92,6 +92,9 @@ void imnHelper::printInfo(imnLink l){
   cout << "Link delay: " << l.delay << endl;
   cout << "Link error: " << l.error << endl;
   cout << "Link duplicate: " << l.duplicate << endl;
+  
+  cout << "POSITION: " << endl;
+  cout << "x: " << l.coordinates.x << " y: " << l.coordinates.y << endl;
 }
 
 void imnHelper::printAll(){
@@ -151,8 +154,10 @@ vector<string> imnHelper:: split(string &s, string delim) {
 void imnHelper::readFile(){
 
   regex node_name("[{]*n[0-9]+[}]*"); //regex to match node names of type n + number ie n1,n2,..ect
+  regex link_name("l[0-9]+");
   regex n_name("n[0-9]+");
   regex number("[0-9]+");
+  regex num_dec("[0-9]+[.]{0,1}[0-9]+");
   regex interface_name("eth[0-9]+");
   regex i_exact("interface eth[0-9]+");
   regex eq("[[:alpha:]]+[=]*[[:space:]]*[0-9]+");
@@ -207,7 +212,7 @@ void imnHelper::readFile(){
         }
         
         if(s.find("link") != string::npos && s[s.length() - 1] == 123 ){
-          regex_search(s,r_match,node_name);
+          regex_search(s,r_match,link_name);
           current_node_name.assign(r_match[0]);
           current_type.assign("link");
           inside_link = 1;
@@ -361,7 +366,6 @@ void imnHelper::readFile(){
           }
         }
         //TODO consider asymetric links, sperated by {} in imn file
-        //TODO convert to ns3 readable strings
         if(s.find("bandwidth") != string::npos){
           if(regex_search(s,r_match,eq)){
             regex_search(s,r_match,eq2);
@@ -409,6 +413,22 @@ void imnHelper::readFile(){
             regex_search(s,r_match,eq2);
             string temp = r_match.suffix().str();
             imn_links.at(size).duplicate = temp;
+          }
+        }
+        //save coordinates, might not exactly correspond to ns3 coordinates
+        if(s.find("iconcoords") != string::npos){
+          regex_search(s,r_match,num_dec);
+          float t = stoi(r_match[0]);
+          string temp = r_match.suffix().str();
+          regex_search(temp,r_match,num_dec);
+          float t2 = stoi(r_match[0]);
+          if(current_type.compare("node") == 0){
+            imn_nodes.at(size).coordinates.x = t;
+            imn_nodes.at(size).coordinates.y = t2;
+          }
+          else{
+            imn_links.at(size).coordinates.x = t;
+            imn_links.at(size).coordinates.y = t2;
           }
         }
            
