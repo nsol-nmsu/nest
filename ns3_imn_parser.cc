@@ -276,7 +276,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     regex_search(imn_container.imn_links.at(i).name,r_match,number);
     n = stoi(r_match[0]) - 1;
 
-    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
+    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
 
   //set wlan node coordinates

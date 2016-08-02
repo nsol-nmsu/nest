@@ -1,6 +1,6 @@
 all: update
 
-update: configure
+update: copy
 	cd .. && ./waf
 
 configure: copy

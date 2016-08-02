@@ -171,7 +171,7 @@ void imnHelper::readFile(){
   regex link_name("l[0-9]+");
   regex node_name("n[0-9]+");
   regex number("[0-9]+");
-  regex num_dec("[0-9]+[.]{0,1}[0-9]+");
+  regex num_dec("[0-9]+[.]{0,1}[0-9]*");
   regex interface_name("eth[0-9]+");
   regex i_exact("interface eth[0-9]+");
   regex eq("[[:alpha:]]+[=]*[[:space:]]*[0-9]+");
@@ -186,6 +186,7 @@ void imnHelper::readFile(){
   int inside_link = 0;   //inside link block
   int link_already_set = 0;
   int wlan_flag = 0;
+  int cust_post_config_flag = 0;
   
   string temp_bandwidth = "0";
   string temp_jitter = "0";
@@ -222,7 +223,11 @@ void imnHelper::readFile(){
 			}
       
       if(track_curly_brackets != 0){ 
-        
+        if(s.find("custom-post-config-commands") != string::npos || cust_post_config_flag == 1){
+          cust_post_config_flag = 1;
+          continue;
+        }     
+  
         if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){ //compared with ascii of {
           regex_search(s,r_match,node_name);
           current_node_name.assign(r_match[0]);
@@ -408,6 +413,7 @@ void imnHelper::readFile(){
           string temp = r_match.suffix().str();
           regex_search(temp,r_match,num_dec);
           float t2 = stoi(r_match[0]);
+cout << t << " coords " << t2 << endl;
           if(current_type.compare("node") == 0){
             imn_nodes.at(size).coordinates.x = t;
             imn_nodes.at(size).coordinates.y = t2;
@@ -481,6 +487,7 @@ void imnHelper::readFile(){
         inside_link = 0;
         link_already_set = 0;
         wlan_flag = 0;
+        cust_post_config_flag = 0;
         
         temp_bandwidth.assign("0");
         temp_jitter.assign("0");
