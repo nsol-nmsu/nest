@@ -413,7 +413,7 @@ void imnHelper::readFile(){
           string temp = r_match.suffix().str();
           regex_search(temp,r_match,num_dec);
           float t2 = stoi(r_match[0]);
-cout << t << " coords " << t2 << endl;
+
           if(current_type.compare("node") == 0){
             imn_nodes.at(size).coordinates.x = t;
             imn_nodes.at(size).coordinates.y = t2;
