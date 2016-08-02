@@ -9,7 +9,7 @@ Short notes:
 
 imn folder must be placed inside folder ns-3.25
 makefile added, 
-typing 'make'           copies files to their destination
-typing 'make clean'     removes the added files
-typing 'make configure' configures ns3 waf to required settings.
-typing 'make compile'   compiles and links all topology files
+typing 'make'           Copies files to their destination, and runs ./waf to
+                        compile and link items.
+typing 'make clean'     Removes <some of> the added files.
+typing 'make configure' Copies files to their destination, configures settings.
