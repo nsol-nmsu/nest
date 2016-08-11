@@ -224,8 +224,13 @@ void imnHelper::readFile(){
       
       if(track_curly_brackets != 0){ 
         if(s.find("custom-post-config-commands") != string::npos || cust_post_config_flag == 1){
-          cust_post_config_flag = 1;
-          continue;
+          if(track_curly_brackets == 1){
+            cust_post_config_flag = 0;
+          }
+          else{
+            cust_post_config_flag = 1;
+            continue;
+          }
         }     
   
         if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){ //compared with ascii of {
