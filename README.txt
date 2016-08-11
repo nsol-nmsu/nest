@@ -13,3 +13,8 @@ typing 'make'           Copies files to their destination, and runs ./waf to
                         compile and link items.
 typing 'make clean'     Removes <some of> the added files.
 typing 'make configure' Copies files to their destination, configures settings.
+
+to run this file, an example syntax would be:
+ ./waf --run "scratch/ns3_imn_parser --topo=imn2ns3/imn_sample_files/third.imn"
+
+
