@@ -60,18 +60,18 @@ int main (int argc, char *argv[]) {
   NodeContainer nodes;
   ApplicationContainer apps;
   //PointToPointHelper p2p;
-  NetDeviceContainer p2pDevices;
+  //NetDeviceContainer p2pDevices;
   WifiHelper wifi = WifiHelper::Default ();
   YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
   YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
   NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
-  InternetStackHelper InternetHelper;
+  //InternetStackHelper InternetHelper;
   //GlobalRoutingHelper routingHelper;
   //AppHelper consumerHelper ("ns3::ndn::ConsumerTest");
   //AppHelper producerHelper ("ns3::ndn::Producer");
-  NetDeviceContainer wifi_devices;
+  //NetDeviceContainer wifi_devices;
 
   // setting default parameters for links and channels
   //Config::SetDefault ("ns3::PointToPointNetDevice::DataRate", StringValue (DEFAULT_P2P_RATE));
@@ -106,10 +106,14 @@ int main (int argc, char *argv[]) {
 
 cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
-  CsmaHelper csma;
-  NetDeviceContainer csmaDevices;
-  NetDeviceContainer switchDevices;
-  //InternetStackHelper stack;
+  //CsmaHelper csma;
+  //NetDeviceContainer csmaDevices;
+  //NetDeviceContainer switchDevices;
+  InternetStackHelper stack;
+  stack.Install(nodes);
+
+  Ipv4AddressHelper address;
+  address.SetBase("10.0.0.0", "255.255.255.0");
 
   regex number("[0-9]+");
   regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
@@ -127,6 +131,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       n1 = 0;
       n2 = 0;
       NodeContainer p2pNodes;
+      NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
 
       peer = imn_container.imn_links.at(i).peer_list.at(0);
@@ -149,11 +154,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
       p2pDevices.Add(p2p.Install(nodes.Get(n1), nodes.Get(n2)));
 
-//********************************************************************
-     //p2p.EnablePcapAll("p2p");
-//********************************************************************
-
-/*      InternetHelper.Install(p2pNodes);
+      //InternetStackHelper internetP2P;
+      //internetP2P.Install(p2pNodes);
 
       regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
@@ -162,10 +164,11 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       strncpy(temp, addr_str.c_str(), sizeof(temp));
       temp[sizeof(temp) - 1] = 0;
 
-      Ipv4AddressHelper address;
-      address.SetBase(temp, "255.255.255.0");
-      address.Assign(p2pDevices);
-*/
+      //Ipv4AddressHelper address;
+      //address.SetBase(temp, "255.255.255.0");
+      address.NewNetwork();
+      Ipv4InterfaceContainer p2pInterface = address.Assign(p2pDevices);
+
       cout << "Creating point-to-point connection with n" << n1 + 1 << " and n" << n2 + 1 << endl;
 
       if(n1 == 0 || n2 == 0){
@@ -180,6 +183,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
+      NodeContainer wifiNodes;
+      NetDeviceContainer wifiDevices;
 
       if(n1 != last_ap_id){
         stringstream ssid_creator;
@@ -188,8 +193,9 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
         wifiPhy.SetChannel(wifiChannel.Create());
         wifiMac.SetType("ns3::ApWifiMac", "Ssid", SsidValue(ssid));
-        wifi_devices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n1)));
+        wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n1)));
         mobility.Install(nodes.Get(n1));
+        wifiNodes.Add(nodes.Get(n1));
         last_ap_id = n1;
         cout << "Creating new wifi network " << ssid << " at n" << n1 + 1 << endl;
       }
@@ -200,21 +206,39 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         n2 = stoi(r_match[0]) - 1;
 
         wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "ActiveProbing", BooleanValue(false));
-        wifi_devices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n2)));
+        wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n2)));
         cout << "Adding node n" << n2 + 1 << " to " << ssid << " at n" << n1 + 1 << endl;
         mobility.Install(nodes.Get(n2));
+        wifiNodes.Add(nodes.Get(n2));
       }
+
+      //InternetStackHelper wifiInternet;
+      //wifiInternet.Install(wifiNodes);
+
+      regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
+      addr_str.assign(r_match.str());
+      addr_str.append(".0");
+      char temp[14];
+      strncpy(temp, addr_str.c_str(), sizeof(temp));
+      temp[sizeof(temp) - 1] = 0;
+
+      //Ipv4AddressHelper address;
+      //address.SetBase(temp, "255.255.255.0");
+      address.NewNetwork();
+      Ipv4InterfaceContainer wifiInterface = address.Assign(wifiDevices);
     }//=============Hub===============
     else if(type.compare("hub") == 0){
       n1 = 0;
       n2 = 0;
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
       int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
+      NodeContainer csmaNodes;
+      NetDeviceContainer csmaDevices;
 
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
-
+      csmaNodes.Add(nodes.Get(n1));
       //csma.Install(nodes.Get(n1));
 
       cout << "Creating new hub network named n" << n1 + 1 << endl;
@@ -223,10 +247,11 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
-        NodeContainer csmaNodes;
-        csmaNodes.Add(nodes.Get(n1));
+        NodeContainer csmaNodeSegment;
+        CsmaHelper csma;
+        csmaNodeSegment.Add(nodes.Get(n1));
+        csmaNodeSegment.Add(nodes.Get(n2));
         csmaNodes.Add(nodes.Get(n2));
-
         //iterate through links to correctly match corresponding data 
         for(int k = 0; k < total_asso_links; k++){
           string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
@@ -241,36 +266,63 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
             csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
           }
         }
-        csmaDevices.Add(csma.Install(csmaNodes));
-        //csma.Install(nodes.Get(n2));
+
+        csmaDevices.Add(csma.Install(csmaNodeSegment));
+
         cout << "Adding node n" << n2 + 1 << " to a csma(hub) n" << n1 + 1 << endl;
       }
+      int x;
+      for(x = 0; x < imn_container.imn_nodes.size(); x++){
+        peer2 = imn_container.imn_nodes.at(x).name;
+        regex_search(peer2,r_match,number);
+        int compare_node = stoi(r_match[0]) - 1;
+        if(n2 == compare_node){
+          break;
+        }
+      }
+   
+      //InternetStackHelper internetCsma;
+      //internetCsma.Install(csmaNodes);
+
+      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
+      addr_str.assign(r_match.str());
+      addr_str.append(".0");
+      char temp[14];
+      strncpy(temp, addr_str.c_str(), sizeof(temp));
+      temp[sizeof(temp) - 1] = 0;
+
+      //Ipv4AddressHelper address;
+      //address.SetBase(temp, "255.255.255.0");
+      address.NewNetwork();
+      Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
     }//=============Switch===============
     else if(type.compare("landswitch") == 0){
      // add different setup for landswitches
       n1 = 0;
       n2 = 0;
+      int total_peers = imn_container.imn_links.at(i).peer_list.size();
+      int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
+      NetDeviceContainer csmaDevices;
 
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
 
-      //csma.SetChannelAttribute("DataRate", DataRateValue(5000000));
-      //csma.SetChannelAttribute("Delay", TimeValue(MicroSeconds(0)));
-      csma.Install(nodes.Get(n1));
-
       cout << "Creating new switch network " << " named n" << n1 + 1 << endl;
 
-      for(int j = 0; j < imn_container.imn_links.at(i).peer_list.size(); j++){
+      for(int j = 0; j < total_peers; j++){
         int flag1 = 0, flag2 = 0;
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
-//cout << "extra link size " << imn_container.imn_links.at(i).extra_links.size() << endl;
-        for(int k = 0; k < imn_container.imn_links.at(i).extra_links.size(); k++){
+        NodeContainer switchNodes;
+        CsmaHelper csma;
+        switchNodes.Add(nodes.Get(n1));
+        switchNodes.Add(nodes.Get(n2));
+
+        for(int k = 0; k < total_asso_links; k++){
           string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
           if(peer2.compare(peer2_check) != 0){
-//cout << peer2 << " " << peer2_check << endl;
             continue;
           }
           if(imn_container.imn_links.at(i).extra_links.at(k).delay.empty() == 0){
@@ -280,13 +332,30 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
             csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
           }
         }
-        csma.Install(nodes.Get(n2));
+        csmaDevices.Add(csma.Install(switchNodes));
+
+        //InternetStackHelper internetCsma;
+        //internetCsma.Install(switchNodes);
+
         cout << "Adding node n" << n2 + 1 << " to a csma(switch) n" << n1 + 1 << endl;
       }
+
+      regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
+      addr_str.assign(r_match.str());
+      addr_str.append(".0");
+      char temp[14];
+      strncpy(temp, addr_str.c_str(), sizeof(temp));
+      temp[sizeof(temp) - 1] = 0;
+
+      //Ipv4AddressHelper address;
+      //address.SetBase(temp, "255.255.255.0");
+      address.NewNetwork();
+      Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
+
     }
   }//end of for loop
 
-  InternetHelper.Install(nodes);
+  /*InternetHelper.Install(nodes);
 
   Ipv4AddressHelper address;
   address.SetBase("10.0.1.0", "255.255.255.0");
@@ -297,7 +366,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
   address.SetBase("10.2.1.0", "255.255.255.0");
   address.Assign(csmaDevices);
-
+  */
   //
   //set router/pc/p2p/other coordinates for NetAnim
   //
@@ -346,9 +415,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
     //ptr to hubs ipv4 address
     Ptr<Ipv4> ipv4 = nodes.Get(n)->GetObject<Ipv4>();
-
-    for (uint32_t j = 0; j < total_peers; j++)
-    {
+cout << n << endl;
+    for (uint32_t j = 0; j < total_peers; j++){
       string temp_str;
       string peer2 = imn_container.imn_links.at(i).peer_list.at(j);
       regex_search(peer2, r_match, number);
@@ -356,7 +424,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
       //get interface address of the xth interface
       Ipv4Address addri = ipv4->GetAddress((j+1),0).GetLocal();
-//cout << addri << endl;
+cout << addri << endl;
       //finish setting node's application target
       AddressValue remoteAddress (InetSocketAddress (addri, port));
       onOffHelper.SetAttribute ("Remote", remoteAddress);
