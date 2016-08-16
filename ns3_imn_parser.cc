@@ -14,6 +14,7 @@
 #include "ns3/csma-module.h"
 #include "ns3/internet-module.h"
 #include "ns3/applications-module.h"
+#include "ns3/bridge-module.h"
 
 #include "ns3/netanim-module.h"
 
@@ -234,11 +235,13 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
       NodeContainer csmaNodes;
       NetDeviceContainer csmaDevices;
+      NetDeviceContainer bridgeDevice;
 
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
       csmaNodes.Add(nodes.Get(n1));
+      Ptr<Node> bridge = nodes.Get(n1);
       //csma.Install(nodes.Get(n1));
 
       cout << "Creating new hub network named n" << n1 + 1 << endl;
@@ -248,8 +251,9 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
         NodeContainer csmaNodeSegment;
+        NetDeviceContainer link;
         CsmaHelper csma;
-        csmaNodeSegment.Add(nodes.Get(n1));
+        csmaNodeSegment.Add(bridge);
         csmaNodeSegment.Add(nodes.Get(n2));
         csmaNodes.Add(nodes.Get(n2));
         //iterate through links to correctly match corresponding data 
@@ -267,7 +271,9 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
           }
         }
 
-        csmaDevices.Add(csma.Install(csmaNodeSegment));
+        link.Add(csma.Install(csmaNodeSegment));
+        csmaDevices.Add(link.Get(1));
+        bridgeDevice.Add(link.Get(0));
 
         cout << "Adding node n" << n2 + 1 << " to a csma(hub) n" << n1 + 1 << endl;
       }
@@ -280,7 +286,9 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
           break;
         }
       }
-   
+
+      BridgeHelper bridgeHelp;
+      bridgeHelp.Install(bridge, bridgeDevice);
       //InternetStackHelper internetCsma;
       //internetCsma.Install(csmaNodes);
 
@@ -378,13 +386,13 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_nodes.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
   }
 
-  //
+/*  //
   //Create a packet sink on the hubs to recieve packets
   //
   uint16_t port = 50000;
   Address hubLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
   PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", hubLocalAddress);
-
+*/
   //
   //set hub/switch nodes coordinates
   //
@@ -399,7 +407,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     regex_search(imn_container.imn_links.at(i).name,r_match,number);
     n = stoi(r_match[0]) - 1;
 
-    ApplicationContainer hubApp = packetSinkHelper.Install (nodes.Get(n));
+/*    ApplicationContainer hubApp = packetSinkHelper.Install (nodes.Get(n));
     hubApp.Start (Seconds (1.0));
     hubApp.Stop (Seconds (10.0));
 
@@ -432,7 +440,7 @@ cout << addri << endl;
     }
     spokeApps.Start (Seconds (1.0));
     spokeApps.Stop (Seconds (10.0));
-
+*/
     //place nodes into NetAnim
     AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
