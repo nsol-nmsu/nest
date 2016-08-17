@@ -155,10 +155,20 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
       p2pDevices.Add(p2p.Install(nodes.Get(n1), nodes.Get(n2)));
 
+      int x;
+      for(x = 0; x < imn_container.imn_nodes.size(); x++){
+        peer2 = imn_container.imn_nodes.at(x).name;
+        regex_search(peer2,r_match,number);
+        int compare_node = stoi(r_match[0]) - 1;
+        if(n2 == compare_node){
+          break;
+        }
+      }
+
       //InternetStackHelper internetP2P;
       //internetP2P.Install(p2pNodes);
 
-      regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
+      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];
@@ -213,10 +223,20 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         wifiNodes.Add(nodes.Get(n2));
       }
 
+      int x;
+      for(x = 0; x < imn_container.imn_nodes.size(); x++){
+        peer2 = imn_container.imn_nodes.at(x).name;
+        regex_search(peer2,r_match,number);
+        int compare_node = stoi(r_match[0]) - 1;
+        if(n2 == compare_node){
+          break;
+        }
+      }
+
       //InternetStackHelper wifiInternet;
       //wifiInternet.Install(wifiNodes);
 
-      regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
+      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];
@@ -304,32 +324,40 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       address.NewNetwork();
       Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
     }//=============Switch===============
-    else if(type.compare("landswitch") == 0){
+    else if(type.compare("lanswitch") == 0){
      // add different setup for landswitches
       n1 = 0;
       n2 = 0;
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
       int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
+
+      NodeContainer csmaNodes;
       NetDeviceContainer csmaDevices;
+      NetDeviceContainer bridgeDevice;
 
       peer = imn_container.imn_links.at(i).name;
       regex_search(peer,r_match,number);
       n1 = stoi(r_match[0]) - 1;
+      csmaNodes.Add(nodes.Get(n1));
+      Ptr<Node> bridge = nodes.Get(n1);
 
-      cout << "Creating new switch network " << " named n" << n1 + 1 << endl;
-
+      cout << "Creating new switch network named n" << n1 + 1 << endl;
+      //for all peers using this switch
       for(int j = 0; j < total_peers; j++){
-        int flag1 = 0, flag2 = 0;
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
-        NodeContainer switchNodes;
+        NodeContainer switchNodePair;
+        NetDeviceContainer link;
         CsmaHelper csma;
-        switchNodes.Add(nodes.Get(n1));
-        switchNodes.Add(nodes.Get(n2));
+        switchNodePair.Add(bridge);
+        switchNodePair.Add(nodes.Get(n2));
+        csmaNodes.Add(nodes.Get(n2));
 
+        //iterate through links to correctly match corresponding data
         for(int k = 0; k < total_asso_links; k++){
           string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
+          //if link info doesn't belong to current node, skip to next
           if(peer2.compare(peer2_check) != 0){
             continue;
           }
@@ -340,13 +368,26 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
             csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
           }
         }
-        csmaDevices.Add(csma.Install(switchNodes));
 
-        //InternetStackHelper internetCsma;
-        //internetCsma.Install(switchNodes);
+        link.Add(csma.Install(switchNodePair));
+        csmaDevices.Add(link.Get(1));
+        bridgeDevice.Add(link.Get(0));
 
         cout << "Adding node n" << n2 + 1 << " to a csma(switch) n" << n1 + 1 << endl;
       }
+
+      int x;
+      for(x = 0; x < imn_container.imn_nodes.size(); x++){
+        peer2 = imn_container.imn_nodes.at(x).name;
+        regex_search(peer2,r_match,number);
+        int compare_node = stoi(r_match[0]) - 1;
+        if(n2 == compare_node){
+          break;
+        }
+      }
+
+      BridgeHelper bridgeHelp;
+      bridgeHelp.Install(bridge, bridgeDevice);
 
       regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
@@ -359,7 +400,6 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       //address.SetBase(temp, "255.255.255.0");
       address.NewNetwork();
       Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
-
     }
   }//end of for loop
 
