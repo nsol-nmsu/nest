@@ -182,10 +182,10 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
       cout << "Creating point-to-point connection with n" << n1 + 1 << " and n" << n2 + 1 << endl;
 
-      if(n1 == 0 || n2 == 0){
+      /*if(n1 == 0 || n2 == 0){
         cout << "P2P link could not be established with " << peer << " and " << peer2 << endl;
         return -1;
-      }
+      }*/
     }//=============Wifi===============
     else if(type.compare("wlan") == 0){
       n1 = 0;
@@ -389,7 +389,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(bridge, bridgeDevice);
 
-      regex_search(imn_container.imn_nodes.at(n1 + 1).interface_list.at(0).ipv4_addr, r_match, addr);
+      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];

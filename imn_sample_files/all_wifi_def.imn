@@ -1,0 +1,330 @@
+node n1 {
+    type wlan
+    network-config {
+	hostname wlan1
+	!
+	interface wireless
+	 ipv6 address 2001:0::0/128
+	 ip address 10.0.0.0/24
+	!
+	mobmodel
+	coreapi
+	basic_range
+	!
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {191.0 80.0}
+    labelcoords {191.0 112.0}
+    interface-peer {e0 n2}
+}
+
+node n2 {
+    type router
+    model router
+    network-config {
+	hostname n2
+	!
+	interface eth0
+	 ipv6 address 2001:0::1/128
+	 ip address 10.0.0.1/24
+	!
+    }
+    canvas c1
+    iconcoords {185.0 203.0}
+    labelcoords {185.0 235.0}
+    interface-peer {eth0 n1}
+}
+
+node n3 {
+    type wlan
+    network-config {
+	hostname wlan3
+	!
+	interface wireless
+	 ipv6 address 2001:1::0/128
+	 ip address 10.0.1.0/24
+	!
+	mobmodel
+	coreapi
+	emane_ieee80211abg
+	!
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {346.0 84.0}
+    labelcoords {346.0 116.0}
+    interface-peer {e0 n4}
+}
+
+node n4 {
+    type router
+    model router
+    network-config {
+	hostname n4
+	!
+	interface eth0
+	 ipv6 address 2001:1::1/128
+	 ip address 10.0.1.1/24
+	!
+    }
+    canvas c1
+    iconcoords {345.0 212.0}
+    labelcoords {345.0 244.0}
+    interface-peer {eth0 n3}
+}
+
+node n5 {
+    type wlan
+    network-config {
+	hostname wlan5
+	!
+	interface wireless
+	 ipv6 address 2001:2::0/128
+	 ip address 10.0.2.0/24
+	!
+	mobmodel
+	coreapi
+	emane_bypass
+	!
+    }
+    custom-config {
+	custom-config-id emane_bypass
+	custom-command 11
+	config {
+	none=0
+	}
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {500.0 87.0}
+    labelcoords {500.0 119.0}
+    interface-peer {e0 n6}
+}
+
+node n6 {
+    type router
+    model router
+    network-config {
+	hostname n6
+	!
+	interface eth0
+	 ipv6 address 2001:2::1/128
+	 ip address 10.0.2.1/24
+	!
+    }
+    canvas c1
+    iconcoords {500.0 212.0}
+    labelcoords {500.0 244.0}
+    interface-peer {eth0 n5}
+}
+
+node n7 {
+    type wlan
+    network-config {
+	hostname wlan7
+	!
+	interface wireless
+	 ipv6 address 2001:3::0/128
+	 ip address 10.0.3.0/24
+	!
+	mobmodel
+	coreapi
+	emane_commeffect
+	!
+    }
+    custom-config {
+	custom-config-id emane_commeffect
+	custom-command {10 3 11 9 11 11}
+	config {
+	filterfile=
+	groupid=0
+	enablepromiscuousmode=0
+	receivebufferperiod=1.0
+	defaultconnectivity=0
+	enabletighttimingmode=0
+	}
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {672.0 87.0}
+    labelcoords {672.0 119.0}
+    interface-peer {e0 n8}
+}
+
+node n8 {
+    type router
+    model router
+    network-config {
+	hostname n8
+	!
+	interface eth0
+	 ipv6 address 2001:3::1/128
+	 ip address 10.0.3.1/24
+	!
+    }
+    canvas c1
+    iconcoords {669.0 213.0}
+    labelcoords {669.0 245.0}
+    interface-peer {eth0 n7}
+}
+
+node n9 {
+    type wlan
+    network-config {
+	hostname wlan9
+	!
+	interface wireless
+	 ipv6 address 2001:4::0/128
+	 ip address 10.0.4.0/24
+	!
+	mobmodel
+	coreapi
+	emane_rfpipe
+	!
+    }
+    custom-config {
+	custom-config-id emane_rfpipe
+	custom-command {11 3 11 2 10 9 9 10 11 4 4 4 2 9 9 9 9 9 10 10 11 11 11 11 10}
+	config {
+	enablepromiscuousmode=0
+	datarate=1M
+	flowcontrolenable=0
+	flowcontroltokens=10
+	pcrcurveuri=/usr/share/emane/models/rfpipe/xml/rfpipepcr.xml
+	jitter=0.0
+	delay=0.0
+	transmissioncontrolmap=
+	enabletighttiming=0
+	bandwidth=1M
+	frequency=2.347G
+	frequencyofinterest=2.347G
+	subid=1
+	systemnoisefigure=4.0
+	txpower=0.0
+	antennagain=0.0
+	antennaazimuth=0.0
+	antennaelevation=0.0
+	antennaprofileid=1
+	antennaprofilemanifesturi=
+	antennaprofileenable=0
+	defaultconnectivitymode=1
+	frequencyofinterestfilterenable=1
+	noiseprocessingmode=0
+	pathlossmode=2ray
+	}
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {837.0 101.0}
+    labelcoords {837.0 133.0}
+    interface-peer {e0 n10}
+}
+
+node n10 {
+    type router
+    model router
+    network-config {
+	hostname n10
+	!
+	interface eth0
+	 ipv6 address 2001:4::1/128
+	 ip address 10.0.4.1/24
+	!
+    }
+    canvas c1
+    iconcoords {843.0 215.0}
+    labelcoords {843.0 247.0}
+    interface-peer {eth0 n9}
+}
+
+link l1 {
+    nodes {n1 n2}
+}
+
+link l2 {
+    nodes {n3 n4}
+}
+
+link l3 {
+    nodes {n5 n6}
+}
+
+link l4 {
+    nodes {n7 n8}
+}
+
+link l5 {
+    nodes {n9 n10}
+}
+
+canvas c1 {
+    name {Canvas1}
+}
+
+option global {
+    interface_names no
+    ip_addresses yes
+    ipv6_addresses yes
+    node_labels yes
+    link_labels yes
+    show_api no
+    background_images no
+    annotations yes
+    grid yes
+    traffic_start 0
+}
+
+option session {
+}
+
