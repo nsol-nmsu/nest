@@ -102,7 +102,7 @@ int main (int argc, char *argv[]) {
   cmd.Parse (argc, argv);
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-
+  imn_container.printAll();
   nodes.Create(imn_container.total);
 
 cout << "\nCreating " << imn_container.total << " nodes" << endl;

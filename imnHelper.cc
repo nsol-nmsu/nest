@@ -1,6 +1,18 @@
 
 #include "imnHelper.h"
 
+/*Here are the default node types and their services:
+• router - zebra, OSFPv2, OSPFv3, vtysh, and IPForward services for IGP link-state routing.
+• host - DefaultRoute and SSH services, representing an SSH server having a default route when connected
+directly to a router.
+• PC - DefaultRoute service for having a default route when connected directly to a router.
+• mdr - zebra, OSPFv3MDR, vtysh, and IPForward services for wireless-optimized MANET Designated Router
+routing.
+• prouter - a physical router, having the same default services as the router node type; for incorporating Linux
+testbed machines into an emulation, the Machine Types is set to physical.
+• xen - a Xen-based router, having the same default services as the router node type; for incorporating Xen domUs
+into an emulation, the Machine Types is set to xen, and different profiles are available.
+*/
 
 //credit for split methods stackoverflow: http://stackoverflow.com/questions/236129/split-a-string-in-c
 namespace ns3{
@@ -505,7 +517,7 @@ void imnHelper::readFile(){
       }
     }
   }
-  printAll();
+  //printAll();
   //cout << "Done processing..." << endl;
   imunes_stream.close();
   //cout << "File closed" << endl;
