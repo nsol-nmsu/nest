@@ -403,6 +403,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     }
   }//end of for loop
 
+  cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates..." << endl;
+
   /*InternetHelper.Install(nodes);
 
   Ipv4AddressHelper address;
@@ -497,6 +499,8 @@ cout << addri << endl;
       anim.SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
     }
   }
+
+  cout << "Node coordinates set... \n\nSetting simulation time..." << endl;
 
   // Turn on global static routing so we can actually be routed across the network.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
