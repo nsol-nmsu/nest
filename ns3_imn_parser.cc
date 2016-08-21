@@ -62,12 +62,12 @@ int main (int argc, char *argv[]) {
   ApplicationContainer apps;
   //PointToPointHelper p2p;
   //NetDeviceContainer p2pDevices;
-  WifiHelper wifi = WifiHelper::Default ();
-  YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
-  YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
-  MobilityHelper mobility;
-  Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
-  NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
+  //WifiHelper wifi = WifiHelper::Default ();
+  //YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default ();
+  //YansWifiChannelHelper wifiChannel = YansWifiChannelHelper::Default ();
+  //MobilityHelper mobility;
+  //Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
+  //NqosWifiMacHelper wifiMac = NqosWifiMacHelper::Default ();
   //InternetStackHelper InternetHelper;
   //GlobalRoutingHelper routingHelper;
   //AppHelper consumerHelper ("ns3::ndn::ConsumerTest");
@@ -84,15 +84,15 @@ int main (int argc, char *argv[]) {
   //Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode", StringValue (WIFI_PHY_MODE));
   
   // set up wifi stuff
-  wifi.SetStandard (WIFI_PHY_STANDARD_80211g);
-  wifiPhy.Set ("RxGain", DoubleValue (0) ); 
-  wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO); 
-  wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-  wifiChannel.AddPropagationLoss("ns3::FixedRssLossModel", "Rss", DoubleValue (WIFI_RSS_DBM));
-  wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
+  //wifi.SetStandard (WIFI_PHY_STANDARD_80211g);
+  //wifiPhy.Set ("RxGain", DoubleValue (0) ); 
+  //wifiPhy.SetPcapDataLinkType (YansWifiPhyHelper::DLT_IEEE802_11_RADIO); 
+  //wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+  //wifiChannel.AddPropagationLoss("ns3::FixedRssLossModel", "Rss", DoubleValue (WIFI_RSS_DBM));
+  /*wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager",
   							   "DataMode",    StringValue(WIFI_PHY_MODE),
   							   "ControlMode", StringValue(WIFI_PHY_MODE));
-
+*/
   // read command-line parameters
   CommandLine cmd;
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
@@ -197,7 +197,22 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
 
-      if(n1 != last_ap_id){
+      WifiHelper wifi;
+      YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
+      wifiPhy.Set("RxGain", DoubleValue(0.0));
+      wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+
+      YansWifiChannelHelper wifiChannel;
+      wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+      wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+      wifiPhy.SetChannel(wifiChannel.Create());
+
+      string phyMode("DsssRate1Mbps");
+      WifiMacHelper wifiMac;
+      wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
+      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
+
+      /*if(n1 != last_ap_id){
         stringstream ssid_creator;
         ssid_creator << "wifi-" << n1;
         ssid = Ssid(ssid_creator.str().c_str());
@@ -209,16 +224,18 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         wifiNodes.Add(nodes.Get(n1));
         last_ap_id = n1;
         cout << "Creating new wifi network " << ssid << " at n" << n1 + 1 << endl;
-      }
+      }*/
 
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         regex_search(peer2,r_match,number);
         n2 = stoi(r_match[0]) - 1;
 
-        wifiMac.SetType("ns3::StaWifiMac", "Ssid", SsidValue(ssid), "ActiveProbing", BooleanValue(false));
+        wifiMac.SetType("ns3::AdhocWifiMac");
         wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n2)));
-        cout << "Adding node n" << n2 + 1 << " to " << ssid << " at n" << n1 + 1 << endl;
+        cout << "Adding node n" << n2 + 1 << " to WLAN n" << n1 + 1 << endl;
+
+        MobilityHelper mobility;
         mobility.Install(nodes.Get(n2));
         wifiNodes.Add(nodes.Get(n2));
       }
@@ -236,19 +253,20 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       //InternetStackHelper wifiInternet;
       //wifiInternet.Install(wifiNodes);
 
-      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
+      /*regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];
       strncpy(temp, addr_str.c_str(), sizeof(temp));
       temp[sizeof(temp) - 1] = 0;
+      */
 
       //Ipv4AddressHelper address;
       //address.SetBase(temp, "255.255.255.0");
       address.NewNetwork();
       Ipv4InterfaceContainer wifiInterface = address.Assign(wifiDevices);
-    }//=============Hub===============
-    else if(type.compare("hub") == 0){
+    }//=============Hub/Switch===============
+    else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       n1 = 0;
       n2 = 0;
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -324,7 +342,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       address.NewNetwork();
       Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
     }//=============Switch===============
-    else if(type.compare("lanswitch") == 0){
+    /*else if(type.compare("lanswitch") == 0){
      // add different setup for landswitches
       n1 = 0;
       n2 = 0;
@@ -400,7 +418,7 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       //address.SetBase(temp, "255.255.255.0");
       address.NewNetwork();
       Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
-    }
+    }*/
   }//end of for loop
 
   cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates..." << endl;
