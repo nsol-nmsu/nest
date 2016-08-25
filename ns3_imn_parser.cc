@@ -102,16 +102,16 @@ int main (int argc, char *argv[]) {
   cmd.Parse (argc, argv);
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-  imn_container.printAll();
-  nodes.Create(imn_container.total);
+  //imn_container.printAll();
+  //nodes.Create(imn_container.total);
 
-cout << "\nCreating " << imn_container.total << " nodes" << endl;
+//cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
   //CsmaHelper csma;
   //NetDeviceContainer csmaDevices;
   //NetDeviceContainer switchDevices;
-  InternetStackHelper stack;
-  stack.Install(nodes);
+  //InternetStackHelper stack;
+  //stack.Install(nodes);
 
   Ipv4AddressHelper address;
   address.SetBase("10.0.0.0", "255.255.255.0");
@@ -129,22 +129,56 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
     cout << endl;
     //=============P2P===============
     if(type.compare("p2p") == 0){
-      n1 = 0;
-      n2 = 0;
+      //n1 = 0;
+      //n2 = 0;
       NodeContainer p2pNodes;
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
 
       peer = imn_container.imn_links.at(i).peer_list.at(0);
       peer2 = imn_container.imn_links.at(i).peer_list.at(1);
-      regex_search(peer, r_match, number);
-      n1 = stoi(r_match[0]) - 1;
-      regex_search(peer2, r_match, number);
-      n2 = stoi(r_match[0]) - 1;
+//cout << "currently looking at " << peer << "-" << peer2 << endl;
+      //regex_search(peer, r_match, number);
+      //n1 = stoi(r_match[0]) - 1;
+      //regex_search(peer2, r_match, number);
+      //n2 = stoi(r_match[0]) - 1;
 
-      p2pNodes.Add(nodes.Get(n1));
-      p2pNodes.Add(nodes.Get(n2));
+      //p2pNodes.Add(nodes.Get(n1));
+      //p2pNodes.Add(nodes.Get(n2));
 
+      int nNodes = nodes.GetN();
+      bool pflag = false, p2flag = false;
+      for(int x = 0; x < nNodes; x++){
+        if(peer.compare(Names::FindName(nodes.Get(x))) == 0){
+          pflag = true;
+        }
+        if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+          p2flag = true;
+        }
+      }
+
+      if(!pflag && !p2flag){
+        p2pNodes.Create(2);
+        nodes.Add(p2pNodes);
+        Names::Add(peer, p2pNodes.Get(0));
+        Names::Add(peer2, p2pNodes.Get(1));
+      }
+      if(pflag && !p2flag){
+        p2pNodes.Create(1);
+        nodes.Add(p2pNodes);
+        Names::Add(peer2, p2pNodes.Get(0));
+        p2pNodes.Add(peer);
+      }
+      else if(!pflag && p2flag){
+        p2pNodes.Create(1);
+        nodes.Add(p2pNodes);
+        Names::Add(peer, p2pNodes.Get(0));
+        p2pNodes.Add(peer2);
+      }
+      //else if(newNodes == 3){//error, network already exists
+        //cout << "Error, network " << peer << "-" << peer2 << " already exists" << endl;
+        //exit(1);
+      //}
 
       if(imn_container.imn_links.at(i).delay.empty() == 0){
         p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(imn_container.imn_links.at(i).delay))));
@@ -153,9 +187,10 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         p2p.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).bandwidth)));
       }
 
-      p2pDevices.Add(p2p.Install(nodes.Get(n1), nodes.Get(n2)));
+      //p2pDevices.Add(p2p.Install(nodes.Get(n1), nodes.Get(n2)));
+      p2pDevices.Add(p2p.Install(peer, peer2));
 
-      int x;
+      /*int x;
       for(x = 0; x < imn_container.imn_nodes.size(); x++){
         peer2 = imn_container.imn_nodes.at(x).name;
         regex_search(peer2,r_match,number);
@@ -163,24 +198,32 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         if(n2 == compare_node){
           break;
         }
+      }*/
+
+      InternetStackHelper internetP2P;
+
+      if(!pflag && !p2flag){
+        internetP2P.Install(p2pNodes);
       }
-
-      //InternetStackHelper internetP2P;
-      //internetP2P.Install(p2pNodes);
-
-      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
+      else if(pflag && !p2flag){
+        internetP2P.Install(peer2);
+      }
+      else if(!pflag && p2flag){
+        internetP2P.Install(peer);
+      }
+      /*regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];
       strncpy(temp, addr_str.c_str(), sizeof(temp));
-      temp[sizeof(temp) - 1] = 0;
+      temp[sizeof(temp) - 1] = 0;*/
 
       //Ipv4AddressHelper address;
       //address.SetBase(temp, "255.255.255.0");
       address.NewNetwork();
       Ipv4InterfaceContainer p2pInterface = address.Assign(p2pDevices);
 
-      cout << "Creating point-to-point connection with n" << n1 + 1 << " and n" << n2 + 1 << endl;
+      cout << "Creating point-to-point connection with " << peer << " and " << peer2 << endl;
 
       /*if(n1 == 0 || n2 == 0){
         cout << "P2P link could not be established with " << peer << " and " << peer2 << endl;
@@ -188,12 +231,12 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       }*/
     }//=============Wifi===============
     else if(type.compare("wlan") == 0){
-      n1 = 0;
-      n2 = 0;
+      //n1 = 0;
+      //n2 = 0;
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
       peer = imn_container.imn_links.at(i).name;
-      regex_search(peer,r_match,number);
-      n1 = stoi(r_match[0]) - 1;
+      //regex_search(peer,r_match,number);
+      //n1 = stoi(r_match[0]) - 1;
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
 
@@ -228,19 +271,33 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
 
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
-        regex_search(peer2,r_match,number);
-        n2 = stoi(r_match[0]) - 1;
+        //regex_search(peer2,r_match,number);
+        //n2 = stoi(r_match[0]) - 1;
+
+        int nNodes = nodes.GetN();
+        bool p2flag = false;
+        for(int x = 0; x < nNodes; x++){
+          if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+            p2flag = true;
+            break;
+          }
+        }
+
+        if(!p2flag){
+          wifiNodes.Create(1);
+          Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
+        }
 
         wifiMac.SetType("ns3::AdhocWifiMac");
-        wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, nodes.Get(n2)));
-        cout << "Adding node n" << n2 + 1 << " to WLAN n" << n1 + 1 << endl;
+        wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, peer2));
+        cout << "Adding node " << peer2 << " to WLAN " << peer << endl;
 
         MobilityHelper mobility;
-        mobility.Install(nodes.Get(n2));
-        wifiNodes.Add(nodes.Get(n2));
+        mobility.Install(peer2);
+        //wifiNodes.Add(peer2);
       }
 
-      int x;
+      /*int x;
       for(x = 0; x < imn_container.imn_nodes.size(); x++){
         peer2 = imn_container.imn_nodes.at(x).name;
         regex_search(peer2,r_match,number);
@@ -248,10 +305,12 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         if(n2 == compare_node){
           break;
         }
-      }
+      }*/
 
-      //InternetStackHelper wifiInternet;
-      //wifiInternet.Install(wifiNodes);
+      InternetStackHelper wifiInternet;
+      wifiInternet.Install(wifiNodes);
+
+      nodes.Add(wifiNodes);
 
       /*regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
@@ -267,8 +326,8 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       Ipv4InterfaceContainer wifiInterface = address.Assign(wifiDevices);
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
-      n1 = 0;
-      n2 = 0;
+      //n1 = 0;
+      //n2 = 0;
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
       int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
       NodeContainer csmaNodes;
@@ -276,24 +335,53 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
       NetDeviceContainer bridgeDevice;
 
       peer = imn_container.imn_links.at(i).name;
-      regex_search(peer,r_match,number);
-      n1 = stoi(r_match[0]) - 1;
-      csmaNodes.Add(nodes.Get(n1));
-      Ptr<Node> bridge = nodes.Get(n1);
+
+      int nNodes = nodes.GetN();
+      bool pflag = false;
+      for(int x = 0; x < nNodes; x++){
+        if(peer.compare(Names::FindName(nodes.Get(x))) == 0){
+          pflag = true;
+          break;
+        }
+      }
+
+      if(!pflag){
+        csmaNodes.Create(1);
+        Names::Add(peer, csmaNodes.Get(csmaNodes.GetN() - 1));
+      }
+
+      //regex_search(peer,r_match,number);
+      //n1 = stoi(r_match[0]) - 1;
+      //csmaNodes.Add(peer);
+      Ptr<Node> bridge = csmaNodes.Get(csmaNodes.GetN() - 1);
       //csma.Install(nodes.Get(n1));
 
-      cout << "Creating new hub network named n" << n1 + 1 << endl;
+      cout << "Creating new hub network named " << peer << endl;
       //for all peers using this hub
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
-        regex_search(peer2,r_match,number);
-        n2 = stoi(r_match[0]) - 1;
+        //regex_search(peer2,r_match,number);
+        //n2 = stoi(r_match[0]) - 1;
         NodeContainer csmaNodeSegment;
         NetDeviceContainer link;
         CsmaHelper csma;
         csmaNodeSegment.Add(bridge);
-        csmaNodeSegment.Add(nodes.Get(n2));
-        csmaNodes.Add(nodes.Get(n2));
+
+        bool p2flag = false;
+        for(int x = 0; x < nNodes; x++){
+          if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+            p2flag = true;
+            break;
+          }
+        }
+
+        if(!p2flag){
+          csmaNodes.Create(1);
+          Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
+        }
+
+        csmaNodeSegment.Add(peer2);
+        //csmaNodes.Add(peer2);
         //iterate through links to correctly match corresponding data 
         for(int k = 0; k < total_asso_links; k++){
           string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
@@ -313,9 +401,9 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         csmaDevices.Add(link.Get(1));
         bridgeDevice.Add(link.Get(0));
 
-        cout << "Adding node n" << n2 + 1 << " to a csma(hub) n" << n1 + 1 << endl;
+        cout << "Adding node " << peer2 << " to a csma(hub) " << peer << endl;
       }
-      int x;
+      /*int x;
       for(x = 0; x < imn_container.imn_nodes.size(); x++){
         peer2 = imn_container.imn_nodes.at(x).name;
         regex_search(peer2,r_match,number);
@@ -323,19 +411,21 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
         if(n2 == compare_node){
           break;
         }
-      }
+      }*/
 
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(bridge, bridgeDevice);
-      //InternetStackHelper internetCsma;
-      //internetCsma.Install(csmaNodes);
+      InternetStackHelper internetCsma;
+      internetCsma.Install(csmaNodes);
 
-      regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
+      nodes.Add(csmaNodes);
+
+      /*regex_search(imn_container.imn_nodes.at(x).interface_list.at(0).ipv4_addr, r_match, addr);
       addr_str.assign(r_match.str());
       addr_str.append(".0");
       char temp[14];
       strncpy(temp, addr_str.c_str(), sizeof(temp));
-      temp[sizeof(temp) - 1] = 0;
+      temp[sizeof(temp) - 1] = 0;*/
 
       //Ipv4AddressHelper address;
       //address.SetBase(temp, "255.255.255.0");
@@ -438,12 +528,52 @@ cout << "\nCreating " << imn_container.total << " nodes" << endl;
   //
   //set router/pc/p2p/other coordinates for NetAnim
   //
+
+
+/////////////////////////////////////////////////////
+// need to deal with rouge nodes somehow...
+/////////////////////////////////////////////////////
+  int nNodes = nodes.GetN(), extra = 0, tNodes = imn_container.imn_nodes.size();
+  NodeContainer rouges;
+//  NetDeviceContainer rDevice;
+
+//cout << tNodes << " " <<  imn_container.imn_nodes.size() << " " << nNodes << endl;
+
+  if(nNodes < tNodes){
+    int rNodes = tNodes - nNodes;
+    rouges.Create(rNodes);
+    nodes.Add(rouges);
+    InternetStackHelper rStack;
+    rStack.Install(rouges);
+    nNodes = imn_container.total;
+
+    cout << rNodes << " rouge (unconnected) node detected!" << endl;
+  }
+/////////////////////////////////////////////////////
+  string nodeName;
+
   for(int i = 0; i < imn_container.imn_nodes.size() ; i++){
-    int n = 0;
-    regex_search(imn_container.imn_nodes.at(i).name,r_match,number);
-    n = stoi(r_match[0]) - 1;
+    int n, nNodes = nodes.GetN();
+    //regex_search(imn_container.imn_nodes.at(i).name,r_match,number);
+    //n = stoi(r_match[0]) - 1;
+    nodeName = imn_container.imn_nodes.at(i).name;
+
+    for(n = 0; n < nNodes; n++){
+      if(nodeName.compare(Names::FindName(nodes.Get(n))) == 0){
+        break;
+      }
+    }
+
+    if(n == nNodes){
+      n = i;
+      Names::Add(nodeName, rouges.Get(extra++));
+    }
+
+    cout << nodeName << " id " << n;
 
     AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_nodes.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
+
+    cout << " set..." << endl;
   }
 
 /*  //
