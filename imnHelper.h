@@ -37,6 +37,7 @@ class imnHelper
     void printInfo(imnNode n);
     void printInfo(imnLink l);
     void printAll();
+    interface get_interface_info(string n1, string n2);
     
     ifstream imunes_stream;
     int bracket_count;

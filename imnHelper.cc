@@ -175,6 +175,30 @@ vector<string> imnHelper:: split(string &s, string delim) {
   return elems;
 }
 
+//confirm correct interface and addresses, return interface information for n1 (first parameter)
+interface imnHelper:: get_interface_info(string n1, string n2){
+
+  imnNode temp_n1, temp_n2;
+  interface n1_inter;
+  
+  for(vector<imnNode>::size_type i = 0; i != imn_nodes.size(); i++){
+    if(imn_nodes.at(i).name.compare(n1) == 0){ //match to n1
+      temp_n1 = imn_nodes.at(i);
+      break;
+    }
+  }
+  
+  for(vector<interface>::size_type i = 0; i != temp_n1.interface_list.size(); i++){
+    if(temp_n1.interface_list.at(i).peer.compare(n2) == 0){
+      n1_inter = temp_n1.interface_list.at(i);
+      break;
+    }
+  }
+  
+  return n1_inter;
+  
+}
+
 //***********************
 //READ FILE
 //***********************
@@ -534,6 +558,7 @@ void imnHelper::readFile(){
       }
     }
   }
+  
   //printAll();
   //cout << "Done processing..." << endl;
   imunes_stream.close();
