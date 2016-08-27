@@ -79,6 +79,7 @@ void imnHelper::printInfo(imnNode n){
     cout << "ip addr: " << n.interface_list[i].ipv4_addr << endl;
     cout << "ipv6 addr: " << n.interface_list[i].ipv6_addr << endl;
     cout << "mac addr: " << n.interface_list[i].mac_addr << endl;
+    cout << "peer connected to interface: " << n.interface_list[i].peer << endl;
   }
   cout << "POSITION: " << endl;
   cout << "x: " << n.coordinates.x << " y: " << n.coordinates.y << endl;
@@ -361,6 +362,8 @@ void imnHelper::readFile(){
           }
         }
         
+       
+        
         //save all links corresponding to this link type( i.e all links to wlan device ect..)
         if(current_type.compare("link") == 0){ 
           if(s.find("interface-peer") != string::npos){
@@ -369,6 +372,20 @@ void imnHelper::readFile(){
             continue;
           }
         }
+        
+        //save name of peer to interface definition for use in setting up ipv4 and ipv6
+        if(current_type.compare("link") != 0 && s.find("interface-peer") != string::npos){
+          regex_search(s,r_match,node_name);
+          string temp_n = r_match[0];
+          regex_search(s,r_match,interface_name);
+          for(vector<interface>::size_type i = 0; i != imn_nodes.at(size).interface_list.size(); i++){
+            if(r_match[0].compare(imn_nodes.at(size).interface_list.at(i).interface_name) == 0){
+              imn_nodes.at(size).interface_list.at(i).peer = temp_n;
+              break;
+            }
+          }
+        }
+        
         if(inside_link == 1 && s.compare("}") != 0){ //process entire link into temp variables
           
           //TODO consider asymetric links, sperated by {} in imn file
