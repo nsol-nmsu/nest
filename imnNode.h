@@ -19,6 +19,7 @@ class interface
     string ipv4_addr;
     string ipv6_addr;
     string mac_addr;
+    string peer; //save peer that connects through this interface, will be used to match pairs in parser
 };
 
 class position
