@@ -136,9 +136,11 @@ int main (int argc, char *argv[]) {
         internetP2P.Install(peer);
       }
 
-      //Ipv4AddressHelper address;
-      //address.SetBase(temp, "255.255.255.0");
-      address.NewNetwork();
+      interface peerAddr = imn_container.get_interface_info(peer, peer2);
+      regex_search(peerAddr.ipv4_addr, r_match, addr);
+      string temp = r_match.str() + ".0";
+
+      address.SetBase(temp.c_str(), "255.255.255.0");
       Ipv4InterfaceContainer p2pInterface = address.Assign(p2pDevices);
 
       cout << "Creating point-to-point connection with " << peer << " and " << peer2 << endl;
@@ -148,6 +150,7 @@ int main (int argc, char *argv[]) {
       peer = imn_container.imn_links.at(i).name;
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
+      InternetStackHelper wifiInternet;
 
       WifiHelper wifi;
       YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
@@ -179,6 +182,7 @@ int main (int argc, char *argv[]) {
         if(!p2flag){
           wifiNodes.Create(1);
           Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
+          wifiInternet.Install(peer2);
         }
 
         wifiMac.SetType("ns3::AdhocWifiMac");
@@ -189,22 +193,25 @@ int main (int argc, char *argv[]) {
         mobility.Install(peer2);
       }
 
-      InternetStackHelper wifiInternet;
-      wifiInternet.Install(wifiNodes);
+      //wifiInternet.Install(wifiNodes);
 
       nodes.Add(wifiNodes);
 
-      //Ipv4AddressHelper address;
-      //address.SetBase(temp, "255.255.255.0");
-      address.NewNetwork();
+      interface peerAddr = imn_container.get_interface_info(peer2, peer);
+      regex_search(peerAddr.ipv4_addr, r_match, addr);
+      string temp = r_match.str() + ".0";
+
+      address.SetBase(temp.c_str(), "255.255.255.0");
       Ipv4InterfaceContainer wifiInterface = address.Assign(wifiDevices);
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
       int total_asso_links = imn_container.imn_links.at(i).extra_links.size();
       NodeContainer csmaNodes;
+      NodeContainer bridgeNode;
       NetDeviceContainer csmaDevices;
       NetDeviceContainer bridgeDevice;
+      InternetStackHelper internetCsma;
 
       peer = imn_container.imn_links.at(i).name;
 
@@ -218,20 +225,16 @@ int main (int argc, char *argv[]) {
       }
 
       if(!pflag){
-        csmaNodes.Create(1);
-        Names::Add(peer, csmaNodes.Get(csmaNodes.GetN() - 1));
+        bridgeNode.Create(1);
+        Names::Add(peer, bridgeNode.Get(0));
+        nodes.Add(peer);
       }
-
-      Ptr<Node> bridge = csmaNodes.Get(csmaNodes.GetN() - 1);
 
       cout << "Creating new hub network named " << peer << endl;
       //for all peers using this hub
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
-        NodeContainer csmaNodeSegment;
-        NetDeviceContainer link;
         CsmaHelper csma;
-        csmaNodeSegment.Add(bridge);
 
         bool p2flag = false;
         for(int x = 0; x < nNodes; x++){
@@ -244,9 +247,10 @@ int main (int argc, char *argv[]) {
         if(!p2flag){
           csmaNodes.Create(1);
           Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
+          nodes.Add(peer2);
+          internetCsma.Install(peer2);
         }
 
-        csmaNodeSegment.Add(peer2);
         //iterate through links to correctly match corresponding data 
         for(int k = 0; k < total_asso_links; k++){
           string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
@@ -262,28 +266,26 @@ int main (int argc, char *argv[]) {
           }
         }
 
-        link.Add(csma.Install(csmaNodeSegment));
-        csmaDevices.Add(link.Get(1));
-        bridgeDevice.Add(link.Get(0));
+        NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
+        csmaDevices.Add(link.Get(0));
+        bridgeDevice.Add(link.Get(1));
 
         cout << "Adding node " << peer2 << " to a csma(hub) " << peer << endl;
       }
 
       BridgeHelper bridgeHelp;
-      bridgeHelp.Install(bridge, bridgeDevice);
-      InternetStackHelper internetCsma;
-      internetCsma.Install(csmaNodes);
+      bridgeHelp.Install(peer, bridgeDevice);
 
-      nodes.Add(csmaNodes);
+      interface peerAddr = imn_container.get_interface_info(peer2, peer);
+      regex_search(peerAddr.ipv4_addr, r_match, addr);
+      string temp = r_match.str() + ".0";
 
-      //Ipv4AddressHelper address;
-      //address.SetBase(temp, "255.255.255.0");
-      address.NewNetwork();
+      address.SetBase(temp.c_str(), "255.255.255.0");
       Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
     }
   }//end of for loop
 
-  cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates..." << endl;
+  cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
 
   //
   //set router/pc/p2p/other coordinates for NetAnim
@@ -294,55 +296,42 @@ int main (int argc, char *argv[]) {
 // need to deal with rouge nodes somehow...
 /////////////////////////////////////////////////////
   int nNodes = nodes.GetN(), extra = 0, tNodes = imn_container.imn_nodes.size();
-  NodeContainer rouges;
-//  NetDeviceContainer rDevice;
 
-//cout << tNodes << " " <<  imn_container.imn_nodes.size() << " " << nNodes << endl;
-
-  if(nNodes < tNodes){
-    int rNodes = tNodes - nNodes;
-    rouges.Create(rNodes);
-    nodes.Add(rouges);
-    InternetStackHelper rStack;
-    rStack.Install(rouges);
-    nNodes = imn_container.total;
-
-    cout << rNodes << " rouge (unconnected) node detected!" << endl;
-  }
 /////////////////////////////////////////////////////
   string nodeName;
 
   for(int i = 0; i < imn_container.imn_nodes.size() ; i++){
-    int n, nNodes = nodes.GetN();
-    //regex_search(imn_container.imn_nodes.at(i).name,r_match,number);
-    //n = stoi(r_match[0]) - 1;
     nodeName = imn_container.imn_nodes.at(i).name;
 
-    for(n = 0; n < nNodes; n++){
-      if(nodeName.compare(Names::FindName(nodes.Get(n))) == 0){
-        break;
-      }
-    }
+        bool nflag = false;
+        for(int x = 0; x < nNodes; x++){
+          if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0){
+            nflag = true;
+            break;
+          }
+        }
 
-    if(n == nNodes){
-      n = i;
-      Names::Add(nodeName, rouges.Get(extra++));
-    }
+        if(!nflag){
+          nodes.Create(1);
+          Names::Add(nodeName, nodes.Get(nodes.GetN() - 1));
+          InternetStackHelper rStack;
+          rStack.Install(nodeName);
+          nNodes++;
+          extra++;
+        }
 
+    int n = Names::Find<Node>(nodeName)->GetId();
     cout << nodeName << " id " << n;
 
-    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_nodes.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
+    AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_nodes.at(i).coordinates.x, imn_container.imn_nodes.at(i).coordinates.y);
 
     cout << " set..." << endl;
   }
 
-/*  //
-  //Create a packet sink on the hubs to recieve packets
-  //
-  uint16_t port = 50000;
-  Address hubLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
-  PacketSinkHelper packetSinkHelper ("ns3::TcpSocketFactory", hubLocalAddress);
-*/
+  if(extra > 0){
+    cout << extra << " rouge (unconnected) node(s) detected!" << endl;
+  }
+
   //
   //set hub/switch nodes coordinates
   //
@@ -354,45 +343,30 @@ int main (int argc, char *argv[]) {
     if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
       continue;
     }
-    regex_search(imn_container.imn_links.at(i).name,r_match,number);
-    n = stoi(r_match[0]) - 1;
 
-/*    ApplicationContainer hubApp = packetSinkHelper.Install (nodes.Get(n));
-    hubApp.Start (Seconds (1.0));
-    hubApp.Stop (Seconds (10.0));
+    nodeName = imn_container.imn_links.at(i).name;
 
     //
-    // Create OnOff applications to send TCP to the hub, one on each spoke node.
+    // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-    OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address ());
-    onOffHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-    onOffHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+    uint16_t port = 50000;
+    peer = imn_container.imn_links.at(i).peer_list.at(0);
+    peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+    Ptr<Ipv4> ipv4 = Names::Find<Node>(peer)->GetObject<Ipv4>();
+    Ipv4Address addri = ipv4->GetAddress(1,0).GetLocal();
 
-    ApplicationContainer spokeApps;
-    int total_peers = imn_container.imn_links.at(i).peer_list.size();
-
-    //ptr to hubs ipv4 address
-    Ptr<Ipv4> ipv4 = nodes.Get(n)->GetObject<Ipv4>();
-cout << n << endl;
-    for (uint32_t j = 0; j < total_peers; j++){
-      string temp_str;
-      string peer2 = imn_container.imn_links.at(i).peer_list.at(j);
-      regex_search(peer2, r_match, number);
-      int n2 = stoi(r_match[0]) - 1;
-
-      //get interface address of the xth interface
-      Ipv4Address addri = ipv4->GetAddress((j+1),0).GetLocal();
-cout << addri << endl;
-      //finish setting node's application target
-      AddressValue remoteAddress (InetSocketAddress (addri, port));
-      onOffHelper.SetAttribute ("Remote", remoteAddress);
-      spokeApps.Add (onOffHelper.Install (nodes.Get(n2)));
-    }
+    OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
+    ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
     spokeApps.Start (Seconds (1.0));
     spokeApps.Stop (Seconds (10.0));
-*/
+
+    PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
+    ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer));
+    sink1.Start(Seconds(1.0));
+    sink1.Stop(Seconds(10.0));
+
     //place nodes into NetAnim
-    AnimationInterface::SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
+    AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
 
   //
