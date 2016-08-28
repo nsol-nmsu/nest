@@ -369,6 +369,10 @@ node n18 {
     network-config {
 	hostname n18
 	!
+	interface eth1
+	 ip address 10.0.12.1/24
+	 ipv6 address 2001:12::1/64
+	!
 	interface eth2
 	 ip address 10.0.11.2/24
 	 ipv6 address 2001:11::2/64
@@ -383,6 +387,7 @@ node n18 {
     labelcoords {135.0 284.0}
     interface-peer {eth0 n14}
     interface-peer {eth2 n19}
+    interface-peer {eth1 n20}
 }
 
 node n19 {
@@ -418,6 +423,10 @@ node n20 {
     network-config {
 	hostname n20
 	!
+	interface eth2
+	 ip address 10.0.12.2/24
+	 ipv6 address 2001:12::2/64
+	!
 	interface eth1
 	 ip address 10.0.10.1/24
 	 ipv6 address 2001:10::1/64
@@ -432,6 +441,7 @@ node n20 {
     labelcoords {70.0 116.0}
     interface-peer {eth0 n19}
     interface-peer {eth1 n21}
+    interface-peer {eth2 n18}
 }
 
 node n21 {
@@ -603,6 +613,11 @@ link l26 {
 
 link l17 {
     nodes {n20 n21}
+    bandwidth 0
+}
+
+link l19 {
+    nodes {n18 n20}
     bandwidth 0
 }
 
