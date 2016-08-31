@@ -15,6 +15,8 @@
 #include "ns3/internet-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/bridge-module.h"
+#include "ns3/traffic-control-helper.h"
+#include "ns3/traffic-control-layer.h"
 
 #include "ns3/netanim-module.h"
 
@@ -60,13 +62,13 @@ int main (int argc, char *argv[]) {
   cmd.Parse (argc, argv);
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-  //imn_container.printAll();
+  imn_container.printAll();
 
   Ipv4AddressHelper address;
   address.SetBase("10.0.0.0", "255.255.255.0");
 
   regex number("[0-9]+");
-  regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
+  regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
   smatch r_match;
   int last_ap_id = -1;
   int n1 = 0, n2 = 0;
@@ -138,10 +140,64 @@ int main (int argc, char *argv[]) {
 
       interface peerAddr = imn_container.get_interface_info(peer, peer2);
       regex_search(peerAddr.ipv4_addr, r_match, addr);
-      string temp = r_match.str() + ".0";
+      string tempIpv4 = r_match.str();
+      string tempMask = r_match.suffix().str();
 
-      address.SetBase(temp.c_str(), "255.255.255.0");
-      Ipv4InterfaceContainer p2pInterface = address.Assign(p2pDevices);
+      Ptr<NetDevice> device = p2pDevices.Get (0);
+
+      Ptr<Node> node = device->GetNode ();
+
+      Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+      int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
+      if (deviceInterface == -1)
+        {
+          deviceInterface = ipv4->AddInterface (device);
+        }
+
+      Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+      ipv4->AddAddress (deviceInterface, ipv4Addr);
+      ipv4->SetMetric (deviceInterface, 1);
+      ipv4->SetUp (deviceInterface);
+
+      // Install the default traffic control configuration if the traffic
+      // control layer has been aggregated, if this is not 
+      // a loopback interface, and there is no queue disc installed already
+      Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
+      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+        {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+        }
+
+      peerAddr = imn_container.get_interface_info(peer2, peer);
+      regex_search(peerAddr.ipv4_addr, r_match, addr);
+      tempIpv4 = r_match.str();
+      tempMask = r_match.suffix().str();
+
+      device = p2pDevices.Get (1);
+
+      node = device->GetNode ();
+
+      ipv4 = node->GetObject<Ipv4>();
+      deviceInterface = ipv4->GetInterfaceForDevice (device);
+      if (deviceInterface == -1)
+        {
+          deviceInterface = ipv4->AddInterface (device);
+        }
+
+      ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+      ipv4->AddAddress (deviceInterface, ipv4Addr);
+      ipv4->SetMetric (deviceInterface, 1);
+      ipv4->SetUp (deviceInterface);
+
+      tc = node->GetObject<TrafficControlLayer> ();
+      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+        {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+        }
 
       cout << "Creating point-to-point connection with " << peer << " and " << peer2 << endl;
     }//=============Wifi===============
@@ -154,8 +210,8 @@ int main (int argc, char *argv[]) {
 
       WifiHelper wifi;
       YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
-      wifiPhy.Set("RxGain", DoubleValue(0.0));
-      wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);
+      wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
+      wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
 
       YansWifiChannelHelper wifiChannel;
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
@@ -167,6 +223,7 @@ int main (int argc, char *argv[]) {
       wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
       wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
 
+      cout << "Creating new wlan network named " << peer << endl;
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
 
@@ -191,18 +248,38 @@ int main (int argc, char *argv[]) {
 
         MobilityHelper mobility;
         mobility.Install(peer2);
+
+        interface peerAddr = imn_container.get_interface_info(peer2, peer);
+        regex_search(peerAddr.ipv4_addr, r_match, addr);
+        string tempIpv4 = r_match.str();
+        string tempMask = r_match.suffix().str();
+
+        Ptr<NetDevice> device = wifiDevices.Get (j);
+
+        Ptr<Node> node = device->GetNode ();
+
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
+        if (deviceInterface == -1)
+          {
+            deviceInterface = ipv4->AddInterface (device);
+          }
+
+        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+        ipv4->AddAddress (deviceInterface, ipv4Addr);
+        ipv4->SetMetric (deviceInterface, 1);
+        ipv4->SetUp (deviceInterface);
+
+        Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
+        if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+          {
+            //NS_LOG_LOGIC ("Installing default traffic control configuration");
+            TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+            tcHelper.Install (device);
+          }
       }
 
-      //wifiInternet.Install(wifiNodes);
-
       nodes.Add(wifiNodes);
-
-      interface peerAddr = imn_container.get_interface_info(peer2, peer);
-      regex_search(peerAddr.ipv4_addr, r_match, addr);
-      string temp = r_match.str() + ".0";
-
-      address.SetBase(temp.c_str(), "255.255.255.0");
-      Ipv4InterfaceContainer wifiInterface = address.Assign(wifiDevices);
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -253,35 +330,61 @@ int main (int argc, char *argv[]) {
 
         //iterate through links to correctly match corresponding data 
         for(int k = 0; k < total_asso_links; k++){
-          string peer2_check = imn_container.imn_links.at(i).extra_links.at(k).name;
+          string peer2_check1 = imn_container.imn_links.at(i).extra_links.at(k).peer_list.at(0);
+
           //if link info doesn't belong to current node, skip to next
-          if(peer2.compare(peer2_check) != 0){
+          if(peer2.compare(peer2_check1) != 0){
             continue;
           }
-          if(imn_container.imn_links.at(i).extra_links.at(k).delay.empty() == 0){
+          if(imn_container.imn_links.at(i).extra_links.at(k).delay.empty() != 0){
             csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(imn_container.imn_links.at(i).extra_links.at(k).delay))));
           }
-          if(imn_container.imn_links.at(i).extra_links.at(k).bandwidth.empty() == 0){
+          if(imn_container.imn_links.at(i).extra_links.at(k).bandwidth.empty() != 0){
             csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
           }
+          break;
         }
 
         NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
         csmaDevices.Add(link.Get(0));
         bridgeDevice.Add(link.Get(1));
 
-        cout << "Adding node " << peer2 << " to a csma(hub) " << peer << endl;
+
+        interface peerAddr = imn_container.get_interface_info(peer2, peer);
+        regex_search(peerAddr.ipv4_addr, r_match, addr);
+        string tempIpv4 = r_match.str();
+        string tempMask = r_match.suffix().str();
+cout << tempIpv4 << endl;
+        Ptr<NetDevice> device = csmaDevices.Get (j);
+
+        Ptr<Node> node = device->GetNode ();
+
+        Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
+        if (deviceInterface == -1)
+          {
+            deviceInterface = ipv4->AddInterface (device);
+          }
+
+        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+        ipv4->AddAddress (deviceInterface, ipv4Addr);
+        ipv4->SetMetric (deviceInterface, 1);
+        ipv4->SetUp (deviceInterface);
+
+        Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
+        if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+          {
+            //NS_LOG_LOGIC ("Installing default traffic control configuration");
+            TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+            tcHelper.Install (device);
+          }
+
+
+        cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
       }
 
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
-
-      interface peerAddr = imn_container.get_interface_info(peer2, peer);
-      regex_search(peerAddr.ipv4_addr, r_match, addr);
-      string temp = r_match.str() + ".0";
-
-      address.SetBase(temp.c_str(), "255.255.255.0");
-      Ipv4InterfaceContainer csmaInterface = address.Assign(csmaDevices);
     }
   }//end of for loop
 
@@ -376,8 +479,7 @@ int main (int argc, char *argv[]) {
 /*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
     int n = 0;
     if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
-      regex_search(imn_container.imn_links.at(i).name,r_match,number);
-      n = stoi(r_match[0]) - 1;
+
       anim.SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
     }
   }*/
@@ -385,7 +487,7 @@ int main (int argc, char *argv[]) {
   cout << "Node coordinates set... \n\nSetting simulation time..." << endl;
 
   // Turn on global static routing so we can actually be routed across the network.
-  Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  //Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
 
   Simulator::Stop (Seconds (9 + 1));
