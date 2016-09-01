@@ -54,7 +54,6 @@ int main (int argc, char *argv[]) {
 
   // simulation locals
   NodeContainer nodes;
-  ApplicationContainer apps;
 
   // read command-line parameters
   CommandLine cmd;
@@ -62,18 +61,12 @@ int main (int argc, char *argv[]) {
   cmd.Parse (argc, argv);
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-  imn_container.printAll();
-
-  Ipv4AddressHelper address;
-  address.SetBase("10.0.0.0", "255.255.255.0");
+  //imn_container.printAll();
 
   regex number("[0-9]+");
   regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
   smatch r_match;
-  int last_ap_id = -1;
-  int n1 = 0, n2 = 0;
-  Ssid ssid = Ssid("no-network");
-  string peer, peer2, type, addr_str;
+  string peer, peer2, type;
 
   for(int i = 0; i < imn_container.imn_links.size(); i++){
     type = imn_container.imn_links.at(i).type;
@@ -142,7 +135,7 @@ int main (int argc, char *argv[]) {
       regex_search(peerAddr.ipv4_addr, r_match, addr);
       string tempIpv4 = r_match.str();
       string tempMask = r_match.suffix().str();
-
+      //cout << tempIpv4 << tempMask << endl;
       Ptr<NetDevice> device = p2pDevices.Get (0);
 
       Ptr<Node> node = device->GetNode ();
@@ -174,7 +167,7 @@ int main (int argc, char *argv[]) {
       regex_search(peerAddr.ipv4_addr, r_match, addr);
       tempIpv4 = r_match.str();
       tempMask = r_match.suffix().str();
-
+      //cout << tempIpv4 << tempMask << endl;
       device = p2pDevices.Get (1);
 
       node = device->GetNode ();
@@ -199,7 +192,33 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
-      cout << "Creating point-to-point connection with " << peer << " and " << peer2 << endl;
+    //
+    // Create OnOff applications to send UDP to the bridge, on the first pair.
+    //
+     /* uint16_t port = 9;
+      //string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
+      //peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+      device = p2pDevices.Get (0);
+      ipv4 = Names::Find<Node>(peer)->GetObject<Ipv4>();
+      deviceInterface = ipv4->GetInterfaceForDevice (device);
+      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
+
+      //cout << peer << " " << addri << endl;
+
+      BulkSendHelper source ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
+      source.SetAttribute("MaxBytes", UintegerValue(0));
+
+      ApplicationContainer spokeApps = source.Install(Names::Find<Node>(peer));
+      spokeApps.Start (Seconds (1.0));
+      spokeApps.Stop (Seconds (10.0));
+
+      PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
+      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer2));
+      sink1.Start(Seconds(1.0));
+      sink1.Stop(Seconds(10.0));
+*/
+
+      cout << "Creating point-to-point connection with " << peer << " and " << peer2;
     }//=============Wifi===============
     else if(type.compare("wlan") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -210,16 +229,17 @@ int main (int argc, char *argv[]) {
 
       WifiHelper wifi;
       YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
+      YansWifiChannelHelper wifiChannel;
+      WifiMacHelper wifiMac;
+
       wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
       wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
 
-      YansWifiChannelHelper wifiChannel;
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
       wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
       wifiPhy.SetChannel(wifiChannel.Create());
 
       string phyMode("DsssRate1Mbps");
-      WifiMacHelper wifiMac;
       wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
       wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
 
@@ -240,6 +260,7 @@ int main (int argc, char *argv[]) {
           wifiNodes.Create(1);
           Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
           wifiInternet.Install(peer2);
+          nodes.Add(peer2);
         }
 
         wifiMac.SetType("ns3::AdhocWifiMac");
@@ -253,7 +274,7 @@ int main (int argc, char *argv[]) {
         regex_search(peerAddr.ipv4_addr, r_match, addr);
         string tempIpv4 = r_match.str();
         string tempMask = r_match.suffix().str();
-
+        //cout << tempIpv4 << tempMask << endl;
         Ptr<NetDevice> device = wifiDevices.Get (j);
 
         Ptr<Node> node = device->GetNode ();
@@ -265,7 +286,7 @@ int main (int argc, char *argv[]) {
             deviceInterface = ipv4->AddInterface (device);
           }
 
-        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), "/24");
         ipv4->AddAddress (deviceInterface, ipv4Addr);
         ipv4->SetMetric (deviceInterface, 1);
         ipv4->SetUp (deviceInterface);
@@ -279,7 +300,29 @@ int main (int argc, char *argv[]) {
           }
       }
 
-      nodes.Add(wifiNodes);
+    //
+    // Create OnOff applications to send UDP to the bridge, on the first pair.
+    //
+      uint16_t port = 50000;
+      string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
+      peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+      Ptr<NetDevice> device = wifiDevices.Get (0);
+      Ptr<Ipv4> ipv4 = Names::Find<Node>(peer1)->GetObject<Ipv4>();
+      int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
+      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
+
+      //cout << peer1 << " " << addri << endl;
+
+      OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
+      ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
+      spokeApps.Start (Seconds (1.0));
+      spokeApps.Stop (Seconds (10.0));
+
+      PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
+      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
+      sink1.Start(Seconds(1.0));
+      sink1.Stop(Seconds(10.0));
+
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -354,17 +397,25 @@ int main (int argc, char *argv[]) {
         regex_search(peerAddr.ipv4_addr, r_match, addr);
         string tempIpv4 = r_match.str();
         string tempMask = r_match.suffix().str();
-cout << tempIpv4 << endl;
+        //cout << tempIpv4 << tempMask << endl;
         Ptr<NetDevice> device = csmaDevices.Get (j);
 
         Ptr<Node> node = device->GetNode ();
-
+        NS_ASSERT_MSG (node, "Ipv4AddressHelper::Assign(): NetDevice is not not associated "
+                     "with any node -> fail");
         Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+        NS_ASSERT_MSG (ipv4, "Ipv4AddressHelper::Assign(): NetDevice is associated"
+                     " with a node without IPv4 stack installed -> fail "
+                     "(maybe need to use InternetStackHelper?)");
+
         int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
         if (deviceInterface == -1)
           {
             deviceInterface = ipv4->AddInterface (device);
           }
+        NS_ASSERT_MSG (deviceInterface >= 0, "Ipv4AddressHelper::Assign(): "
+                     "Interface index not found");
+
 
         Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
         ipv4->AddAddress (deviceInterface, ipv4Addr);
@@ -379,9 +430,31 @@ cout << tempIpv4 << endl;
             tcHelper.Install (device);
           }
 
-
         cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
       }
+
+    //
+    // Create OnOff applications to send UDP to the bridge, on the first pair.
+    //
+      uint16_t port = 50000;
+      string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
+      peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+      Ptr<NetDevice> device = csmaDevices.Get (0);
+      Ptr<Ipv4> ipv4 = Names::Find<Node>(peer1)->GetObject<Ipv4>();
+      int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
+      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
+
+      //cout << peer1 << " " << addri << endl;
+
+      OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
+      ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
+      spokeApps.Start (Seconds (1.0));
+      spokeApps.Stop (Seconds (10.0));
+
+      PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
+      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
+      sink1.Start(Seconds(1.0));
+      sink1.Stop(Seconds(10.0));
 
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
@@ -449,25 +522,6 @@ cout << tempIpv4 << endl;
 
     nodeName = imn_container.imn_links.at(i).name;
 
-    //
-    // Create OnOff applications to send UDP to the bridge, on the first pair.
-    //
-    uint16_t port = 50000;
-    peer = imn_container.imn_links.at(i).peer_list.at(0);
-    peer2 = imn_container.imn_links.at(i).peer_list.at(1);
-    Ptr<Ipv4> ipv4 = Names::Find<Node>(peer)->GetObject<Ipv4>();
-    Ipv4Address addri = ipv4->GetAddress(1,0).GetLocal();
-
-    OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
-    ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
-    spokeApps.Start (Seconds (1.0));
-    spokeApps.Stop (Seconds (10.0));
-
-    PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
-    ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer));
-    sink1.Start(Seconds(1.0));
-    sink1.Stop(Seconds(10.0));
-
     //place nodes into NetAnim
     AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
@@ -487,10 +541,10 @@ cout << tempIpv4 << endl;
   cout << "Node coordinates set... \n\nSetting simulation time..." << endl;
 
   // Turn on global static routing so we can actually be routed across the network.
-  //Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
 
-  Simulator::Stop (Seconds (9 + 1));
+  Simulator::Stop (Seconds (11));
 
   // traces
   //ndn::L3RateTracer::InstallAll ((trace_prefix + "/rate-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.9999));
