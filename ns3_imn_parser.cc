@@ -63,11 +63,13 @@ int main (int argc, char *argv[]) {
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
   //imn_container.printAll();
 
-  regex number("[0-9]+");
+  //for ipv4 and ipv6, ipv6 will find mask, therefore use prefix for address
   regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
+  regex addrIpv6("[/]{1}[0-9]+");
   smatch r_match;
   string peer, peer2, type;
 
+  // go through all networks and build accordingly
   for(int i = 0; i < imn_container.imn_links.size(); i++){
     type = imn_container.imn_links.at(i).type;
     cout << endl;
@@ -77,9 +79,12 @@ int main (int argc, char *argv[]) {
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
 
+      // get node names
       peer = imn_container.imn_links.at(i).peer_list.at(0);
       peer2 = imn_container.imn_links.at(i).peer_list.at(1);
 
+      // Check if nodes already exists, 
+      // if so set flag and only reference by name, do not recreate
       int nNodes = nodes.GetN();
       bool pflag = false, p2flag = false;
       for(int x = 0; x < nNodes; x++){
@@ -118,7 +123,6 @@ int main (int argc, char *argv[]) {
       }
 
       p2pDevices.Add(p2p.Install(peer, peer2));
-
       InternetStackHelper internetP2P;
 
       if(!pflag && !p2flag){
@@ -130,17 +134,23 @@ int main (int argc, char *argv[]) {
       else if(!pflag && p2flag){
         internetP2P.Install(peer);
       }
-
+      //set addresses
       interface peerAddr = imn_container.get_interface_info(peer, peer2);
       regex_search(peerAddr.ipv4_addr, r_match, addr);
       string tempIpv4 = r_match.str();
       string tempMask = r_match.suffix().str();
-      //cout << tempIpv4 << tempMask << endl;
+
+      regex_search(peerAddr.ipv6_addr, r_match, addrIpv6);
+      string tempIpv6 = r_match.prefix().str();
+      string tempIpv6Mask = r_match.str();
+
+      //cout << tempIpv6 << tempIpv6Mask << endl;
       Ptr<NetDevice> device = p2pDevices.Get (0);
 
       Ptr<Node> node = device->GetNode ();
 
       Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+      Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
       int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
       if (deviceInterface == -1)
         {
@@ -163,16 +173,42 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
+      deviceInterface = ipv6->GetInterfaceForDevice (device);
+      if (deviceInterface == -1)
+        {
+          deviceInterface = ipv6->AddInterface (device);
+        }
+      NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
+                     "Interface index not found");
+
+      Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+      ipv6->SetMetric (deviceInterface, 1);
+      ipv6->AddAddress (deviceInterface, ipv6Addr);
+      ipv6->SetUp (deviceInterface);
+
+      tc = node->GetObject<TrafficControlLayer> ();
+      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+        {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+        }
+
       peerAddr = imn_container.get_interface_info(peer2, peer);
       regex_search(peerAddr.ipv4_addr, r_match, addr);
       tempIpv4 = r_match.str();
       tempMask = r_match.suffix().str();
+
+      regex_search(peerAddr.ipv6_addr, r_match, addrIpv6);
+      tempIpv6 = r_match.prefix().str();
+      tempIpv6Mask = r_match.str();
       //cout << tempIpv4 << tempMask << endl;
       device = p2pDevices.Get (1);
 
       node = device->GetNode ();
 
       ipv4 = node->GetObject<Ipv4>();
+      ipv6 = node->GetObject<Ipv6>();
       deviceInterface = ipv4->GetInterfaceForDevice (device);
       if (deviceInterface == -1)
         {
@@ -192,31 +228,26 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
-    //
-    // Create OnOff applications to send UDP to the bridge, on the first pair.
-    //
-     /* uint16_t port = 9;
-      //string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
-      //peer2 = imn_container.imn_links.at(i).peer_list.at(1);
-      device = p2pDevices.Get (0);
-      ipv4 = Names::Find<Node>(peer)->GetObject<Ipv4>();
-      deviceInterface = ipv4->GetInterfaceForDevice (device);
-      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
+      deviceInterface = ipv6->GetInterfaceForDevice (device);
+      if (deviceInterface == -1)
+        {
+          deviceInterface = ipv6->AddInterface (device);
+        }
+      NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
+                     "Interface index not found");
 
-      //cout << peer << " " << addri << endl;
+      ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+      ipv6->SetMetric (deviceInterface, 1);
+      ipv6->AddAddress (deviceInterface, ipv6Addr);
+      ipv6->SetUp (deviceInterface);
 
-      BulkSendHelper source ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
-      source.SetAttribute("MaxBytes", UintegerValue(0));
-
-      ApplicationContainer spokeApps = source.Install(Names::Find<Node>(peer));
-      spokeApps.Start (Seconds (1.0));
-      spokeApps.Stop (Seconds (10.0));
-
-      PacketSinkHelper sink("ns3::TcpSocketFactory", InetSocketAddress(Ipv4Address::GetAny(), port));
-      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer2));
-      sink1.Start(Seconds(1.0));
-      sink1.Stop(Seconds(10.0));
-*/
+      tc = node->GetObject<TrafficControlLayer> ();
+      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+        {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+        }
 
       cout << "Creating point-to-point connection with " << peer << " and " << peer2;
     }//=============Wifi===============
@@ -244,6 +275,7 @@ int main (int argc, char *argv[]) {
       wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
 
       cout << "Creating new wlan network named " << peer << endl;
+      // Go through peer list and add them to the network
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
 
@@ -274,6 +306,10 @@ int main (int argc, char *argv[]) {
         regex_search(peerAddr.ipv4_addr, r_match, addr);
         string tempIpv4 = r_match.str();
         string tempMask = r_match.suffix().str();
+
+        regex_search(peerAddr.ipv6_addr, r_match, addrIpv6);
+        string tempIpv6 = r_match.prefix().str();
+        string tempIpv6Mask = r_match.str();
         //cout << tempIpv4 << tempMask << endl;
         Ptr<NetDevice> device = wifiDevices.Get (j);
 
@@ -298,12 +334,34 @@ int main (int argc, char *argv[]) {
             TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
             tcHelper.Install (device);
           }
+
+        Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
+        deviceInterface = ipv6->GetInterfaceForDevice (device);
+        if (deviceInterface == -1)
+          {
+          deviceInterface = ipv6->AddInterface (device);
+          }
+        NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
+                     "Interface index not found");
+
+        Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+        ipv6->SetMetric (deviceInterface, 1);
+        ipv6->AddAddress (deviceInterface, ipv6Addr);
+        ipv6->SetUp (deviceInterface);
+
+        tc = node->GetObject<TrafficControlLayer> ();
+        if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+          {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+          }
       }
 
     //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-      uint16_t port = 50000;
+/*      uint16_t port = 50000;
       string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
       peer2 = imn_container.imn_links.at(i).peer_list.at(1);
       Ptr<NetDevice> device = wifiDevices.Get (0);
@@ -322,7 +380,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(10.0));
-
+*/
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -347,11 +405,11 @@ int main (int argc, char *argv[]) {
       if(!pflag){
         bridgeNode.Create(1);
         Names::Add(peer, bridgeNode.Get(0));
-        nodes.Add(peer);
+        //nodes.Add(peer);
       }
 
       cout << "Creating new hub network named " << peer << endl;
-      //for all peers using this hub
+      // Add all peers to this network
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         CsmaHelper csma;
@@ -371,7 +429,7 @@ int main (int argc, char *argv[]) {
           internetCsma.Install(peer2);
         }
 
-        //iterate through links to correctly match corresponding data 
+        // iterate through links to correctly match corresponding attributes 
         for(int k = 0; k < total_asso_links; k++){
           string peer2_check1 = imn_container.imn_links.at(i).extra_links.at(k).peer_list.at(0);
 
@@ -392,11 +450,15 @@ int main (int argc, char *argv[]) {
         csmaDevices.Add(link.Get(0));
         bridgeDevice.Add(link.Get(1));
 
-
+        // Set addresses
         interface peerAddr = imn_container.get_interface_info(peer2, peer);
         regex_search(peerAddr.ipv4_addr, r_match, addr);
         string tempIpv4 = r_match.str();
         string tempMask = r_match.suffix().str();
+
+        regex_search(peerAddr.ipv6_addr, r_match, addrIpv6);
+        string tempIpv6 = r_match.prefix().str();
+        string tempIpv6Mask = r_match.str();
         //cout << tempIpv4 << tempMask << endl;
         Ptr<NetDevice> device = csmaDevices.Get (j);
 
@@ -430,13 +492,35 @@ int main (int argc, char *argv[]) {
             tcHelper.Install (device);
           }
 
+
+        Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
+        deviceInterface = ipv6->GetInterfaceForDevice (device);
+        if (deviceInterface == -1)
+          {
+          deviceInterface = ipv6->AddInterface (device);
+          }
+        NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
+                     "Interface index not found");
+
+        Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+        ipv6->SetMetric (deviceInterface, 1);
+        ipv6->AddAddress (deviceInterface, ipv6Addr);
+        ipv6->SetUp (deviceInterface);
+
+        tc = node->GetObject<TrafficControlLayer> ();
+        if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+          {
+          //NS_LOG_LOGIC ("Installing default traffic control configuration");
+          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+          tcHelper.Install (device);
+          }
         cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
       }
 
     //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-      uint16_t port = 50000;
+/*      uint16_t port = 50000;
       string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
       peer2 = imn_container.imn_links.at(i).peer_list.at(1);
       Ptr<NetDevice> device = csmaDevices.Get (0);
@@ -455,11 +539,11 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(10.0));
-
+*/
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
     }
-  }//end of for loop
+  }//end of for topology builder
 
   cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
 
@@ -472,10 +556,9 @@ int main (int argc, char *argv[]) {
 // need to deal with rouge nodes somehow...
 /////////////////////////////////////////////////////
   int nNodes = nodes.GetN(), extra = 0, tNodes = imn_container.imn_nodes.size();
-
-/////////////////////////////////////////////////////
   string nodeName;
 
+  // Set node coordinates for NetAnim use
   for(int i = 0; i < imn_container.imn_nodes.size() ; i++){
     nodeName = imn_container.imn_nodes.at(i).name;
 
@@ -486,7 +569,7 @@ int main (int argc, char *argv[]) {
             break;
           }
         }
-
+        // if node was rouge, create node to reference
         if(!nflag){
           nodes.Create(1);
           Names::Add(nodeName, nodes.Get(nodes.GetN() - 1));
@@ -509,7 +592,7 @@ int main (int argc, char *argv[]) {
   }
 
   //
-  //set hub/switch nodes coordinates
+  //set hub/switch coordinates
   //
   for(int i = 0; i < imn_container.imn_links.size() ; i++){
     int n = 0;
@@ -522,7 +605,6 @@ int main (int argc, char *argv[]) {
 
     nodeName = imn_container.imn_links.at(i).name;
 
-    //place nodes into NetAnim
     AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
 
@@ -559,9 +641,4 @@ int main (int argc, char *argv[]) {
   cout << "Done." << endl;
 
   return 0;
-
 }
-
-
-
-
