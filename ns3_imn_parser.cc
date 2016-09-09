@@ -61,7 +61,7 @@ int main (int argc, char *argv[]) {
   cmd.Parse (argc, argv);
   
   imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-  //imn_container.printAll();
+  imn_container.printAll();
 
   //for ipv4 and ipv6, ipv6 will find mask, therefore use prefix for address
   regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
@@ -625,6 +625,9 @@ int main (int argc, char *argv[]) {
   // Turn on global static routing so we can actually be routed across the network.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+/*for (int i = 0; i < 10; i++){
+  cout << Names::Find<Node>("n7")->GetObject<Ipv4>()->GetAddress(i,0).GetLocal() << endl;
+}*/
 
   Simulator::Stop (Seconds (11));
 
