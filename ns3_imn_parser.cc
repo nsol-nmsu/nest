@@ -635,11 +635,14 @@ int main (int argc, char *argv[]) {
     AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
   }
 
+
+  AnimationInterface anim("test.xml");
+  anim.EnablePacketMetadata(true);
+  anim.EnableIpv4RouteTracking ("testRouteTracking.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
+
   //
   //set wlan node coordinates
   //
-  AnimationInterface anim("test.xml");
-  anim.EnablePacketMetadata(true);
 /*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
     int n = 0;
     if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
