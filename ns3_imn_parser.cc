@@ -249,6 +249,23 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
+      UdpEchoServerHelper echoServer (9);
+
+      ApplicationContainer serverApps = echoServer.Install (peer2);
+      serverApps.Start (Seconds (1.0));
+      serverApps.Stop (Seconds (10.0));
+
+      deviceInterface = ipv4->GetInterfaceForDevice (device);
+      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
+      UdpEchoClientHelper echoClient (addri, 9);
+      echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
+      echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
+      echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
+
+      ApplicationContainer clientApps = echoClient.Install (peer);
+      clientApps.Start (Seconds (2.0));
+      clientApps.Stop (Seconds (10.0));
+
       cout << "Creating point-to-point connection with " << peer << " and " << peer2;
     }//=============Wifi===============
     else if(type.compare("wlan") == 0){
@@ -361,26 +378,31 @@ int main (int argc, char *argv[]) {
     //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-/*      uint16_t port = 50000;
+
+      uint16_t port = 50000;
       string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
-      peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+      //peer2 = imn_container.imn_links.at(i).peer_list.at(1);
       Ptr<NetDevice> device = wifiDevices.Get (0);
       Ptr<Ipv4> ipv4 = Names::Find<Node>(peer1)->GetObject<Ipv4>();
       int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
       Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
 
       //cout << peer1 << " " << addri << endl;
+      ApplicationContainer spokeApps;
+      OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
 
-      OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
-      ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
-      spokeApps.Start (Seconds (1.0));
-      spokeApps.Stop (Seconds (10.0));
+      for(int j = 1; j < total_peers; j++){
+        peer2 = imn_container.imn_links.at(i).peer_list.at(j);
+        spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
+        spokeApps.Start (Seconds (1.0));
+        spokeApps.Stop (Seconds (10.0));
+      }
 
-      PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
+      PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(10.0));
-*/
+
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -520,9 +542,9 @@ int main (int argc, char *argv[]) {
     //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-/*      uint16_t port = 50000;
+      uint16_t port = 50000;
       string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
-      peer2 = imn_container.imn_links.at(i).peer_list.at(1);
+      //peer2 = imn_container.imn_links.at(i).peer_list.at(1);
       Ptr<NetDevice> device = csmaDevices.Get (0);
       Ptr<Ipv4> ipv4 = Names::Find<Node>(peer1)->GetObject<Ipv4>();
       int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
@@ -530,16 +552,21 @@ int main (int argc, char *argv[]) {
 
       //cout << peer1 << " " << addri << endl;
 
-      OnOffHelper onOffHelper ("ns3::UdpSocketFactory", Address (InetSocketAddress(addri)));
-      ApplicationContainer spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
-      spokeApps.Start (Seconds (1.0));
-      spokeApps.Stop (Seconds (10.0));
+      OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
+      ApplicationContainer spokeApps;
 
-      PacketSinkHelper sink("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
+      for(int j = 1; j < total_peers; j++){
+        peer2 = imn_container.imn_links.at(i).peer_list.at(j);
+        spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
+        spokeApps.Start (Seconds (1.0));
+        spokeApps.Stop (Seconds (10.0));
+      }
+
+      PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(10.0));
-*/
+
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
     }
@@ -612,6 +639,7 @@ int main (int argc, char *argv[]) {
   //set wlan node coordinates
   //
   AnimationInterface anim("test.xml");
+  anim.EnablePacketMetadata(true);
 /*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
     int n = 0;
     if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
