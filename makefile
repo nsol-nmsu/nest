@@ -1,5 +1,5 @@
 CPATH = ../src/topology-read/imn_reader/
-IMNFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h
+IMNFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h
 
 all: update
 
@@ -11,6 +11,7 @@ configure: copy
 
 copy: makeDir
 	cp ns3_imn_parser.cc ../scratch/
+	cp xml_tester.cc ../scratch/
 	cp $(IMNFILES) $(CPATH)
 	mv -vn ../src/topology-read/wscript ../src/topology-read/wscript.old
 	cp wscript ../src/topology-read/

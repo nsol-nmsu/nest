@@ -1,5 +1,9 @@
 ## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
+def configure(conf):
+  conf.env.append_value("LINKFLAGS", ["-Lboost_system","-L/usr/include/"])
+  conf.env.append_value("LIB", ["boost"])
+
 def build(bld):
     obj = bld.create_ns3_module('topology-read', ['network'])
     obj.source = [
@@ -11,6 +15,7 @@ def build(bld):
        'imn_reader/imnHelper.cc',
        'imn_reader/imnNode.cc',
        'imn_reader/imnLink.cc',
+       'imn_reader/xmlGenerator.cc',
         ]
 
     module_test = bld.create_ns3_module_test_library('topology-read')
@@ -29,6 +34,7 @@ def build(bld):
        'imn_reader/imnHelper.h',
        'imn_reader/imnNode.h',
        'imn_reader/imnLink.h',
+       'imn_reader/xmlGenerator.h',
         ]
 
     if bld.env['ENABLE_EXAMPLES']:
