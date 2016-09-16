@@ -17,6 +17,7 @@
 #include "ns3/bridge-module.h"
 #include "ns3/traffic-control-helper.h"
 #include "ns3/traffic-control-layer.h"
+#include "ns3/ns2-mobility-helper.h"
 
 #include "ns3/netanim-module.h"
 
@@ -28,6 +29,7 @@ using std::endl;
 using std::cerr;
 using std::string;
 using std::vector;
+using std::ostream;
 
 // settings
 #define SIMULATION_RUNTIME 1600
@@ -41,16 +43,33 @@ using std::vector;
 
 using namespace ns3;
 
+// Prints actual position and velocity when a course change event occurs
+/*static void
+CourseChange (ostream *os, string foo, Ptr<const MobilityModel> mobility)
+{
+  Vector pos = mobility->GetPosition (); // Get position
+  Vector vel = mobility->GetVelocity (); // Get velocity
+
+  // Prints position and velocities
+  *os << Simulator::Now () << " POS: x=" << pos.x << ", y=" << pos.y
+      << ", z=" << pos.z << "; VEL:" << vel.x << ", y=" << vel.y
+      << ", z=" << vel.z << endl;
+}*/
+
 //trying to parse an imn file and create an ns3 scenario file from it
 int main (int argc, char *argv[]) {
+  Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
+//Config::Set("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/EnergyDetectionThreshold", DoubleValue(-82.0));
 
-	// config locals
-  string topo_name = "/dev/null", 
-              topo_cmd = "";
-              //trace_prefix = "/dev/null",
-              //content_size = "0",
-              
-  std::ifstream topo_stream;		//imn file
+  double duration = 10.0;
+
+  // Enable logging from the ns2 helper
+  //LogComponentEnable ("Ns2MobilityHelper",LOG_LEVEL_DEBUG);
+
+  // config locals
+  string topo_name = "",
+         //logFile = "ns2-mob.log",
+         traceFile = "/dev/null";
 
   // simulation locals
   NodeContainer nodes;
@@ -58,10 +77,33 @@ int main (int argc, char *argv[]) {
   // read command-line parameters
   CommandLine cmd;
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
+  cmd.AddValue("traceFile","Ns2 movement trace file", traceFile);
+  cmd.AddValue("duration","Duration of Simulation",duration);
+  //cmd.AddValue ("logFile", "Log file", logFile);
   cmd.Parse (argc, argv);
-  
-  imnHelper imn_container(topo_name.c_str()); //holds entire imn file in a list of node and list link containers
-  imn_container.printAll();
+
+  // Check command line arguments
+  if (topo_name.empty ()){
+    std::cout << "Usage of " << argv[0] << " :\n\n"
+    "./waf --run \"scratch/ns3_imn_parser"
+    " --topo=imn2ns3/imn_sample_files/sample1.imn"
+    " --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements"
+    //" --logFile=ns2-mob.log"
+    " --duration=27.0\" \n\n";
+
+    return 0;
+  }
+
+  //holds entire imn file in a list of node and list link containers  
+  imnHelper imn_container(topo_name.c_str()); 
+  //imn_container.printAll();
+
+  // Create Ns2MobilityHelper with the specified trace log file as parameter
+  Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
+
+  // open log file for output
+  //ofstream os;
+  //os.open(logFile.c_str());
 
   //for ipv4 and ipv6, ipv6 will find mask, therefore use prefix for address
   regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
@@ -253,7 +295,7 @@ int main (int argc, char *argv[]) {
 
       ApplicationContainer serverApps = echoServer.Install (peer2);
       serverApps.Start (Seconds (1.0));
-      serverApps.Stop (Seconds (10.0));
+      serverApps.Stop (Seconds (duration / 10));
 
       deviceInterface = ipv4->GetInterfaceForDevice (device);
       Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
@@ -264,7 +306,7 @@ int main (int argc, char *argv[]) {
 
       ApplicationContainer clientApps = echoClient.Install (peer);
       clientApps.Start (Seconds (2.0));
-      clientApps.Stop (Seconds (10.0));
+      clientApps.Stop (Seconds (duration / 10));
 
       cout << "Creating point-to-point connection with " << peer << " and " << peer2;
     }//=============Wifi===============
@@ -280,8 +322,8 @@ int main (int argc, char *argv[]) {
       YansWifiChannelHelper wifiChannel;
       WifiMacHelper wifiMac;
 
-      wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
-      wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
+      //wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
+      //wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
 
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
       wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
@@ -378,7 +420,6 @@ int main (int argc, char *argv[]) {
     //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
-
       uint16_t port = 50000;
       string peer1 = imn_container.imn_links.at(i).peer_list.at(0);
       //peer2 = imn_container.imn_links.at(i).peer_list.at(1);
@@ -395,13 +436,13 @@ int main (int argc, char *argv[]) {
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
         spokeApps.Start (Seconds (1.0));
-        spokeApps.Stop (Seconds (10.0));
+        spokeApps.Stop (Seconds (duration / 10));
       }
 
       PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
-      sink1.Stop(Seconds(10.0));
+      sink1.Stop(Seconds(duration / 10));
 
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
@@ -559,13 +600,13 @@ int main (int argc, char *argv[]) {
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
         spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
         spokeApps.Start (Seconds (1.0));
-        spokeApps.Stop (Seconds (10.0));
+        spokeApps.Stop (Seconds (duration / 10));
       }
 
       PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
-      sink1.Stop(Seconds(10.0));
+      sink1.Stop(Seconds(duration / 10));
 
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
@@ -643,6 +684,9 @@ int main (int argc, char *argv[]) {
   //
   //set wlan node coordinates
   //
+
+  ns2.Install();
+
 /*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
     int n = 0;
     if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
@@ -660,8 +704,11 @@ int main (int argc, char *argv[]) {
   cout << Names::Find<Node>("n7")->GetObject<Ipv4>()->GetAddress(i,0).GetLocal() << endl;
 }*/
 
-  Simulator::Stop (Seconds (11));
+  // Configure callback for logging
+//  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
+//                   MakeBoundCallback (&CourseChange, &os));
 
+  Simulator::Stop (Seconds (duration));
   // traces
   //ndn::L3RateTracer::InstallAll ((trace_prefix + "/rate-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.9999));
   //L2RateTracer::InstallAll ((trace_prefix + "/drop-trace.txt").c_str(), Seconds (SIMULATION_RUNTIME + 0.999));
