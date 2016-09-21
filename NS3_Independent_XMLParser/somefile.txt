@@ -1,0 +1,99 @@
+
+#include <string>
+#include <iostream>
+#include <sstream>
+#include <fstream>
+#include <sys/stat.h>
+#include <regex>
+
+#include "ns3/core-module.h"
+#include "ns3/network-module.h"
+#include "ns3/mobility-module.h"
+#include "ns3/wifi-module.h"
+#include "ns3/point-to-point-module.h"
+#include "ns3/csma-module.h"
+#include "ns3/internet-module.h"
+#include "ns3/applications-module.h"
+#include "ns3/bridge-module.h"
+#include "ns3/traffic-control-helper.h"
+#include "ns3/traffic-control-layer.h"
+#include "ns3/ns2-mobility-helper.h"
+
+#include "ns3/netanim-module.h"
+
+#include "ns3/imnHelper.h" //custom created file to parse imn
+
+//thinds from namespace std
+using std::cout;
+using std::endl;
+using std::cerr;
+using std::string;
+using std::vector;
+using std::ostream;
+
+// settings
+#define SIMULATION_RUNTIME 1600
+#define MINIMUM_FREQUENCY  "1"
+#define CHUNK_SIZE         1436
+#define WIFI_RSS_DBM       -80
+#define WIFI_PHY_MODE      "DsssRate11Mbps"
+#define DEFAULT_P2P_RATE   "1000Mbps"
+#define DEFAULT_P2P_DELAY  "1ms"
+#define DEBUG_OUTPUT       0
+
+using namespace ns3;
+
+//trying to parse an imn file and create an ns3 scenario file from it
+int main (int argc, char *argv[]) {
+  Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
+//Config::Set("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Phy/EnergyDetectionThreshold", DoubleValue(-82.0));
+
+  double duration = 10.0;
+
+  // Enable logging from the ns2 helper
+  //LogComponentEnable ("Ns2MobilityHelper",LOG_LEVEL_DEBUG);
+
+  // config locals
+  string topo_name = "",
+         //logFile = "ns2-mob.log",
+         traceFile = "/dev/null";
+
+  // simulation locals
+  NodeContainer nodes;
+
+  // read command-line parameters
+  CommandLine cmd;
+  cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
+  cmd.AddValue("traceFile","Ns2 movement trace file", traceFile);
+  cmd.AddValue("duration","Duration of Simulation",duration);
+  //cmd.AddValue ("logFile", "Log file", logFile);
+  cmd.Parse (argc, argv);
+
+  // Check command line arguments
+  if (topo_name.empty ()){
+    std::cout << "Usage of " << argv[0] << " :
+
+"
+    "./waf --run \"scratch/ns3_imn_parser"
+    " --topo=imn2ns3/imn_sample_files/sample1.imn"
+    " --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements"
+    //" --logFile=ns2-mob.log"
+    " --duration=27.0\" 
+
+";
+
+    return 0;
+  }
+
+  //holds entire imn file in a list of node and list link containers  
+  imnHelper imn_container(topo_name.c_str()); 
+  //imn_container.printAll();
+
+  // Create Ns2MobilityHelper with the specified trace log file as parameter
+  Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
+
+  //for ipv4 and ipv6, ipv6 will find mask, therefore use prefix for address
+  regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
+  regex addrIpv6("[/]{1}[0-9]+");
+  smatch r_match;
+  string peer, peer2, type;
