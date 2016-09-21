@@ -50,9 +50,9 @@ void xmlGenerator::generate_from_imn(){
 
   //some values are placeholders for now, for testing purposes
   pt::ptree tree;
-  tree.add("EmulationScript.<xmlattr>.version", "0.1");
-  tree.add("EmulationScript.Event", "");
-  tree.add("EmulationScript.Event.time", "0.0");
+  tree.add("Scenario.<xmlattr>.version", "0.1");
+  tree.add("Scenario.Event", "");
+  tree.add("Scenario.Event.time", "0.0");
   
   //Generate NetworkPlan
   generateNetworkPlan(tree, imn_container);
@@ -68,10 +68,10 @@ void xmlGenerator::generate_from_imn(){
 //TODO: clean up method a bit
 void xmlGenerator::generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c){
   
-  current_tree.add("EmulationScript.Event.NetworkPlan", "");
+  current_tree.add("Scenario.NetworkPlan", "");
   
   for(int i = 0; i < imn_c.imn_nodes.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.NetworkPlan.Node", "");
+    pt::ptree& Node = current_tree.add("Scenario.NetworkPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_nodes.at(i).name);
     //Node.add("CORE_type", imn_c.imn_nodes.at(i).type);
     //Node.add("CORE_model", imn_c.imn_nodes.at(i).model); 
@@ -103,7 +103,7 @@ void xmlGenerator::generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c
   }
   //Generate Link-type Nodes (i.e wifi,hubs,lanswitch,..ect)
   for(int i = 0; i < imn_c.imn_links.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.NetworkPlan.Node", "");
+    pt::ptree& Node = current_tree.add("Scenario.NetworkPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_links.at(i).name);
     
     //handle wlan
@@ -181,10 +181,10 @@ void xmlGenerator::generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c
 
 void xmlGenerator:: generateMotionPlan(pt::ptree& current_tree, imnHelper& imn_c){
 
-  current_tree.add("EmulationScript.Event.MotionPlan", "");
+  current_tree.add("Scenario.Event.MotionPlan", "");
   
   for(int i = 0; i < imn_c.imn_nodes.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.MotionPlan.Node", "");
+    pt::ptree& Node = current_tree.add("Scenario.Event.MotionPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_nodes.at(i).name);
     pt::ptree& motion = Node.add("motion", "");
     
@@ -204,7 +204,7 @@ void xmlGenerator:: generateMotionPlan(pt::ptree& current_tree, imnHelper& imn_c
     if(imn_c.imn_links.at(i).type.compare("p2p") == 0){
       break;
     }
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.MotionPlan.Node", "");
+    pt::ptree& Node = current_tree.add("Scenario.Event.MotionPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_links.at(i).name);
     pt::ptree& motion = Node.add("motion", "");
     
