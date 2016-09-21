@@ -1,6 +1,6 @@
 HPATH = ../src/topology-read/imn_reader/
-IMNHELPERFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h header.h
-NSFILES = ns3_imn_parser.cc xml_tester.cc
+IMNHELPERFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h
+NSFILES = ns3_imn_parser.cc xml_tester.cc xml_to_ns3_scenario.cc
 SPATH = ../scratch/
 
 all: update

@@ -1,9 +1,5 @@
 ## -*- Mode: python; py-indent-offset: 4; indent-tabs-mode: nil; coding: utf-8; -*-
 
-def configure(conf):
-  conf.env.append_value("LINKFLAGS", ["-Lboost_system","-L/usr/include/"])
-  conf.env.append_value("LIB", ["boost"])
-
 def build(bld):
     obj = bld.create_ns3_module('topology-read', ['network'])
     obj.source = [

@@ -96,21 +96,35 @@ int main (int argc, char *argv[]) {
 
 
 
-  BOOST_FOREACH(ptree::value_type const& nod, pt.get_child("EmulationScript.Event.NetworkPlan")){
-    type = pt.get<string>("interface.<xmlattr>.type");
+  BOOST_FOREACH(ptree::value_type const& nod, pt.get_child("ScenarioScript.NetworkPlan")){
+    const ptree& child = nod.second;
+    type = child.get<string>("interface.<xmlattr>.type", "router");
     //=============P2P===============
     if(type.compare("p2p") == 0){
       NodeContainer p2pNodes;
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
-
-      ptree::assoc_iterator it = pt.find("peer");
+      bool fst = true;
+      //ptree::assoc_iterator it = child.find("peer");
 
       // get node names
-      peer = it->second.data();
-      it++;
-      peer2 = it->second.data();
+      peer = "n1";//it->second.data();
+      //it++;
+      peer2 = "m2";//it->second.data();
 
+      BOOST_FOREACH(ptree::value_type const& p, child.get_child("interface.channel")){
+cout << p.first << endl;
+        if(p.first == "peer"){
+          if(fst){
+            peer = p.second.data();
+            fst = false;
+          }
+          else{
+            peer2 = p.second.data();
+          }
+        }
+      }
+cout << peer << " asdfwef " << peer2 << endl;
       // Check if nodes already exists, 
       // if so set flag and only reference by name, do not recreate
       int nNodes = nodes.GetN();
@@ -143,12 +157,13 @@ int main (int argc, char *argv[]) {
         p2pNodes.Add(peer2);
       }
 
-      if(pt.get<int>("interface.channel.delay") == 0){
-        p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(pt.get<int>("interface.channel.delay"))));
+      if(child.get<int>("interface.channel.delay") == 0){
+        p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(child.get<int>("interface.channel.delay"))));
       }
-      if(pt.get<int>("interface.channel.bandwidth") == 0){
-        p2p.SetDeviceAttribute("DataRate", DataRateValue(pt.get<int>("interface.channel.bandwidth")));
+      if(child.get<int>("interface.channel.bandwidth") == 0){
+        p2p.SetDeviceAttribute("DataRate", DataRateValue(child.get<int>("interface.channel.bandwidth")));
       }
+cout << child.get<int>("interface.channel.delay") << endl;
 
       p2pDevices.Add(p2p.Install(peer, peer2));
       InternetStackHelper internetP2P;
