@@ -475,10 +475,12 @@ void imnHelper::readFile(){
           if(current_type.compare("node") == 0){
             imn_nodes.at(size).coordinates.x = t;
             imn_nodes.at(size).coordinates.y = t2;
+            imn_nodes.at(size).coordinates.type = "cartesian";
           }
           else{
             imn_links.at(size).coordinates.x = t;
             imn_links.at(size).coordinates.y = t2;
+            imn_links.at(size).coordinates.type = "cartesian";
           }
         }
       }else{ //track_curly_brackets was 0

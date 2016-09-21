@@ -27,6 +27,7 @@ class position
   public:
     float x;
     float y;
+    string type;
 };
 
 class imnNode
