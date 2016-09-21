@@ -44,8 +44,9 @@ class xmlGenerator
   
   void addNetPlanLocation(pt::ptree& current_tree, imnNode n);
   void addNetPlanLocation(pt::ptree& current_tree, imnLink l);
-  void addNetPlanInterface(pt::ptree& current_tree, imnNode n);
+  void addNetPlanInterface(pt::ptree& current_tree, imnNode n, vector<imnLink>& temp);
   void addNetPlanInterface(pt::ptree& current_tree, imnLink l);
+  void addChannelToInterface(pt::ptree& current_tree, imnHelper& imn_c);
   
   void generateServicePlan(pt::ptree& current_tree, imnHelper& imn_c);
 
