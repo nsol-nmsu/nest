@@ -40,8 +40,15 @@ class xmlGenerator
   virtual ~xmlGenerator(); //destructor
   void generate_xml(int parse_mode);
   void generate_from_imn();
-  void generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c); 
-  void generateMotionPlan(pt::ptree& current_tree, imnHelper& imn_c);
+  void generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c);
+  
+  void addNetPlanLocation(pt::ptree& current_tree, imnNode n);
+  void addNetPlanLocation(pt::ptree& current_tree, imnLink l);
+  void addNetPlanInterface(pt::ptree& current_tree, imnNode n);
+  void addNetPlanInterface(pt::ptree& current_tree, imnLink l);
+  
+  void generateServicePlan(pt::ptree& current_tree, imnHelper& imn_c);
+
   
   string file_name;
 

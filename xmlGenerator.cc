@@ -50,175 +50,193 @@ void xmlGenerator::generate_from_imn(){
 
   //some values are placeholders for now, for testing purposes
   pt::ptree tree;
-  tree.add("EmulationScript.<xmlattr>.version", "0.1");
-  tree.add("EmulationScript.Event", "");
-  tree.add("EmulationScript.Event.time", "0.0");
+  tree.add("ScenarioScript.<xmlattr>.version", "0.1");
+  tree.add("ScenarioScript.<xmlattr>.name", "TEST");
+  tree.add("ScenarioScript.<xmlattr>.platform", "CORE");
+  tree.add("ScenarioScript.Event", "");
+  tree.add("ScenarioScript.Event.time", "0.0");
   
   //Generate NetworkPlan
   generateNetworkPlan(tree, imn_container);
-  
-  //Generate MotionPlan
-  generateMotionPlan(tree, imn_container);
 
   write_xml("my_test.xml", tree, std::locale(),pt::xml_writer_settings<string>(' ', 4));
 
   
 }
 
+
+
 //TODO: clean up method a bit
 void xmlGenerator::generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c){
   
-  current_tree.add("EmulationScript.Event.NetworkPlan", "");
+  current_tree.add("Scenario.NetworkPlan", "");
   
+  //Generate non-link-type Nodes (i.e routers,...ect) 
   for(int i = 0; i < imn_c.imn_nodes.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.NetworkPlan.Node", "");
+    pt::ptree& Node = current_tree.add("ScenarioScript.NetworkPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_nodes.at(i).name);
-    //Node.add("CORE_type", imn_c.imn_nodes.at(i).type);
-    //Node.add("CORE_model", imn_c.imn_nodes.at(i).model); 
-    //type and model should be in defined during servicePlan?
-    //think they will be used to infer services running only, not explicitly stated
     
-    //Generate non-link-type Nodes (i.e routers,...ect)
-    for(int j = 0; j < imn_c.imn_nodes.at(i).interface_list.size(); j++){
-      pt::ptree& interface = Node.add("interface", "");
-      interface.add("<xmlattr>.name", imn_c.imn_nodes.at(i).interface_list.at(j).interface_name);
-      interface.add("<xmlattr>.type", imn_c.imn_nodes.at(i).type); //using Node type, check if this is correct
-      
-      for(int addr_num = 0; addr_num < 3; addr_num++){
-        if(addr_num == 0 && imn_c.imn_nodes.at(i).interface_list.at(j).ipv4_addr.compare("") != 0){ //check if empty
-          pt::ptree& address = interface.add("address", imn_c.imn_nodes.at(i).interface_list.at(j).ipv4_addr);
-          address.add("<xmlattr>.type", "ipv4");
-        }
-        else  if(addr_num == 1 && imn_c.imn_nodes.at(i).interface_list.at(j).ipv6_addr.compare("") != 0){ //check if empty
-          pt::ptree& address = interface.add("address", imn_c.imn_nodes.at(i).interface_list.at(j).ipv6_addr);
-          address.add("<xmlattr>.type", "ipv6");
-        }
-        else  if(addr_num == 2 && imn_c.imn_nodes.at(i).interface_list.at(j).mac_addr.compare("") != 0){ //check if empty
-          pt::ptree& address = interface.add("address", imn_c.imn_nodes.at(i).interface_list.at(j).mac_addr);
-          address.add("<xmlattr>.type", "mac");
-        }
-      }
-      interface.add("peer.<xmlattr>.name", imn_c.imn_nodes.at(i).interface_list.at(j).peer);
-    }
+    //Add all location information
+    addNetPlanLocation(Node, imn_c.imn_nodes.at(i));
+    
+    //Add all interface information
+    addNetPlanInterface(Node, imn_c.imn_nodes.at(i));
   }
+  
   //Generate Link-type Nodes (i.e wifi,hubs,lanswitch,..ect)
   for(int i = 0; i < imn_c.imn_links.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.NetworkPlan.Node", "");
+    pt::ptree& Node = current_tree.add("ScenarioScript.NetworkPlan.Node", "");
     Node.add("<xmlattr>.name", imn_c.imn_links.at(i).name);
     
-    //handle wlan
-    if(imn_c.imn_links.at(i).type.compare("wlan") == 0){
-      for(int j = 0; j < imn_c.imn_links.at(i).interface_list.size(); j++){
-        pt::ptree& interface = Node.add("interface", "");
-        interface.add("<xmlattr>.name", imn_c.imn_links.at(i).interface_list.at(j).interface_name);
-        interface.add("<xmlattr>.type", imn_c.imn_links.at(i).type);
-        
-        for(int addr_num = 0; addr_num < 3; addr_num++){
-          if(addr_num == 0 && imn_c.imn_links.at(i).interface_list.at(j).ipv4_addr.compare("") != 0){ //check if empty
-           pt::ptree& address = interface.add("address", imn_c.imn_links.at(i).interface_list.at(j).ipv4_addr);
-           address.add("<xmlattr>.type", "ipv4");
-          }
-          else  if(addr_num == 1 && imn_c.imn_links.at(i).interface_list.at(j).ipv6_addr.compare("") != 0){ //check if empty
-            pt::ptree& address = interface.add("address", imn_c.imn_links.at(i).interface_list.at(j).ipv6_addr);
-            address.add("<xmlattr>.type", "ipv6");
-          }
-          else  if(addr_num == 2 && imn_c.imn_links.at(i).interface_list.at(j).mac_addr.compare("") != 0){ //check if empty
-           pt::ptree& address = interface.add("address", imn_c.imn_links.at(i).interface_list.at(j).mac_addr);
-           address.add("<xmlattr>.type", "mac");
-          }
-        }
-        
-        pt::ptree& channel = interface.add("channel", "");
-        channel.add("bandwidth", imn_c.imn_links.at(i).bandwidth);
-        channel.add("range", imn_c.imn_links.at(i).range);
-        channel.add("jitter", imn_c.imn_links.at(i).jitter);
-        channel.add("delay", imn_c.imn_links.at(i).delay);
-        channel.add("error", imn_c.imn_links.at(i).error);
-        channel.add("duplicate", imn_c.imn_links.at(i).duplicate);
-        for(int j = 0; j < imn_c.imn_links.at(i).peer_list.size(); j++){
-          pt::ptree& peer = channel.add("peer","");
-          peer.add("<xmlattr>.name", imn_c.imn_links.at(i).peer_list.at(j));
-        }
-      }
-    }
-    else if(imn_c.imn_links.at(i).type.compare("p2p") == 0){ //process p2p links
-      pt::ptree& interface = Node.add("interface", "");
-      interface.add("<xmlattr>.type", imn_c.imn_links.at(i).type);
-      pt::ptree& channel = interface.add("channel", "");
-      channel.add("bandwidth", imn_c.imn_links.at(i).bandwidth);
-      channel.add("range", imn_c.imn_links.at(i).range);
-      channel.add("jitter", imn_c.imn_links.at(i).jitter);
-      channel.add("delay", imn_c.imn_links.at(i).delay);
-      channel.add("error", imn_c.imn_links.at(i).error);
-      channel.add("duplicate", imn_c.imn_links.at(i).duplicate);
-      for(int j = 0; j < imn_c.imn_links.at(i).peer_list.size(); j++){
-        pt::ptree& peer = channel.add("peer","");
-        peer.add("<xmlattr>.name", imn_c.imn_links.at(i).peer_list.at(j));
-      }
-    }
-    else{
-      pt::ptree& interface = Node.add("interface", "");
-      interface.add("<xmlattr>.type", imn_c.imn_links.at(i).type);
-      
-      for(int j = 0; j < imn_c.imn_links.at(i).extra_links.size(); j++){
-        pt::ptree& channel = interface.add("channel", "");
-        channel.add("bandwidth", imn_c.imn_links.at(i).extra_links.at(j).bandwidth);
-        channel.add("range", imn_c.imn_links.at(i).extra_links.at(j).range);
-        channel.add("jitter", imn_c.imn_links.at(i).extra_links.at(j).jitter);
-        channel.add("delay", imn_c.imn_links.at(i).extra_links.at(j).delay);
-        channel.add("error", imn_c.imn_links.at(i).extra_links.at(j).error);
-        channel.add("duplicate", imn_c.imn_links.at(i).extra_links.at(j).duplicate);
-        for(int x = 0; x < imn_c.imn_links.at(i).extra_links.at(j).peer_list.size(); x++){
-          pt::ptree& peer = channel.add("peer","");
-          peer.add("<xmlattr>.name", imn_c.imn_links.at(i).extra_links.at(j).peer_list.at(x));
-        }
-      }
+    //Add all location information
+    if(imn_c.imn_links.at(i).type.compare("p2p") != 0){
+      addNetPlanLocation(Node, imn_c.imn_links.at(i));  
     }
     
+    //Add all interface information
+    addNetPlanInterface(Node, imn_c.imn_links.at(i));
   }
   
 }
 
-void xmlGenerator:: generateMotionPlan(pt::ptree& current_tree, imnHelper& imn_c){
+//function to add location information for a link
+void xmlGenerator:: addNetPlanLocation(pt::ptree& current_tree, imnLink l)
+{
 
-  current_tree.add("EmulationScript.Event.MotionPlan", "");
-  
-  for(int i = 0; i < imn_c.imn_nodes.size(); i++){
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.MotionPlan.Node", "");
-    Node.add("<xmlattr>.name", imn_c.imn_nodes.at(i).name);
-    pt::ptree& motion = Node.add("motion", "");
-    
     ostringstream ss, ss2;
-    ss << imn_c.imn_nodes.at(i).coordinates.x;
+    ss << l.coordinates.x;
     string first(ss.str());
-    ss2 << imn_c.imn_nodes.at(i).coordinates.y;
+    ss2 << l.coordinates.y;
     string second(ss2.str());
     string loc = first + "," + second;
     
-    pt::ptree& location = motion.add("location", loc);
-    location.add("<xmlattr>.type", "cartesian");
+    pt::ptree& location = current_tree.add("Location", loc);
+    location.add("<xmlattr>.type", l.coordinates.type);
+    //location.add("<xmlattr>.duration", "");
+}
+
+//function to add location inforamtion for a node
+void xmlGenerator:: addNetPlanLocation(pt::ptree& current_tree, imnNode n)
+{
     
-  }
-  
-  for(int i = 0; i < imn_c.imn_links.size(); i++){
-    if(imn_c.imn_links.at(i).type.compare("p2p") == 0){
-      break;
+    ostringstream ss, ss2;
+    ss << n.coordinates.x;
+    string first(ss.str());
+    ss2 << n.coordinates.y;
+    string second(ss2.str());
+    string loc = first + "," + second;
+    
+    pt::ptree& location = current_tree.add("Location", loc);
+    location.add("<xmlattr>.type", n.coordinates.type);
+    //location.add("<xmlattr>.duration", "");
+
+}
+
+//function to add Interface information for node interface
+void xmlGenerator:: addNetPlanInterface(pt::ptree& current_tree, imnNode n)
+{
+  for(int i = 0; i < n.interface_list.size(); i++){
+    pt::ptree& interface = current_tree.add("interface", "");
+    interface.add("<xmlattr>.name", n.interface_list.at(i).interface_name);
+    //interface.add("<xmlattr>.type", n.type); //TODO:using Node type, schema asks for different input, not retrivable at this time
+
+    
+    for(int addr_num = 0; addr_num < 3; addr_num++){ //add ipv4, ipv6, and mac addr
+      if(addr_num == 0 && n.interface_list.at(i).ipv4_addr.compare("") != 0){ //check if empty
+        pt::ptree& address = interface.add("address", n.interface_list.at(i).ipv4_addr);
+        address.add("<xmlattr>.type", "ipv4");
+      }
+      else  if(addr_num == 1 && n.interface_list.at(i).ipv6_addr.compare("") != 0){ //check if empty
+        pt::ptree& address = interface.add("address", n.interface_list.at(i).ipv6_addr);
+        address.add("<xmlattr>.type", "ipv6");
+      }
+      else  if(addr_num == 2 && n.interface_list.at(i).mac_addr.compare("") != 0){ //check if empty
+        pt::ptree& address = interface.add("address", n.interface_list.at(i).mac_addr);
+        address.add("<xmlattr>.type", "mac");
+      }
     }
-    pt::ptree& Node = current_tree.add("EmulationScript.Event.MotionPlan.Node", "");
-    Node.add("<xmlattr>.name", imn_c.imn_links.at(i).name);
-    pt::ptree& motion = Node.add("motion", "");
-    
-    ostringstream ss, ss2;
-    ss << imn_c.imn_links.at(i).coordinates.x;
-    string first(ss.str());
-    ss2 << imn_c.imn_links.at(i).coordinates.y;
-    string second(ss2.str());
-    string loc = first + "," + second;
-    
-    pt::ptree& location = motion.add("location", loc);
-    location.add("<xmlattr>.type", "cartesian");
-    
+    interface.add("peer.<xmlattr>.name", n.interface_list.at(i).peer);
   }
+}
+
+//funciton to add Interface information for link interface
+void xmlGenerator:: addNetPlanInterface(pt::ptree& current_tree, imnLink l)
+{
+  
+  //handle wlan's list of interfaces
+  if(l.type.compare("wlan") == 0){
+    for(int i = 0; i < l.interface_list.size(); i++){
+      pt::ptree& interface = current_tree.add("interface", "");
+      interface.add("<xmlattr>.name", l.interface_list.at(i).interface_name);
+      interface.add("<xmlattr>.type", l.type);
+        
+      for(int addr_num = 0; addr_num < 3; addr_num++){
+        if(addr_num == 0 && l.interface_list.at(i).ipv4_addr.compare("") != 0){ //check if empty
+         pt::ptree& address = interface.add("address", l.interface_list.at(i).ipv4_addr);
+         address.add("<xmlattr>.type", "ipv4");
+        }
+        else  if(addr_num == 1 && l.interface_list.at(i).ipv6_addr.compare("") != 0){ //check if empty
+          pt::ptree& address = interface.add("address", l.interface_list.at(i).ipv6_addr);
+          address.add("<xmlattr>.type", "ipv6");
+        }
+        else  if(addr_num == 2 && l.interface_list.at(i).mac_addr.compare("") != 0){ //check if empty
+         pt::ptree& address = interface.add("address", l.interface_list.at(i).mac_addr);
+         address.add("<xmlattr>.type", "mac");
+        }
+      }
+      pt::ptree& channel = interface.add("channel", "");
+      channel.add("bandwidth", l.bandwidth);
+      channel.add("range", l.range);
+      channel.add("jitter", l.jitter);
+      channel.add("delay", l.delay);
+      channel.add("error", l.error);
+      channel.add("duplicate", l.duplicate);
+      for(int i = 0; i < l.peer_list.size(); i++){
+        pt::ptree& peer = channel.add("peer","");
+        peer.add("<xmlattr>.name", l.peer_list.at(i));
+      }
+    }
+  }
+  else{
+    pt::ptree& interface = current_tree.add("interface", "");
+    interface.add("<xmlattr>.type", l.type);
+    
+    //add p2p channel
+    if(l.type.compare("p2p") == 0){
+      pt::ptree& channel = interface.add("channel", "");
+      channel.add("bandwidth", l.bandwidth);
+      channel.add("range", l.range);
+      channel.add("jitter", l.jitter);
+      channel.add("delay", l.delay);
+      channel.add("error", l.error);
+      channel.add("duplicate", l.duplicate);
+      for(int i = 0; i < l.peer_list.size(); i++){
+        pt::ptree& peer = channel.add("peer","");
+        peer.add("<xmlattr>.name", l.peer_list.at(i));
+      }
+    }
+    else{ //add all channels that a hub/switch has
+      for(int i = 0; i < l.extra_links.size(); i++){
+        pt::ptree& channel = interface.add("channel", "");
+        channel.add("bandwidth", l.extra_links.at(i).bandwidth);
+        channel.add("range", l.extra_links.at(i).range);
+        channel.add("jitter", l.extra_links.at(i).jitter);
+        channel.add("delay", l.extra_links.at(i).delay);
+        channel.add("error", l.extra_links.at(i).error);
+        channel.add("duplicate", l.extra_links.at(i).duplicate);
+        for(int x = 0; x < l.extra_links.at(i).peer_list.size(); x++){
+          pt::ptree& peer = channel.add("peer","");
+          peer.add("<xmlattr>.name", l.extra_links.at(i).peer_list.at(x));
+        }
+      }
+    }
+  }
+}
+
+
+//method to generate the servicePlan
+void xmlGenerator:: generateServicePlan(pt::ptree& current_tree, imnHelper& imn_c)
+{
 
 }
 
