@@ -22,13 +22,13 @@
 //#include <regex>
 
 #include "ns3/imnHelper.h"
-#include "ns3/xmlGenerator.h"
+//#include "ns3/xmlGenerator.h"
 
-//#include <boost/property_tree/xml_parser.hpp>
-//#include <boost/property_tree/ptree.hpp>
-//#include <boost/foreach.hpp>
-//#include <exception>
-//#include <set>
+#include <boost/property_tree/xml_parser.hpp>
+#include <boost/property_tree/ptree.hpp>
+#include <boost/foreach.hpp>
+#include <exception>
+#include <set>
 
 //things from namespace std
 
@@ -113,14 +113,13 @@ int main (int argc, char *argv[]) {
       peer2 = "m2";//it->second.data();
 
       BOOST_FOREACH(ptree::value_type const& p, child.get_child("interface.channel")){
-cout << p.first << endl;
         if(p.first == "peer"){
           if(fst){
-            peer = p.second.data();
+            peer = p.second.get<string>("<xmlattr>.name");
             fst = false;
           }
           else{
-            peer2 = p.second.data();
+            peer2 = p.second.get<string>("<xmlattr>.name");
           }
         }
       }
