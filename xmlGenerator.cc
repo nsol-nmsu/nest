@@ -69,7 +69,7 @@ void xmlGenerator::generate_from_imn(){
 //TODO: clean up method a bit
 void xmlGenerator::generateNetworkPlan(pt::ptree& current_tree, imnHelper& imn_c){
   
-  current_tree.add("Scenario.NetworkPlan", "");
+  current_tree.add("ScenarioScript.NetworkPlan", "");
   
   //Generate non-link-type Nodes (i.e routers,...ect) 
   for(int i = 0; i < imn_c.imn_nodes.size(); i++){

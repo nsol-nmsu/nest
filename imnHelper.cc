@@ -487,7 +487,7 @@ void imnHelper::readFile(){
         
         if(inside_link == 1){ //create and store link
           if(wlan_flag == 1){
-            cout << "begin wlan" << endl;
+            //cout << "begin wlan" << endl;
             imn_links.at(size).bandwidth = temp_bandwidth;
             imn_links.at(size).jitter = temp_jitter;
             imn_links.at(size).delay = temp_delay;
@@ -495,7 +495,7 @@ void imnHelper::readFile(){
             imn_links.at(size).range = temp_range;
             imn_links.at(size).duplicate = temp_duplicate;
             link_already_set = 1;
-            cout << "end wlan" << endl;
+            //cout << "end wlan" << endl;
           }
           for(vector<imnLink>::size_type i = 0; i != imn_links.size(); i++){
             if(temp_peer1.compare(imn_links[i].name) == 0 || temp_peer2.compare(imn_links[i].name) == 0){

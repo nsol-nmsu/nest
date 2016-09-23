@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScenarioScript version="0.1" name="TEST" platform="CORE">
+    <Event>
+        <time>0.0</time>
+    </Event>
+    <NetworkPlan>
+        <Node name="n1">
+            <Location type="cartesian">186,137</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.1/32</address>
+                <address type="ipv6">a:0::1/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n2">
+            <Location type="cartesian">49,297</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.2/32</address>
+                <address type="ipv6">a:0::2/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n3">
+            <Location type="cartesian">176,328</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.3/32</address>
+                <address type="ipv6">a:0::3/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n4">
+            <Location type="cartesian">145,195</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.4/32</address>
+                <address type="ipv6">a:0::4/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n5">
+            <Location type="cartesian">137,257</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.5/32</address>
+                <address type="ipv6">a:0::5/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n6">
+            <Location type="cartesian">119,93</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.6/32</address>
+                <address type="ipv6">a:0::6/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n7">
+            <Location type="cartesian">79,50</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.7/32</address>
+                <address type="ipv6">a:0::7/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n8">
+            <Location type="cartesian">159,8</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.8/32</address>
+                <address type="ipv6">a:0::8/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n9">
+            <Location type="cartesian">150,165</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.9/32</address>
+                <address type="ipv6">a:0::9/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n10">
+            <Location type="cartesian">64,42</Location>
+            <interface name="eth0">
+                <address type="ipv4">10.0.0.10/32</address>
+                <address type="ipv6">a:0::10/128</address>
+                <peer name="n11"/>
+            </interface>
+        </Node>
+        <Node name="n11">
+            <Location type="cartesian">0,0</Location>
+            <interface name="wireless" type="wlan">
+                <address type="ipv4">10.0.0.0/32</address>
+                <address type="ipv6">a:0::0/128</address>
+                <channel>
+                    <bandwidth>54000000</bandwidth>
+                    <range>200</range>
+                    <jitter>0</jitter>
+                    <delay>50000</delay>
+                    <error>0</error>
+                    <duplicate>0</duplicate>
+                    <peer name="n1"/>
+                    <peer name="n2"/>
+                    <peer name="n3"/>
+                    <peer name="n4"/>
+                    <peer name="n5"/>
+                    <peer name="n6"/>
+                    <peer name="n7"/>
+                    <peer name="n8"/>
+                    <peer name="n9"/>
+                    <peer name="n10"/>
+                </channel>
+            </interface>
+        </Node>
+    </NetworkPlan>
+</ScenarioScript>

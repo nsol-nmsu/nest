@@ -157,11 +157,11 @@ int main (int argc, char *argv[]) {
         p2pNodes.Add(peer2);
       }
 
-      if(imn_container.imn_links.at(i).delay.empty() == 0){
+      if(!imn_container.imn_links.at(i).delay.empty()){
         p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(imn_container.imn_links.at(i).delay))));
       }
-      if(imn_container.imn_links.at(i).bandwidth.empty() == 0){
-        p2p.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).bandwidth)));
+      if(!imn_container.imn_links.at(i).bandwidth.empty()){
+        p2p.SetDeviceAttribute("DataRate", DataRateValue(DataRate(stoi(imn_container.imn_links.at(i).bandwidth))));
       }
 
       p2pDevices.Add(p2p.Install(peer, peer2));
@@ -500,11 +500,11 @@ int main (int argc, char *argv[]) {
           if(peer2.compare(peer2_check1) != 0){
             continue;
           }
-          if(imn_container.imn_links.at(i).extra_links.at(k).delay.empty() != 0){
+          if(!imn_container.imn_links.at(i).extra_links.at(k).delay.empty()){
             csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(imn_container.imn_links.at(i).extra_links.at(k).delay))));
           }
-          if(imn_container.imn_links.at(i).extra_links.at(k).bandwidth.empty() != 0){
-            csma.SetDeviceAttribute("DataRate", DataRateValue(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth)));
+          if(!imn_container.imn_links.at(i).extra_links.at(k).bandwidth.empty()){
+            csma.SetChannelAttribute("DataRate", DataRateValue(DataRate(stoi(imn_container.imn_links.at(i).extra_links.at(k).bandwidth))));
           }
           break;
         }
