@@ -25,7 +25,7 @@ or
 
 or
 
-./waf --run "scratch/xml_tons3_scenario --topo=imn2ns3/imn_sample_files/sample1.xml --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements --duration=27.0"
+./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample1.xml --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements --duration=27.0"
 
 
 **to Generate an XML file:**
