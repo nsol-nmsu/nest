@@ -367,7 +367,7 @@ void imnHelper::readFile(){
             if(s.find("ip address") != string::npos){
               imn_nodes.at(size).interface_list.at(inside_iblock-1).ipv4_addr = tokens[tokens.size() - 1];
             }
-            if(s.find("ipv6") != string::npos){
+            if(s.find("ipv6 address") != string::npos){
               imn_nodes.at(size).interface_list.at(inside_iblock-1).ipv6_addr = tokens[tokens.size() - 1];
             }
             if(s.find("mac") != string::npos){
@@ -377,7 +377,7 @@ void imnHelper::readFile(){
             if(s.find("ip address") != string::npos){
               imn_links.at(size).interface_list.at(inside_iblock-1).ipv4_addr = tokens[tokens.size() - 1];
             }
-            if(s.find("ipv6") != string::npos){
+            if(s.find("ipv6 address") != string::npos){
               imn_links.at(size).interface_list.at(inside_iblock-1).ipv6_addr = tokens[tokens.size() - 1];
             }
             if(s.find("mac") != string::npos){

@@ -56,6 +56,7 @@ int main (int argc, char *argv[]) {
 
   // simulation locals
   NodeContainer nodes;
+  NodeContainer bridges;
 
   // read command-line parameters
   CommandLine cmd;
@@ -173,7 +174,7 @@ int main (int argc, char *argv[]) {
       else if(!pflag && p2flag){
         internetP2P.Install(peer);
       }
-
+      // get addresses ipv4 and ipv6
       BOOST_FOREACH(ptree::value_type const& p, pt.get_child("ScenarioScript.NetworkPlan")){
         if(p.second.get<string>("<xmlattr>.name") == peer){
           BOOST_FOREACH(ptree::value_type const& p2, p.second){
@@ -213,7 +214,6 @@ int main (int argc, char *argv[]) {
       regex_search(ipv6_addr, r_match, addrIpv6);
       string tempIpv6 = r_match.prefix().str();
       string tempIpv6Mask = r_match.str();
-
       //cout << tempIpv6 << tempIpv6Mask << endl;
       Ptr<NetDevice> device = p2pDevices.Get (0);
 
@@ -274,7 +274,6 @@ int main (int argc, char *argv[]) {
       tempIpv6Mask = r_match.str();
       //cout << tempIpv4 << tempMask << endl;
       device = p2pDevices.Get (1);
-
       node = device->GetNode ();
 
       ipv4 = node->GetObject<Ipv4>();
@@ -439,15 +438,18 @@ int main (int argc, char *argv[]) {
           string tempIpv4 = r_match.str();
           string tempMask = r_match.suffix().str();
 
-          // NS3 Routing has a bug with netMask 32
-          // This is a temporary fix
-          if(tempMask.compare("/32") == 0){
-            tempMask = "/24";
-          }
-
           regex_search(ipv6_addr, r_match, addrIpv6);
           string tempIpv6 = r_match.prefix().str();
           string tempIpv6Mask = r_match.str();
+
+          // NS3 Routing has a bug with netMask 32
+          // This is a temporary work around
+          if(tempMask.compare("/32") == 0){
+            tempMask = "/24";
+          }
+          if(tempIpv6Mask.compare("/128") == 0){
+            tempIpv6Mask = "/64";
+          }
 
           Ptr<NetDevice> device = wifiDevices.Get (j++);
           Ptr<Node> node = device->GetNode ();
@@ -542,9 +544,10 @@ int main (int argc, char *argv[]) {
       InternetStackHelper internetCsma;
 
       int nNodes = nodes.GetN();
+      int bNodes = bridges.GetN();
       bool pflag = false;
-      for(int x = 0; x < nNodes; x++){
-        if(peer.compare(Names::FindName(nodes.Get(x))) == 0){
+      for(int x = 0; x < bNodes; x++){
+        if(peer.compare(Names::FindName(bridges.Get(x))) == 0){
           pflag = true;
           break;
         }
@@ -553,29 +556,51 @@ int main (int argc, char *argv[]) {
       if(!pflag){
         bridgeNode.Create(1);
         Names::Add(peer, bridgeNode.Get(0));
-        //nodes.Add(peer);
+        bridges.Add(peer);
+        bNodes++;
       }
 
-      cout << "\nCreating new hub network named " << peer << endl;
+      cout << "\nCreating new "<< type <<" network named " << peer << endl;
       // Go through peer list and add them to the network
       BOOST_FOREACH(ptree::value_type const& p, child.get_child("interface")){
         if(p.first == "channel"){
+          string pType;
           peer2 = p.second.get<string>("peer.<xmlattr>.name");
           CsmaHelper csma;
 
-          bool p2flag = false;
+          BOOST_FOREACH(ptree::value_type const& p, pt.get_child("ScenarioScript.NetworkPlan")){
+            if(p.second.get<string>("<xmlattr>.name") == peer2){
+              pType = p.second.get<string>("interface.<xmlattr>.type", "router");
+            }
+          }
+
+          bool p2Nflag = false;
           for(int x = 0; x < nNodes; x++){
             if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
-              p2flag = true;
+              p2Nflag = true;
+              break;
+            }
+          }
+          bool p2Bflag = false;
+          for(int x = 0; x < bNodes; x++){
+            if(peer2.compare(Names::FindName(bridges.Get(x))) == 0){
+              p2Bflag = true;
               break;
             }
           }
 
-          if(!p2flag){
-            csmaNodes.Create(1);
-            Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
-            nodes.Add(peer2);
-            internetCsma.Install(peer2);
+          if(!p2Nflag && !p2Bflag){
+            if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
+              csmaNodes.Create(1);
+              Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
+              nodes.Add(peer2);
+              internetCsma.Install(peer2);
+            }
+            else{
+              bridgeNode.Create(1);
+              Names::Add(peer2, bridgeNode.Get(bridgeNode.GetN() - 1));
+              bridges.Add(peer2);
+            }
           }
 
           if(p.second.get<int>("delay", 0) != 0){
@@ -586,8 +611,20 @@ int main (int argc, char *argv[]) {
           }
 
           NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
-          csmaDevices.Add(link.Get(0));
-          bridgeDevice.Add(link.Get(1));
+
+          if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
+            csmaDevices.Add(link.Get(0));
+            bridgeDevice.Add(link.Get(1));
+          }
+          else{
+            //bridgeDevice.Add(link.Get(0));
+            bridgeDevice.Add(link.Get(1));
+            //bridgeDevice.Add(link);
+            //BridgeHelper bridgeHelp;
+            //bridgeHelp.Install(peer2, link.Get(0));
+            cout << "Linking " << pType << " " << peer2 << " to a csma(" << type << ") " << peer << endl;
+            continue;
+          }
 
           // Set addresses
           BOOST_FOREACH(ptree::value_type const& p, pt.get_child("ScenarioScript.NetworkPlan")){
@@ -729,7 +766,7 @@ int main (int argc, char *argv[]) {
    }
     nodeName = nod.second.get<string>("<xmlattr>.name");
     int loc1, loc2;
-cout << nod.first;
+
     bool nflag = false;
     for(int x = 0; x < nNodes; x++){
       if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0){
@@ -751,7 +788,7 @@ cout << nod.first;
     }
 
     int n = Names::Find<Node>(nodeName)->GetId();
-    cout << "Node " << nodeName << " with id " << n;
+    cout << nod.second.get<string>("interface.<xmlattr>.type", "router") << " " << nodeName << " with id " << n;
 
     string location = nod.second.get<string>("Location").data();
 
