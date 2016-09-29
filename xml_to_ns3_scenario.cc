@@ -767,7 +767,7 @@ int main (int argc, char *argv[]) {
   //
   //set router/pc/p2p/other coordinates for NetAnim
   //
-  int nNodes = nodes.GetN(), extra = 0;
+  int nNodes = nodes.GetN(), extra = 0, bNodes = bridges.GetN();
   string nodeName;
 
   // Set node coordinates for NetAnim use
@@ -781,11 +781,18 @@ int main (int argc, char *argv[]) {
 
     bool nflag = false;
     for(int x = 0; x < nNodes; x++){
-      if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0 || nodeName.compare(Names::FindName(bridges.Get(x))) == 0){
+      if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0){
         nflag = true;
         break;
       }
     }
+    for(int x = 0; x < bNodes; x++){
+      if(nodeName.compare(Names::FindName(bridges.Get(x))) == 0){
+        nflag = true;
+        break;
+      }
+    }
+
     // if node was rouge, create node to reference
     if(!nflag){
       nodes.Create(1);
