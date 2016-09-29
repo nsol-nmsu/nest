@@ -214,7 +214,7 @@ int main (int argc, char *argv[]) {
       regex_search(ipv6_addr, r_match, addrIpv6);
       string tempIpv6 = r_match.prefix().str();
       string tempIpv6Mask = r_match.str();
-      //cout << tempIpv6 << tempIpv6Mask << endl;
+
       Ptr<NetDevice> device = p2pDevices.Get (0);
 
       Ptr<Node> node = device->GetNode ();
@@ -272,7 +272,7 @@ int main (int argc, char *argv[]) {
       regex_search(ipv6_addr2, r_match, addrIpv6);
       tempIpv6 = r_match.prefix().str();
       tempIpv6Mask = r_match.str();
-      //cout << tempIpv4 << tempMask << endl;
+
       device = p2pDevices.Get (1);
       node = device->GetNode ();
 
@@ -318,7 +318,7 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
-     //
+/*     //
      // Create a BulkSendApplication and install it on peer2
      //
       uint16_t port = 9;  // well-known echo port number
@@ -341,6 +341,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sinkApps = sink.Install (peer);
       sinkApps.Start (Seconds (2.0));
       sinkApps.Stop (Seconds (duration / 10));
+*/
 /*
       UdpEchoServerHelper echoServer (9);
 
@@ -497,7 +498,7 @@ int main (int argc, char *argv[]) {
             }
         }
       }
-    //
+/*    //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
       uint16_t port = 50000;
@@ -529,6 +530,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(duration / 10));
+*/
     }
 //==========================================
 //=================Hub/Switch===============
@@ -709,7 +711,7 @@ int main (int argc, char *argv[]) {
           cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
         }
       }
-      //
+/*      //
       // Create OnOff applications to send UDP to the bridge, on the first pair.
       //
       uint16_t port = 50000;
@@ -742,20 +744,29 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(duration / 10));
-
+*/
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
     }
-  }//end of for topology builder
+  }
+////////////////////////////////
+//END OF TOPOLOGY BUILDER
+////////////////////////////////
+  cout << "\nCORE topology imported..." << endl; 
+////////////////////////////////
+//START OF APPLICATION GENERATOR
+////////////////////////////////
 
-  cout << "\nCORE topology imported...\n\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
+
+
+
+
+
+  cout << "\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
 
   //
   //set router/pc/p2p/other coordinates for NetAnim
   //
-/////////////////////////////////////////////////////
-// need to deal with rouge nodes somehow...
-/////////////////////////////////////////////////////
   int nNodes = nodes.GetN(), extra = 0;
   string nodeName;
 
@@ -765,35 +776,34 @@ int main (int argc, char *argv[]) {
      continue;
    }
     nodeName = nod.second.get<string>("<xmlattr>.name");
+    type = nod.second.get<string>("interface.<xmlattr>.type", "router");
     int loc1, loc2;
 
     bool nflag = false;
     for(int x = 0; x < nNodes; x++){
-      if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0){
+      if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0 || nodeName.compare(Names::FindName(bridges.Get(x))) == 0){
         nflag = true;
         break;
       }
     }
     // if node was rouge, create node to reference
     if(!nflag){
-      string csmaswitch = nod.second.get<string>("interface.<xmlattr>.type", "router");
-      if(csmaswitch != "hub" && csmaswitch != "lanswitch"){
-        nodes.Create(1);
-        Names::Add(nodeName, nodes.Get(nodes.GetN() - 1));
-        InternetStackHelper rStack;
-        rStack.Install(nodeName);
-        nNodes++;
-        extra++;
-      }
+      nodes.Create(1);
+      Names::Add(nodeName, nodes.Get(nodes.GetN() - 1));
+      InternetStackHelper rStack;
+      rStack.Install(nodeName);
+      nNodes++;
+      extra++;
     }
 
     int n = Names::Find<Node>(nodeName)->GetId();
-    cout << nod.second.get<string>("interface.<xmlattr>.type", "router") << " " << nodeName << " with id " << n;
+    cout << type << " " << nodeName << " with id " << n;
 
+    // get x coord
     string location = nod.second.get<string>("Location").data();
-
     regex_search(location, r_match, cartesian);
     loc1 = stoi(r_match.str());
+    // get y coord
     location = r_match.suffix().str();
     regex_search(location, r_match, cartesian);
     loc2 = stoi(r_match.str());
@@ -807,50 +817,17 @@ int main (int argc, char *argv[]) {
     cout << extra << " rouge (unconnected) node(s) detected!" << endl;
   }
 
-  //
-  //set hub/switch coordinates
-  //
-/*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
-    int n = 0;
-    if(imn_container.imn_links.at(i).type.compare("p2p") == 0){
-      continue;
-    }
-    if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
-      continue;
-    }
-
-    nodeName = imn_container.imn_links.at(i).name;
-
-    AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
-  }
-*/
-
-  AnimationInterface anim("test.xml");
+  AnimationInterface anim("NetAnimFile.xml");
   anim.EnablePacketMetadata(true);
   anim.EnableIpv4RouteTracking ("testRouteTracking.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
 
-  //
-  //set wlan node coordinates
-  //
-
+  // install ns2 mobility script
   ns2.Install();
-
-/*  for(int i = 0; i < imn_container.imn_links.size() ; i++){
-    int n = 0;
-    if(imn_container.imn_links.at(i).type.compare("wlan") == 0){
-
-      anim.SetConstantPosition(nodes.Get(n), imn_container.imn_links.at(i).coordinates.x, imn_container.imn_links.at(i).coordinates.y);
-    }
-  }*/
 
   cout << "Node coordinates set... \n\nSetting simulation time..." << endl;
 
   // Turn on global static routing so we can actually be routed across the network.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
-
-/*for (int i = 0; i < 10; i++){
-  cout << Names::Find<Node>("n7")->GetObject<Ipv4>()->GetAddress(i,0).GetLocal() << endl;
-}*/
 
   // Configure callback for logging
 //  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
