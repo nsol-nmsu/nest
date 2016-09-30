@@ -19,9 +19,9 @@
 //#include <sstream>
 //#include <fstream>
 //#include <sys/stat.h>
-//#include <regex>
+#include <regex>
 
-#include "ns3/imnHelper.h"
+//#include "ns3/imnHelper.h"
 //#include "ns3/xmlGenerator.h"
 
 #include <boost/property_tree/xml_parser.hpp>
@@ -38,6 +38,8 @@ using std::cerr;
 using std::string;
 using std::vector;
 using std::ostream;
+using std::regex;
+using std::smatch;
 
 using boost::property_tree::ptree;
 
@@ -155,10 +157,10 @@ int main (int argc, char *argv[]) {
         p2pNodes.Add(peer2);
       }
 
-      if(child.get<int>("interface.channel.delay") == 0){
+      if(child.get<int>("interface.channel.delay", -1) != 0){
         p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(child.get<int>("interface.channel.delay"))));
       }
-      if(child.get<int>("interface.channel.bandwidth") == 0){
+      if(child.get<int>("interface.channel.bandwidth", -1) != 0){
         p2p.SetDeviceAttribute("DataRate", DataRateValue(child.get<int>("interface.channel.bandwidth")));
       }
 
@@ -605,10 +607,10 @@ int main (int argc, char *argv[]) {
             }
           }
 
-          if(p.second.get<int>("delay", 0) != 0){
+          if(p.second.get<int>("delay", -1) != -1){
             csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(p.second.get<int>("delay"))));
           }
-          if(p.second.get<int>("bandwidth", 0) != 0){
+          if(p.second.get<int>("bandwidth", -1) != -1){
             csma.SetChannelAttribute("DataRate", DataRateValue(p.second.get<int>("bandwidth")));
           }
 
@@ -824,9 +826,9 @@ int main (int argc, char *argv[]) {
     cout << extra << " rouge (unconnected) node(s) detected!" << endl;
   }
 
-  AnimationInterface anim("NetAnimFile.xml");
-  anim.EnablePacketMetadata(true);
-  anim.EnableIpv4RouteTracking ("testRouteTracking.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
+  AnimationInterface anim("NetAnim-xml-to-ns3.xml");
+  //anim.EnablePacketMetadata(true);
+  //anim.EnableIpv4RouteTracking ("testRouteTrackingXml.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
 
   // install ns2 mobility script
   ns2.Install();

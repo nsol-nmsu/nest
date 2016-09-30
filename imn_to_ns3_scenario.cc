@@ -1,10 +1,10 @@
 
-#include <string>
-#include <iostream>
-#include <sstream>
-#include <fstream>
-#include <sys/stat.h>
-#include <regex>
+//#include <string>
+//#include <iostream>
+//#include <sstream>
+//#include <fstream>
+//#include <sys/stat.h>
+//#include <regex>
 
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
@@ -30,16 +30,6 @@ using std::cerr;
 using std::string;
 using std::vector;
 using std::ostream;
-
-// settings
-#define SIMULATION_RUNTIME 1600
-#define MINIMUM_FREQUENCY  "1"
-#define CHUNK_SIZE         1436
-#define WIFI_RSS_DBM       -80
-#define WIFI_PHY_MODE      "DsssRate11Mbps"
-#define DEFAULT_P2P_RATE   "1000Mbps"
-#define DEFAULT_P2P_DELAY  "1ms"
-#define DEBUG_OUTPUT       0
 
 using namespace ns3;
 
@@ -291,7 +281,7 @@ int main (int argc, char *argv[]) {
           tcHelper.Install (device);
         }
 
-      UdpEchoServerHelper echoServer (9);
+/*      UdpEchoServerHelper echoServer (9);
 
       ApplicationContainer serverApps = echoServer.Install (peer2);
       serverApps.Start (Seconds (1.0));
@@ -307,7 +297,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer clientApps = echoClient.Install (peer);
       clientApps.Start (Seconds (2.0));
       clientApps.Stop (Seconds (duration / 10));
-
+*/
       cout << "Creating point-to-point connection with " << peer << " and " << peer2;
     }//=============Wifi===============
     else if(type.compare("wlan") == 0){
@@ -369,9 +359,17 @@ int main (int argc, char *argv[]) {
         regex_search(peerAddr.ipv6_addr, r_match, addrIpv6);
         string tempIpv6 = r_match.prefix().str();
         string tempIpv6Mask = r_match.str();
-        //cout << tempIpv4 << tempMask << endl;
-        Ptr<NetDevice> device = wifiDevices.Get (j);
 
+        // NS3 Routing has a bug with netMask 32
+        // This is a temporary work around
+        if(tempMask.compare("/32") == 0){
+          tempMask = "/24";
+        }
+        if(tempIpv6Mask.compare("/128") == 0){
+          tempIpv6Mask = "/64";
+        }
+
+        Ptr<NetDevice> device = wifiDevices.Get (j);
         Ptr<Node> node = device->GetNode ();
 
         Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
@@ -381,7 +379,7 @@ int main (int argc, char *argv[]) {
             deviceInterface = ipv4->AddInterface (device);
           }
 
-        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), "/24");
+        Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
         ipv4->AddAddress (deviceInterface, ipv4Addr);
         ipv4->SetMetric (deviceInterface, 1);
         ipv4->SetUp (deviceInterface);
@@ -417,7 +415,7 @@ int main (int argc, char *argv[]) {
           }
       }
 
-    //
+/*    //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
       uint16_t port = 50000;
@@ -443,7 +441,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(duration / 10));
-
+*/
     }//=============Hub/Switch===============
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       int total_peers = imn_container.imn_links.at(i).peer_list.size();
@@ -471,7 +469,7 @@ int main (int argc, char *argv[]) {
         //nodes.Add(peer);
       }
 
-      cout << "Creating new hub network named " << peer << endl;
+      cout << "Creating new "<< type <<" network named " << peer << endl;
       // Add all peers to this network
       for(int j = 0; j < total_peers; j++){
         peer2 = imn_container.imn_links.at(i).peer_list.at(j);
@@ -580,7 +578,7 @@ int main (int argc, char *argv[]) {
         cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
       }
 
-    //
+/*    //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
       uint16_t port = 50000;
@@ -607,7 +605,7 @@ int main (int argc, char *argv[]) {
       ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
       sink1.Start(Seconds(1.0));
       sink1.Stop(Seconds(duration / 10));
-
+*/
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
     }
@@ -618,11 +616,6 @@ int main (int argc, char *argv[]) {
   //
   //set router/pc/p2p/other coordinates for NetAnim
   //
-
-
-/////////////////////////////////////////////////////
-// need to deal with rouge nodes somehow...
-/////////////////////////////////////////////////////
   int nNodes = nodes.GetN(), extra = 0, tNodes = imn_container.imn_nodes.size();
   string nodeName;
 
@@ -677,9 +670,9 @@ int main (int argc, char *argv[]) {
   }
 
 
-  AnimationInterface anim("test.xml");
-  anim.EnablePacketMetadata(true);
-  anim.EnableIpv4RouteTracking ("testRouteTracking.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
+  AnimationInterface anim("NetAnim-imn-to-ns3.xml");
+  //anim.EnablePacketMetadata(true);
+  //anim.EnableIpv4RouteTracking ("testRouteTrackingImn.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
 
   //
   //set wlan node coordinates
