@@ -1,5 +1,5 @@
 IMNHELPERFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h 
-NSFILES = imn_to_ns3_scenario.cc xml_tester.cc xml_to_ns3_scenario.cc
+NSFILES = imn_to_ns3_scenario.cc xml_to_ns3_scenario.cc xml_tester.cc
 HPATH = ../src/topology-read/imn_reader/
 SPATH = ../scratch/
 
@@ -21,7 +21,10 @@ makeDir:
 	mkdir -vp ../src/topology-read/imn_reader
 
 clean:
-	rm -f ../scratch/ns3_imn_parser.cc 
+	rm -f ../scratch/imn_to_ns3_scenario.cc
+	rm -f ../scratch/xml_to_ns3_scenario.cc
+	rm -f ../scratch/xml_tester.cc
 	rm -rf ../src/topology-read/imn_reader
-
+	rm -rf ../src/topology-read/wscript
+	mv ../src/topology-read/wscript.old ../src/topology-read/wscript
 
