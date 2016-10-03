@@ -52,22 +52,13 @@
             <Location type="cartesian">540,348</Location>
             <interface name="eth0">
                 <address type="ipv4">10.0.0.5/32</address>
-                <address type="ipv6">mincostlsa</address>
+                <address type="ipv6">a:0::3/128</address>
                 <peer name="n10"/>
             </interface>
             <interface name="eth1">
                 <address type="ipv4">10.0.6.2/24</address>
                 <address type="ipv6">a:6::2/64</address>
                 <peer name="n15"/>
-            </interface>
-            <interface name="eth0">
-                <peer name=""/>
-            </interface>
-            <interface name="eth1">
-                <peer name=""/>
-            </interface>
-            <interface name="eth0">
-                <peer name=""/>
             </interface>
         </Node>
         <Node name="n6">
