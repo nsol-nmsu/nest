@@ -219,11 +219,13 @@ void imnHelper::readFile(){
   string current_type = "";
   int track_curly_brackets = 0;
   int size = 0;          //
+  int network_block = 0; //unmodified interface location
   int inside_iblock = 0; //interface block
   int inside_link = 0;   //inside link block
   int link_already_set = 0;
   int wlan_flag = 0;
   int cust_post_config_flag = 0;
+  int skip = 0;
   
   string temp_bandwidth = "0";
   string temp_jitter = "0";
@@ -234,7 +236,7 @@ void imnHelper::readFile(){
   string temp_peer1 = "";
   string temp_peer2 = "";
   
-  // { = 123 , } = 125
+  //ASCII = INT, { = 123 , } = 125
   
   
   //cout << "opening file..."<< endl;
@@ -251,14 +253,24 @@ void imnHelper::readFile(){
       string s;
       getline(imunes_stream, s);
       s = removeLeadSpaces(s);
-			
-			if(s.find("{") != string::npos){
-				track_curly_brackets++;
-			}
-			if(s.find("}") != string::npos){
-				track_curly_brackets--;
-			}
+
+      if(s.find("{") != string::npos){
+        track_curly_brackets++;
+      }
+      if(s.find("}") != string::npos){
+        track_curly_brackets--;
+      }
       
+      if(skip == 1 || s.find("comments {") != string::npos){
+        if(track_curly_brackets != 0){
+          skip = 1;
+          continue;
+        }
+        else{
+          skip = 0;
+        }
+      }
+
       if(track_curly_brackets != 0){ 
         if(s.find("custom-post-config-commands") != string::npos || cust_post_config_flag == 1){
           if(track_curly_brackets == 1){
@@ -269,7 +281,7 @@ void imnHelper::readFile(){
             continue;
           }
         }     
-  
+
         if(s.find("node") != string::npos && s[s.length() - 1] == 123 ){ //compared with ascii of {
           regex_search(s,r_match,node_name);
           current_node_name.assign(r_match[0]);
@@ -337,10 +349,15 @@ void imnHelper::readFile(){
         //finished with interface definition block
         if(inside_iblock != 0 && s.find("}") != string::npos){
           inside_iblock = 0;
+          network_block = 0;
           continue;
         }
+        //make sure we get the unmodified interface information
+        if(s.find("network-config") != string::npos){
+          network_block = 1;
+        }
         //check if interface name, setup interface list
-        if(regex_search(s,r_match,i_exact) || s.find("interface wireless") != string::npos){ 
+        if(network_block == 1 && regex_search(s,r_match,i_exact) || s.find("interface wireless") != string::npos){ 
           string temp = "test";
           if(regex_search(s,r_match,interface_name))
             temp.assign(r_match[0]);
