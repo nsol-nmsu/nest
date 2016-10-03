@@ -63,3 +63,54 @@ or
 
 
 
+//***************************BUGS/ERRORS/TO-DO******************************//
+//**IN IMN/XML TO NS3 SCENARIO
+- Currently cannot handle switch/hub to switch/hub connections
+reason: NS3 doesn't not have a representation for hub/switches, currently
+        using bridges. Routing bridge to bridge causes broadcast storm.
+
+- IPv4 error when setting wireless network with other networks,
+  temporary fix by changing /32 mask to /24
+reason: known NS3 bug with routing protocol not yet configured for it.
+        Other possible solution, setting routing individually (not explored)
+
+- Currently has no automated application settings enabled.
+reason: TO-DO
+
+
+
+
+//**IN IMN TO XML GENERATOR
+- Can erroneously create interfaces with RJ45 and prouters
+reason: when setting p2p links, we don't check if peer nodes types.
+
+- Can create empty interfaces/nodes
+reason: custom-config can have additional settings for existing interfaces where
+        our reader may incorrectly interpret them as new.
+        Empty node may be a byproduct, not yet full understood.
+
+- Can flip interface address/peer
+reason: unknown, may be something more to do with custom-config additional
+        settings.
+
+- ServicePlan must be user inputed once XML intermediate file is created
+reason: complexity of services/scripts
+
+
+
+
+//**IN XML SCHEMA
+- Event time not very useful
+reason: can be used to alter simulation start and stop times but must be
+        user inputted, NS3 currently does this already for stop time.
+
+- ServicePlan unfinished.
+reason: TO-DO
+
+
+
+
+
+
+
+
