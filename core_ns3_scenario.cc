@@ -638,12 +638,14 @@ int main (int argc, char *argv[]) {
           //  }
           }
 
-            BOOST_FOREACH(ptree::value_type const& tp1, p0.second.get_child("member")){
-            if(p1.second.get<string>("<xmlattr>.name") == "bw"){
-              csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data().str())));
-            }
-            else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
-              csma.SetChannelAttribute("Delay",TimeValue(stoi(p1.second.data().str())));
+            BOOST_FOREACH(ptree::value_type const& tp1, p0.second){
+            if(p.fist == "parameter"){
+              if(p1.second.get<string>("<xmlattr>.name") == "bw"){
+                csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data().str())));
+              }
+              else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
+                csma.SetChannelAttribute("Delay",TimeValue(stoi(p1.second.data().str())));
+              }
             }
           }
 
