@@ -101,6 +101,28 @@ int main (int argc, char *argv[]) {
     const ptree& child = nod.second;
     type = child.get<string>("type");
 
+    if(type.compare("ethernet") == 0){
+      optional<const ptree&> bridge_exists = child.get_child_optional("hub");
+      if(!bridge_exists){
+        bridge_exists = child.get_child_optional("lanswitch");
+        if(!bridge_exists){
+          bridge_exists = child.get_child_optional("host");
+          if(!bridge_exists){
+            type = "p2p";
+          }
+          else{
+            type = child.get<string>("host.type");
+          }
+        }
+        else{
+          type = "lanswitch";
+        }
+      }
+      else{
+        type = "hub";
+      }
+    }
+
 //===================================
 //=================P2P===============
 //===================================
@@ -368,7 +390,7 @@ int main (int argc, char *argv[]) {
 //====================================
 //=================Wifi===============
 //====================================
-    if(type.compare("wlan") == 0){
+    if(type.compare("wireless") == 0){
       int j = 0;
       string ipv4_addr, ipv6_addr;
       peer = nod.second.get<string>("<xmlattr>.name");
@@ -567,19 +589,25 @@ int main (int argc, char *argv[]) {
 
       cout << "\nCreating new "<< type <<" network named " << peer << endl;
       // Go through peer list and add them to the network
-      BOOST_FOREACH(ptree::value_type const& p, child){
-        if(p.first == "member"){
-          string pType, name_holder;
-          name_holder = p.second.get<string>("");
-          regex_search(name_holder, r_match, name);
-          peer2 = r_match.str();
-          CsmaHelper csma;
+      BOOST_FOREACH(ptree::value_type const& p0, child){
+        if(p0.first == "channel"){
+          string param, name_holder;
 
-          BOOST_FOREACH(ptree::value_type const& p, pt.get_child("ScenarioScript.NetworkPlan")){
-            if(p.second.get<string>("<xmlattr>.name") == peer2){
-              pType = p.second.get<string>("interface.<xmlattr>.type", "router");
-            }
+          BOOST_FOREACH(ptree::value_type const& tp0, p0.second.get_child("member")){
+            name_holder = tp0.second.data();
+            regex_search(name_holder, r_match, name);
+            peer2 = r_match.str();
+            CsmaHelper csma;
+            if(peer2.compare(peer) != 0){
+              break;
           }
+
+          //BOOST_FOREACH(ptree::value_type const& p1, p0.second.get_child("parameter")){
+          //  if(p1.first == "channel")
+          //  if(p1.second.get<string>("<xmlattr>.name") == peer2){
+          //    pType = p1.second.get<string>("interface.<xmlattr>.type", "router");
+          //  }
+          //}
 
           bool p2Nflag = false;
           for(int x = 0; x < nNodes; x++){
@@ -597,53 +625,55 @@ int main (int argc, char *argv[]) {
           }
 
           if(!p2Nflag && !p2Bflag){
-            if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
+          //  if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
               internetCsma.Install(peer2);
-            }
-            else{
-              bridgeNode.Create(1);
-              Names::Add(peer2, bridgeNode.Get(bridgeNode.GetN() - 1));
-              bridges.Add(peer2);
-            }
+          //  }
+          //  else{
+          //    bridgeNode.Create(1);
+          //    Names::Add(peer2, bridgeNode.Get(bridgeNode.GetN() - 1));
+          //    bridges.Add(peer2);
+          //  }
           }
 
-          if(p.second.get<int>("delay", -1) != -1){
-            csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(p.second.get<int>("delay"))));
-          }
-          if(p.second.get<int>("bandwidth", -1) != -1){
-            csma.SetChannelAttribute("DataRate", DataRateValue(p.second.get<int>("bandwidth")));
+            BOOST_FOREACH(ptree::value_type const& tp1, p0.second.get_child("member")){
+            if(p1.second.get<string>("<xmlattr>.name") == "bw"){
+              csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data().str())));
+            }
+            else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
+              csma.SetChannelAttribute("Delay",TimeValue(stoi(p1.second.data().str())));
+            }
           }
 
           NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
 
-          if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
+          //if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
             csmaDevices.Add(link.Get(0));
             bridgeDevice.Add(link.Get(1));
-          }
-          else{
+          //}
+          //else{
             //bridgeDevice.Add(link.Get(0));
-            bridgeDevice.Add(link.Get(1));
+            //bridgeDevice.Add(link.Get(1));
             //bridgeDevice.Add(link);
             //BridgeHelper bridgeHelp;
             //bridgeHelp.Install(peer2, link.Get(0));
-            cout << "Linking " << pType << " " << peer2 << " to a csma(" << type << ") " << peer << endl;
-            continue;
-          }
+            //cout << "Linking " << pType << " " << peer2 << " to a csma(" << type << ") " << peer << endl;
+            //continue;
+          //}
 
           // Set addresses
-          BOOST_FOREACH(ptree::value_type const& p, pt.get_child("ScenarioScript.NetworkPlan")){
-            if(p.second.get<string>("<xmlattr>.name") == peer2){
-              BOOST_FOREACH(ptree::value_type const& p2, p.second){
-                if(p2.first == "interface" && p2.second.get<string>("peer.<xmlattr>.name") == peer){
-                  BOOST_FOREACH(ptree::value_type const& p3, p2.second){
-                    if(p3.first == "address" && p3.second.get<string>("<xmlattr>.type") == "ipv4"){
-                      ipv4_addr = p3.second.data();
+          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("ScenarioScript.NetworkPlan")){
+            if(pl1.second.get<string>("<xmlattr>.name") == peer2){
+              BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
+                if(pl2.first == "interface" && pl2.second.get<string>("peer.<xmlattr>.name") == peer){
+                  BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
+                    if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "ipv4"){
+                      ipv4_addr = pl3.second.data();
                     }
-                    else if(p3.first == "address" && p3.second.get<string>("<xmlattr>.type") == "ipv6"){
-                      ipv6_addr = p3.second.data();
+                    else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "ipv6"){
+                      ipv6_addr = pl3.second.data();
                     }
                   }
                 }
@@ -722,9 +752,9 @@ int main (int argc, char *argv[]) {
       uint16_t port = 50000;
       string peer1;
       j = 0;
-      BOOST_FOREACH(ptree::value_type const& p, child.get_child("interface")){
-        if(p.first == "channel" && j == 0){
-          peer1 = p.second.get<string>("peer.<xmlattr>.name");
+      BOOST_FOREACH(ptree::value_type const& pa1, child.get_child("interface")){
+        if(pa1.first == "channel" && j == 0){
+          peer1 = pa1.second.get<string>("peer.<xmlattr>.name");
           j++;
 
           Ptr<NetDevice> device = csmaDevices.Get (0);
@@ -735,9 +765,9 @@ int main (int argc, char *argv[]) {
           ApplicationContainer spokeApps;
           OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
 
-          BOOST_FOREACH(ptree::value_type const& p2, child.get_child("interface")){
-            if(p2.first == "channel" && p2.second.get<string>("peer.<xmlattr>.name") != peer1){
-              peer2 = p2.second.get<string>("peer.<xmlattr>.name");
+          BOOST_FOREACH(ptree::value_type const& pa2, child.get_child("interface")){
+            if(pa2.first == "channel" && pa2.second.get<string>("peer.<xmlattr>.name") != peer1){
+              peer2 = pa2.second.get<string>("peer.<xmlattr>.name");
               spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
               spokeApps.Start (Seconds (1.0));
               spokeApps.Stop (Seconds (duration / 10));
