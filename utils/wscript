@@ -12,6 +12,7 @@ def build(bld):
        'imn_reader/imnNode.cc',
        'imn_reader/imnLink.cc',
        'imn_reader/xmlGenerator.cc',
+       'UTM_conversion/LatLong-UTMconversion.cpp',
         ]
 
     module_test = bld.create_ns3_module_test_library('topology-read')
@@ -31,6 +32,8 @@ def build(bld):
        'imn_reader/imnNode.h',
        'imn_reader/imnLink.h',
        'imn_reader/xmlGenerator.h',
+       'UTM_conversion/LatLong-UTMconversion.h',
+       'UTM_conversion/constants.h',
         ]
 
     if bld.env['ENABLE_EXAMPLES']:
