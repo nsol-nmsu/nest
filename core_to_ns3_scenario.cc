@@ -258,9 +258,9 @@ int main (int argc, char *argv[]) {
           else if(p0.second.get<string>("<xmlattr>.name") == "delay"){
             p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p0.second.data()))));
           }
-          else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
-            p2p.SetChannelAttribute("ReceiveErrorModel",DoubleValue(stod(p0.second.data())));
-          }
+          //else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
+          //  p2p.SetChannelAttribute("ReceiveErrorModel",DoubleValue(stod(p0.second.data())));
+          //}
         }
       }
 
@@ -758,9 +758,9 @@ int main (int argc, char *argv[]) {
               else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
                 csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                csma.SetDeviceAttribute("ReceiveErrorModel",DoubleValue(stod(p1.second.data())));
-              }
+              //else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
+              //  csma.SetDeviceAttribute("ReceiveErrorModel",DoubleValue(stod(p1.second.data())));
+              //}
             }
           }
 
