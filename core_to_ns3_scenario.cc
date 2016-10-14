@@ -47,8 +47,58 @@ using boost::property_tree::ptree;
 using boost::optional;
 
 using namespace ns3;
+  // globals for position conversion
+  static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
+  static double x = 0.0;
+  static double y = 0.0;
+  static double refX = 0.0; // in orginal calculations but uneeded
+  static double refY = 0.0; // in orginal calculations but uneeded
+  static int refZoneNum;
+  static char refUTMZone;
 
-//trying to parse an imn file and create an ns3 scenario file from it
+// convert latitude/longitude location data to y/x Cartasian coordinates
+void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
+  char UTMZone;
+  int zoneNum;
+  double Locx, meterX;
+  double Locy, meterY;
+  // convert latitude/longitude location data to UTM meter coordinates
+  LLtoUTM(23, Lat, Lon, Locy, Locx, UTMZone, zoneNum);
+
+  if(refZoneNum != zoneNum){
+    double tempX,tempY, xShift, yShift;
+    double lon2 = refLon + 6 * (zoneNum - refZoneNum);
+    double lat2 = refLat + (double)(UTMZone - refUTMZone);
+    char tempC;
+    int tempI;
+
+    // get easting shift to get position x in meters
+    LLtoUTM(23, refLat, lon2, tempY, tempX, tempC, tempI);
+    xShift = haversine(refLon, refLat, lon2, refLat) - tempX;
+    meterX = Locx + xShift;
+
+    // get northing shift to get position y in meters
+    LLtoUTM(23, lat2, refLon, tempY, tempX, tempC, tempI);
+    yShift = -(haversine(refLon, refLat, refLon, lat2) + tempY);
+    meterY = Locy + yShift;
+
+    // convert meters to pixels to match CORE canvas coordinates
+    rx = (100.0 * (meterX / refScale)) + refX;
+    ry = -((100.0 * (meterY / refScale)) + refY);
+  }
+  else{
+    meterX = Locx - refLocx;
+    meterY = Locy - refLocy;
+
+    // convert meters to pixels to match CORE canvas coordinates
+    rx = (100.0 * (meterX / refScale)) + refX;
+    ry = -((100.0 * (meterY / refScale)) + refY);
+  }
+}
+
+//
+// Parse CORE XML and create an ns3 scenario file from it
+//
 int main (int argc, char *argv[]) {
   Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
 
@@ -100,6 +150,15 @@ int main (int argc, char *argv[]) {
   regex name("[a-zA-Z0-9]+");
   smatch r_match;
 
+  // Get xml position reference for calculations
+  refLat = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.lat");
+  refLon = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.lon");
+  refAlt = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.alt");
+  refScale = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.scale100");
+
+  LLtoUTM(23,refLat,refLon,refLocy,refLocx,refUTMZone,refZoneNum);
+
+  // Build topology
   BOOST_FOREACH(ptree::value_type const& nod, pt.get_child("scenario")){
     if(nod.first != "network"){
       continue;
@@ -107,6 +166,7 @@ int main (int argc, char *argv[]) {
     const ptree& child = nod.second;
     type = child.get<string>("type");
 
+    // Correctly determine network topology to build
     if(type.compare("ethernet") == 0){
       optional<const ptree&> bridge_exists = child.get_child_optional("hub");
       if(!bridge_exists){
@@ -162,11 +222,11 @@ int main (int argc, char *argv[]) {
       // if so set flag and only reference by name, do not recreate
       int nNodes = nodes.GetN();
       bool pflag = false, p2flag = false;
-      for(int x = 0; x < nNodes; x++){
-        if(peer.compare(Names::FindName(nodes.Get(x))) == 0){
+      for(int i = 0; i < nNodes; i++){
+        if(peer.compare(Names::FindName(nodes.Get(i))) == 0){
           pflag = true;
         }
-        if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+        if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
           p2flag = true;
         }
       }
@@ -222,16 +282,11 @@ int main (int argc, char *argv[]) {
           continue;
         }
         if(pl1.second.get<string>("<xmlattr>.name") == peer){
-          char* temp;
-          //set position
-          // x coord
-          double loc1 = pl1.second.get<double>("point.<xmlattr>.lat");
-          // y coord
-          double loc2 = pl1.second.get<double>("point.<xmlattr>.lon");
-//cout << peer << peer2 << endl;
-          //LLtoUTM(23,pl1.second.get<double>("point.<xmlattr>.lat"),pl1.second.get<double>("point.<xmlattr>.lon"),loc1, loc2, temp);
-//cout << loc1 << " " << loc2 << endl;
-          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), loc1, loc2);
+          // set coordinates
+          getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
+                        pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), x, y);
 
           BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
             if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
@@ -250,12 +305,11 @@ int main (int argc, char *argv[]) {
           }
         }
         else if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-          //set position
-          // x coord
-          double loc1 = pl1.second.get<double>("point.<xmlattr>.lat");
-          // y coord
-          double loc2 = pl1.second.get<double>("point.<xmlattr>.lon");
-          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), loc1, loc2);
+          // set coordinates
+          getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
+                        pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
 
           BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
             if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder2){
@@ -472,8 +526,8 @@ int main (int argc, char *argv[]) {
 
           int nNodes = nodes.GetN();
           bool p2flag = false;
-          for(int x = 0; x < nNodes; x++){
-            if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+          for(int i = 0; i < nNodes; i++){
+            if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
               p2flag = true;
               break;
             }
@@ -498,12 +552,10 @@ int main (int argc, char *argv[]) {
               continue;
             }
             if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-              //set position
-              // x coord
-              double loc1 = pl1.second.get<double>("point.<xmlattr>.lat");
-              // y coord
-              double loc2 = pl1.second.get<double>("point.<xmlattr>.lon");
-              AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), loc1, loc2);
+              getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
+                            pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+              AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
 
               BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
                 if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
@@ -637,8 +689,8 @@ int main (int argc, char *argv[]) {
       int nNodes = nodes.GetN();
       int bNodes = bridges.GetN();
       bool pflag = false;
-      for(int x = 0; x < bNodes; x++){
-        if(peer.compare(Names::FindName(bridges.Get(x))) == 0){
+      for(int i = 0; i < bNodes; i++){
+        if(peer.compare(Names::FindName(bridges.Get(i))) == 0){
           pflag = true;
           break;
         }
@@ -650,12 +702,10 @@ int main (int argc, char *argv[]) {
         bridges.Add(peer);
         bNodes++;
 
-        //set position
-        // x coord
-        double loc1 = nod.second.get<double>("point.<xmlattr>.lat");
-        // y coord
-        double loc2 = nod.second.get<double>("point.<xmlattr>.lon");
-        AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), loc1, loc2);
+        getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                      nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+        AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), x, y);
       }
 
       cout << "\nCreating new "<< type <<" network named " << peer << endl;
@@ -678,15 +728,15 @@ int main (int argc, char *argv[]) {
           }
 
           bool p2Nflag = false;
-          for(int x = 0; x < nNodes; x++){
-            if(peer2.compare(Names::FindName(nodes.Get(x))) == 0){
+          for(int i = 0; i < nNodes; i++){
+            if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
               p2Nflag = true;
               break;
             }
           }
           bool p2Bflag = false;
-          for(int x = 0; x < bNodes; x++){
-            if(peer2.compare(Names::FindName(bridges.Get(x))) == 0){
+          for(int i = 0; i < bNodes; i++){
+            if(peer2.compare(Names::FindName(bridges.Get(i))) == 0){
               p2Bflag = true;
               break;
             }
@@ -736,12 +786,10 @@ int main (int argc, char *argv[]) {
                 continue;
               }
               if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-              //set position
-              // x coord
-              double loc1 = pl1.second.get<double>("point.<xmlattr>.lat");
-              // y coord
-              double loc2 = pl1.second.get<double>("point.<xmlattr>.lon");
-              AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), loc1, loc2);
+                getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
+                              pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+                AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
 
               BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
                 if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
@@ -871,7 +919,7 @@ int main (int argc, char *argv[]) {
 ////////////////////////////////
   cout << "\nCORE topology imported..." << endl; 
 ////////////////////////////////
-//START OF APPLICATION GENERATOR
+//START OF APPLICATION GENERATOR TODO
 ////////////////////////////////
 
 
@@ -881,30 +929,21 @@ int main (int argc, char *argv[]) {
 
   cout << "\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
 
-  //
-  //set router/pc/p2p/other coordinates for NetAnim
-  //
   int nNodes = nodes.GetN(), extra = 0, bNodes = bridges.GetN();
   string nodeName;
 
-  // Set node coordinates for NetAnim use
-/*  BOOST_FOREACH(ptree::value_type const& nod, pt.get_child("scenario")){
-   if(nod.second.get<string>("interface.<xmlattr>.type", "router") == "wlan" || nod.second.get<string>("interface.<xmlattr>.type", "router") == "p2p"){
-     continue;
-   }
+  // Set node coordinates for rouge nodes
+  BOOST_FOREACH(ptree::value_type const& nod, pt.get_child("scenario")){
+    if(nod.first != "router" && nod.first != "host"){
+      continue;
+    }
+
     nodeName = nod.second.get<string>("<xmlattr>.name");
-    type = nod.second.get<string>("interface.<xmlattr>.type", "router");
-    int loc1, loc2;
+    int Locx, Locy;
 
     bool nflag = false;
     for(int x = 0; x < nNodes; x++){
       if(nodeName.compare(Names::FindName(nodes.Get(x))) == 0){
-        nflag = true;
-        break;
-      }
-    }
-    for(int x = 0; x < bNodes; x++){
-      if(nodeName.compare(Names::FindName(bridges.Get(x))) == 0){
         nflag = true;
         break;
       }
@@ -919,20 +958,17 @@ int main (int argc, char *argv[]) {
       nNodes++;
       extra++;
     }
+    else{
+      continue;
+    }
 
     int n = Names::Find<Node>(nodeName)->GetId();
     cout << type << " " << nodeName << " with id " << n;
 
-    // get x coord
-    string location = nod.second.get<string>("Location").data();
-    regex_search(location, r_match, cartesian);
-    loc1 = stoi(r_match.str());
-    // get y coord
-    location = r_match.suffix().str();
-    regex_search(location, r_match, cartesian);
-    loc2 = stoi(r_match.str());
+    getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                  nod.second.get<double>("point.<xmlattr>.lon"), x, y);
 
-    AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), loc1, loc2);
+    AnimationInterface::SetConstantPosition(Names::Find<Node>(nodeName), x, y);
 
     cout << " set..." << endl;
   }
@@ -940,7 +976,7 @@ int main (int argc, char *argv[]) {
   if(extra > 0){
     cout << extra << " rouge (unconnected) node(s) detected!" << endl;
   }
-*/
+
   AnimationInterface anim("NetAnim-core-to-ns3.xml");
   //anim.EnablePacketMetadata(true);
   //anim.EnableIpv4RouteTracking ("testRouteTrackingXml.xml", Seconds(1.0), Seconds(3.0), Seconds(5));

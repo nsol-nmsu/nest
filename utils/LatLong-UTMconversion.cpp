@@ -32,14 +32,13 @@ Defense Mapping Agency. 1987b. DMA Technical Report: Supplement to Department of
 //}
 
 void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
-			 double &UTMNorthing, double &UTMEasting, char* UTMZone)
+			 double &UTMNorthing, double &UTMEasting, char &UTMZone, int &ZoneNumber)
 {
 //converts lat/long to UTM coords.  Equations from USGS Bulletin 1532 
 //East Longitudes are positive, West longitudes are negative. 
 //North latitudes are positive, South latitudes are negative
 //Lat and Long are in decimal degrees
 	//Written by Chuck Gantz- chuck.gantz@globalstar.com
-printf("got %f %f\n",Lat, Long);
 	double a = ellipsoid[ReferenceEllipsoid].EquatorialRadius;
 	double eccSquared = ellipsoid[ReferenceEllipsoid].eccentricitySquared;
 	double k0 = 0.9996;
@@ -54,7 +53,7 @@ printf("got %f %f\n",Lat, Long);
 	double LatRad = Lat*deg2rad;
 	double LongRad = LongTemp*deg2rad;
 	double LongOriginRad;
-	int    ZoneNumber;
+	//int    ZoneNumber;
 
 	ZoneNumber = int((LongTemp + 180)/6) + 1;
   
@@ -74,6 +73,7 @@ printf("got %f %f\n",Lat, Long);
 
 	//compute the UTM Zone from the latitude and longitude
 	//sprintf(UTMZone, "%d%c", ZoneNumber, UTMLetterDesignator(Lat));
+	UTMZone = UTMLetterDesignator(Lat);
 
 	eccPrimeSquared = (eccSquared)/(1-eccSquared);
 
@@ -92,7 +92,7 @@ printf("got %f %f\n",Lat, Long);
 					+ 500000.0);
 
 	UTMNorthing = (double)(k0*(M+N*tan(LatRad)*(A*A/2+(5-T+9*C+4*C*C)*A*A*A*A/24
-				 + (61-58*T+T*T+600*C-330*eccPrimeSquared)*A*A*A*A*A*A/720)));printf("should get %f,%f\n",UTMNorthing,UTMEasting);
+				 + (61-58*T+T*T+600*C-330*eccPrimeSquared)*A*A*A*A*A*A/720)));
 	if(Lat < 0)
 		UTMNorthing += 10000000.0; //10000000 meter offset for southern hemisphere
 }
@@ -191,4 +191,31 @@ void UTMtoLL(int ReferenceEllipsoid, const double UTMNorthing, const double UTME
 	Long = LongOrigin + Long * rad2deg;
 
 }
+
+double haversine(const double lon1, const double lat1, const double lon2, const double lat2){
+  // Calculate the great circle distance between two points
+  // on the earth (specified in decimal degrees)
+
+  // convert decimal degrees to radians
+  double radLat1 = lat1 * deg2rad;
+  double radLon1 = lon1 * deg2rad;
+  double radLat2 = lat2 * deg2rad;
+  double radLon2 = lon2 * deg2rad;
+
+  // haversine formula
+  double dLat = radLat2 - radLat1;
+  double dLon = radLon2 - radLon1;
+
+  double a = sin(dLat/2) * sin(dLat/2) + cos(radLat1) * cos(radLat2) * sin(dLon/2) * sin(dLon/2);
+  double c = 2 * asin(sqrt(a));
+  double m = 6367000 * c;
+
+  return m;
+}
 //}// end namespace ns3
+
+
+
+
+
+

@@ -12,10 +12,11 @@
     //static TypeId GetTypeId (void); //recommended by ns-3 tutorial
 
     void LLtoUTM(int ReferenceEllipsoid, const double Lat, const double Long, 
-			 double &UTMNorthing, double &UTMEasting, char* UTMZone);
+			 double &UTMNorthing, double &UTMEasting, char &UTMZone, int &ZoneNumber);
     void UTMtoLL(int ReferenceEllipsoid, const double UTMNorthing, const double UTMEasting, const char* UTMZone,
 			  double& Lat,  double& Long );
     char UTMLetterDesignator(double Lat);
+    double haversine(const double lon1, const double lat1, const double lon2, const double lat2);
     //void LLtoSwissGrid(const double Lat, const double Long, 
 //			 double &SwissNorthing, double &SwissEasting);
     //void SwissGridtoLL(const double SwissNorthing, const double SwissEasting, 
