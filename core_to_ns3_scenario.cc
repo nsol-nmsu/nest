@@ -47,14 +47,25 @@ using boost::property_tree::ptree;
 using boost::optional;
 
 using namespace ns3;
-  // globals for position conversion
-  static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
-  static double x = 0.0;
-  static double y = 0.0;
-  static double refX = 0.0; // in orginal calculations but uneeded
-  static double refY = 0.0; // in orginal calculations but uneeded
-  static int refZoneNum;
-  static char refUTMZone;
+// globals for position conversion
+static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
+static double x = 0.0;
+static double y = 0.0;
+static double refX = 0.0; // in orginal calculations but uneeded
+static double refY = 0.0; // in orginal calculations but uneeded
+static int refZoneNum;
+static char refUTMZone;
+
+// globals for splitting strings
+regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
+regex addrIpv6("[/]{1}[0-9]+");
+regex name("[a-zA-Z0-9]+");
+smatch r_match;
+
+// globals for get/set addresses
+static string mac_addr  = "skip";
+static string ipv4_addr = "skip";
+static string ipv6_addr = "skip";
 
 // convert latitude/longitude location data to y/x Cartasian coordinates
 void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
@@ -94,6 +105,108 @@ void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
     rx = (100.0 * (meterX / refScale)) + refX;
     ry = -((100.0 * (meterY / refScale)) + refY);
   }
+}
+
+void getAddresses(ptree pt, string sourceNode, string peerNode){
+  BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+    if(pl1.first != "host" && pl1.first != "router"){
+      continue;
+    }
+    if(pl1.second.get<string>("<xmlattr>.name") == sourceNode){
+      getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
+                    pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+      AnimationInterface::SetConstantPosition(Names::Find<Node>(sourceNode), x, y);
+
+      BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
+        if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == peerNode){
+          BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
+            if(pl3.first == "address"){
+              if(pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
+                ipv4_addr = pl3.second.data();
+              }
+              else if(pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
+                ipv6_addr = pl3.second.data();
+              }
+              else if(pl3.second.get<string>("<xmlattr>.type") == "mac"){
+                mac_addr = pl3.second.data();
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+void assignDeviceAddress(const Ptr<NetDevice> device){
+  Ptr<Node> node = device->GetNode ();
+  int32_t deviceInterface;
+  if(mac_addr.compare("skip") != 0){
+    device->SetAddress(Mac48Address(mac_addr.c_str()));
+  }
+
+  if(ipv4_addr.compare("skip") != 0){
+    regex_search(ipv4_addr, r_match, addr);
+    string tempIpv4 = r_match.str();
+    string tempMask = r_match.suffix().str();
+
+    // NS3 Routing has a bug with netMask 32
+    // This is a temporary work around
+    if(tempMask.compare("/32") == 0){
+      tempMask = "/24";
+    }
+
+    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
+    deviceInterface = ipv4->GetInterfaceForDevice (device);
+    if (deviceInterface == -1)
+      {
+      deviceInterface = ipv4->AddInterface (device);
+      }
+    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv4AddressHelper::Assign(): "
+                   "Interface index not found");
+
+    Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
+    ipv4->AddAddress (deviceInterface, ipv4Addr);
+    ipv4->SetMetric (deviceInterface, 1);
+    ipv4->SetUp (deviceInterface);
+}
+
+  if(ipv6_addr.compare("skip") != 0){
+    regex_search(ipv6_addr, r_match, addrIpv6);
+    string tempIpv6 = r_match.prefix().str();
+    string tempIpv6Mask = r_match.str();
+
+    if(tempIpv6Mask.compare("/128") == 0){
+      tempIpv6Mask = "/64";
+    }
+
+    Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
+    deviceInterface = ipv6->GetInterfaceForDevice (device);
+    if (deviceInterface == -1)
+      {
+      deviceInterface = ipv6->AddInterface (device);
+      }
+    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
+                   "Interface index not found");
+
+    Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+    ipv6->SetMetric (deviceInterface, 1);
+    ipv6->AddAddress (deviceInterface, ipv6Addr);
+    ipv6->SetUp (deviceInterface);
+}
+
+  Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
+  if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
+     {
+     //NS_LOG_LOGIC ("Installing default traffic control configuration");
+     TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
+     tcHelper.Install (device);
+     }
+
+  mac_addr  = "skip";
+  ipv4_addr = "skip";
+  ipv6_addr = "skip";
 }
 
 //
@@ -143,12 +256,6 @@ int main (int argc, char *argv[]) {
   // open log file for output
   //ofstream os;
   //os.open(logFile.c_str());
-
-  //for ipv4 and ipv6, ipv6 will find mask, therefore use prefix for address
-  regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
-  regex addrIpv6("[/]{1}[0-9]+");
-  regex name("[a-zA-Z0-9]+");
-  smatch r_match;
 
   // Get xml position reference for calculations
   refLat = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.lat");
@@ -258,9 +365,10 @@ int main (int argc, char *argv[]) {
           else if(p0.second.get<string>("<xmlattr>.name") == "delay"){
             p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p0.second.data()))));
           }
-          //else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
-          //  p2p.SetChannelAttribute("ReceiveErrorModel",DoubleValue(stod(p0.second.data())));
-          //}
+          else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
+            Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p0.second.data())));
+            p2p.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
+          }
         }
       }
 
@@ -276,170 +384,15 @@ int main (int argc, char *argv[]) {
       else if(!pflag && p2flag){
         internetP2P.Install(peer);
       }
-      // get addresses ipv4 and ipv6
-      BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-        if(pl1.first != "host" && pl1.first != "router"){
-          continue;
-        }
-        if(pl1.second.get<string>("<xmlattr>.name") == peer){
-          // set coordinates
-          getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                        pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
 
-          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), x, y);
-
-          BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-            if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
-              BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-                if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                  ipv4_addr = pl3.second.data();
-                }
-                else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                  ipv6_addr = pl3.second.data();
-                }
-                else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                  mac_addr = pl3.second.data();
-                }
-              }
-            }
-          }
-        }
-        else if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-          // set coordinates
-          getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                        pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
-
-          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
-
-          BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-            if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder2){
-              BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-                if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                  ipv4_addr2 = pl3.second.data();
-                }
-                else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                  ipv6_addr2 = pl3.second.data();
-                }
-                else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                  mac_addr2 = pl3.second.data();
-                }
-              }
-            }
-          }
-        }
-      }
-
-      //set addresses, starting with peer
-      regex_search(ipv4_addr, r_match, addr);
-      string tempIpv4 = r_match.str();
-      string tempMask = r_match.suffix().str();
-
-      regex_search(ipv6_addr, r_match, addrIpv6);
-      string tempIpv6 = r_match.prefix().str();
-      string tempIpv6Mask = r_match.str();
-      //cout << ipv4_addr << endl;
+      // Get then set addresses
+      getAddresses(pt, peer, name_holder);
       Ptr<NetDevice> device = p2pDevices.Get (0);
+      assignDeviceAddress(device);
 
-      Ptr<Node> node = device->GetNode ();
-
-      Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-      Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
-      int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
-      if (deviceInterface == -1)
-        {
-          deviceInterface = ipv4->AddInterface (device);
-        }
-
-      Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-      ipv4->AddAddress (deviceInterface, ipv4Addr);
-      ipv4->SetMetric (deviceInterface, 1);
-      ipv4->SetUp (deviceInterface);
-
-      // Install the default traffic control configuration if the traffic
-      // control layer has been aggregated, if this is not 
-      // a loopback interface, and there is no queue disc installed already
-      Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
-      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-        {
-          //NS_LOG_LOGIC ("Installing default traffic control configuration");
-          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-          tcHelper.Install (device);
-        }
-
-      deviceInterface = ipv6->GetInterfaceForDevice (device);
-      if (deviceInterface == -1)
-        {
-          deviceInterface = ipv6->AddInterface (device);
-        }
-      NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                     "Interface index not found");
-
-      Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
-      ipv6->SetMetric (deviceInterface, 1);
-      ipv6->AddAddress (deviceInterface, ipv6Addr);
-      ipv6->SetUp (deviceInterface);
-
-      tc = node->GetObject<TrafficControlLayer> ();
-      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-        {
-          //NS_LOG_LOGIC ("Installing default traffic control configuration");
-          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-          tcHelper.Install (device);
-        }
-
-      // Set address for peer2
-      regex_search(ipv4_addr2, r_match, addr);
-      tempIpv4 = r_match.str();
-      tempMask = r_match.suffix().str();
-      //cout << ipv4_addr2 << endl;
-      regex_search(ipv6_addr2, r_match, addrIpv6);
-      tempIpv6 = r_match.prefix().str();
-      tempIpv6Mask = r_match.str();
-
+      getAddresses(pt, peer2, name_holder2);
       device = p2pDevices.Get (1);
-      node = device->GetNode ();
-
-      ipv4 = node->GetObject<Ipv4>();
-      ipv6 = node->GetObject<Ipv6>();
-      deviceInterface = ipv4->GetInterfaceForDevice (device);
-      if (deviceInterface == -1)
-        {
-          deviceInterface = ipv4->AddInterface (device);
-        }
-
-      ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-      ipv4->AddAddress (deviceInterface, ipv4Addr);
-      ipv4->SetMetric (deviceInterface, 1);
-      ipv4->SetUp (deviceInterface);
-
-      tc = node->GetObject<TrafficControlLayer> ();
-      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-        {
-          //NS_LOG_LOGIC ("Installing default traffic control configuration");
-          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-          tcHelper.Install (device);
-        }
-
-      deviceInterface = ipv6->GetInterfaceForDevice (device);
-      if (deviceInterface == -1)
-        {
-          deviceInterface = ipv6->AddInterface (device);
-        }
-      NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                     "Interface index not found");
-
-      ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
-      ipv6->SetMetric (deviceInterface, 1);
-      ipv6->AddAddress (deviceInterface, ipv6Addr);
-      ipv6->SetUp (deviceInterface);
-
-      tc = node->GetObject<TrafficControlLayer> ();
-      if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-        {
-          //NS_LOG_LOGIC ("Installing default traffic control configuration");
-          TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-          tcHelper.Install (device);
-        }
+      assignDeviceAddress(device);
 
 /*     //
      // Create a BulkSendApplication and install it on peer2
@@ -547,96 +500,10 @@ int main (int argc, char *argv[]) {
           MobilityHelper mobility;
           mobility.Install(peer2);
 
-          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-            if(pl1.first != "host" && pl1.first != "router"){
-              continue;
-            }
-            if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-              getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                            pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
-
-              AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
-
-              BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-                if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
-                  BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-                    if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                      ipv4_addr = pl3.second.data();
-                    }
-                    else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                      ipv6_addr = pl3.second.data();
-                    }
-                    else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                      mac_addr = pl3.second.data();
-
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          regex_search(ipv4_addr, r_match, addr);
-          string tempIpv4 = r_match.str();
-          string tempMask = r_match.suffix().str();
-
-          regex_search(ipv6_addr, r_match, addrIpv6);
-          string tempIpv6 = r_match.prefix().str();
-          string tempIpv6Mask = r_match.str();
-
-          // NS3 Routing has a bug with netMask 32
-          // This is a temporary work around
-          if(tempMask.compare("/32") == 0){
-            tempMask = "/24";
-          }
-          if(tempIpv6Mask.compare("/128") == 0){
-            tempIpv6Mask = "/64";
-          }
-
+          // Get then set address
+          getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
-          Ptr<Node> node = device->GetNode ();
-
-          Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-          int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
-          if (deviceInterface == -1)
-            {
-              deviceInterface = ipv4->AddInterface (device);
-            }
-
-          Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-          ipv4->AddAddress (deviceInterface, ipv4Addr);
-          ipv4->SetMetric (deviceInterface, 1);
-          ipv4->SetUp (deviceInterface);
-
-          Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
-          if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-            {
-              //NS_LOG_LOGIC ("Installing default traffic control configuration");
-              TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-              tcHelper.Install (device);
-            }
-
-          Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
-          deviceInterface = ipv6->GetInterfaceForDevice (device);
-          if (deviceInterface == -1)
-            {
-            deviceInterface = ipv6->AddInterface (device);
-            }
-          NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                     "Interface index not found");
-
-          Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
-          ipv6->SetMetric (deviceInterface, 1);
-          ipv6->AddAddress (deviceInterface, ipv6Addr);
-          ipv6->SetUp (deviceInterface);
-
-          tc = node->GetObject<TrafficControlLayer> ();
-          if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-            {
-            //NS_LOG_LOGIC ("Installing default traffic control configuration");
-            TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-            tcHelper.Install (device);
-            }
+          assignDeviceAddress(device);
         }
       }
 /*    //
@@ -758,9 +625,10 @@ int main (int argc, char *argv[]) {
               else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
                 csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
               }
-              //else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-              //  csma.SetDeviceAttribute("ReceiveErrorModel",DoubleValue(stod(p1.second.data())));
-              //}
+              else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
+                Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
+              }
             }
           }
 
@@ -780,99 +648,11 @@ int main (int argc, char *argv[]) {
             //continue;
           //}
 
-          // Set addresses
-          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-              if(pl1.first != "host" && pl1.first != "router"){
-                continue;
-              }
-              if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-                getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                              pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
+          // Get then set address
+          getAddresses(pt, peer2, name_holder);
+          Ptr<NetDevice> device = csmaDevices.Get (j++);
+          assignDeviceAddress(device);
 
-                AnimationInterface::SetConstantPosition(Names::Find<Node>(peer2), x, y);
-
-              BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-                if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == name_holder){
-                  BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-                    if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                      ipv4_addr = pl3.second.data();
-                    }
-                    else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                      ipv6_addr = pl3.second.data();
-                    }
-                    else if(pl3.first == "address" && pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                      mac_addr = pl3.second.data();
-
-                    }
-                  }
-                }
-              }
-            }
-          }
-
-          regex_search(ipv4_addr, r_match, addr);
-          string tempIpv4 = r_match.str();
-          string tempMask = r_match.suffix().str();
-
-          regex_search(ipv6_addr, r_match, addrIpv6);
-          string tempIpv6 = r_match.prefix().str();
-          string tempIpv6Mask = r_match.str();
-          //cout << ipv4_addr << tempIpv4 << tempMask << endl;
-          //cout << ipv6_addr << tempIpv6 << tempMask << endl;
-          Ptr<NetDevice> device = csmaDevices.Get (j);
-
-          Ptr<Node> node = device->GetNode ();
-          NS_ASSERT_MSG (node, "Ipv4AddressHelper::Assign(): NetDevice is not not associated "
-                       "with any node -> fail");
-          Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-          NS_ASSERT_MSG (ipv4, "Ipv4AddressHelper::Assign(): NetDevice is associated"
-                       " with a node without IPv4 stack installed -> fail "
-                       "(maybe need to use InternetStackHelper?)");
-
-          int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
-          if (deviceInterface == -1)
-            {
-              deviceInterface = ipv4->AddInterface (device);
-            }
-          NS_ASSERT_MSG (deviceInterface >= 0, "Ipv4AddressHelper::Assign(): "
-                       "Interface index not found");
-
-
-          Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-          ipv4->AddAddress (deviceInterface, ipv4Addr);
-          ipv4->SetMetric (deviceInterface, 1);
-          ipv4->SetUp (deviceInterface);
-
-          Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
-          if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-            {
-              //NS_LOG_LOGIC ("Installing default traffic control configuration");
-              TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-              tcHelper.Install (device);
-            }
-
-
-          Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
-          deviceInterface = ipv6->GetInterfaceForDevice (device);
-          if (deviceInterface == -1)
-            {
-            deviceInterface = ipv6->AddInterface (device);
-            }
-          NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                       "Interface index not found");
-
-          Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
-          ipv6->SetMetric (deviceInterface, 1);
-          ipv6->AddAddress (deviceInterface, ipv6Addr);
-          ipv6->SetUp (deviceInterface);
-
-          tc = node->GetObject<TrafficControlLayer> ();
-          if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-            {
-            //NS_LOG_LOGIC ("Installing default traffic control configuration");
-            TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-            tcHelper.Install (device);
-            }
           cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
         }
       }
@@ -927,7 +707,7 @@ int main (int argc, char *argv[]) {
 
 
 
-  cout << "\nSetting NetAnim coordinates for " << nodes.GetN() << " connected nodes..." << endl;
+  cout << endl << nodes.GetN() << " defined node names with their respective id's..." << endl;
 
   int nNodes = nodes.GetN(), extra = 0, bNodes = bridges.GetN();
   string nodeName;
@@ -959,6 +739,8 @@ int main (int argc, char *argv[]) {
       extra++;
     }
     else{
+      int n = Names::Find<Node>(nodeName)->GetId();
+      cout << nodeName << " with id " << n << endl;
       continue;
     }
 
