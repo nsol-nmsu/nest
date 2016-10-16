@@ -710,6 +710,9 @@ int main (int argc, char *argv[]) {
             TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
             tcHelper.Install (device);
             }
+
+          // increament to get correct device for Address next iteration
+          j++;
           cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
         }
       }
