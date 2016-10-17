@@ -1,0 +1,740 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario compiled="true" name="sample10-kitchen-sink.xml" version="1.0" xmlns="nmfPlan" xmlns:CORE="coreSpecific">
+  <network id="n4" name="n4">
+    <point lat="47.5720443142" lon="-122.128131664" type="gps"/>
+    <type>ethernet</type>
+    <hub id="n4/n4" name="n4">
+      <type domain="CORE">hub</type>
+      <interface id="n4/n4/e0" name="e0"/>
+      <interface id="n4/n4/e1" name="e1"/>
+      <interface id="n4/n4/e2" name="e2"/>
+      <interface id="n4/n4/e3" name="e3"/>
+      <alias domain="COREID">4</alias>
+      <point lat="47.5720443142" lon="-122.128131664" type="gps"/>
+    </hub>
+    <member type="interface">n3/eth0</member>
+    <member type="interface">n4/n4/e0</member>
+    <member type="interface">n16/eth0</member>
+    <member type="interface">n4/n4/e1</member>
+    <member type="interface">n17/eth0</member>
+    <member type="interface">n4/n4/e2</member>
+    <member type="interface">n18/eth0</member>
+    <member type="interface">n4/n4/e3</member>
+    <member type="channel">n4/chan0</member>
+    <member type="channel">n4/chan1</member>
+    <member type="channel">n4/chan2</member>
+    <member type="channel">n4/chan3</member>
+    <channel id="n4/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">1024000</parameter>
+      <parameter name="delay">8000</parameter>
+      <member index="0" type="interface">n3/eth0</member>
+      <member index="1" type="interface">n4/n4/e0</member>
+    </channel>
+    <channel id="n4/chan1" name="chan1">
+      <type>ethernet</type>
+      <member index="0" type="interface">n16/eth0</member>
+      <member index="1" type="interface">n4/n4/e1</member>
+    </channel>
+    <channel id="n4/chan2" name="chan2">
+      <type>ethernet</type>
+      <member index="0" type="interface">n17/eth0</member>
+      <member index="1" type="interface">n4/n4/e2</member>
+    </channel>
+    <channel id="n4/chan3" name="chan3">
+      <type>ethernet</type>
+      <member index="0" type="interface">n18/eth0</member>
+      <member index="1" type="interface">n4/n4/e3</member>
+    </channel>
+  </network>
+  <network id="n5" name="n5">
+    <point lat="47.5755376105" lon="-122.11897848" type="gps"/>
+    <type>ethernet</type>
+    <switch id="n5/n5" name="n5">
+      <type domain="CORE">lanswitch</type>
+      <interface id="n5/n5/e0" name="e0"/>
+      <interface id="n5/n5/e1" name="e1"/>
+      <interface id="n5/n5/e2" name="e2"/>
+      <interface id="n5/n5/e3" name="e3"/>
+      <interface id="n5/n5/e4" name="e4"/>
+      <alias domain="COREID">5</alias>
+      <point lat="47.5755376105" lon="-122.11897848" type="gps"/>
+    </switch>
+    <switch id="n5/n25" name="n25">
+      <type domain="CORE">lanswitch</type>
+      <interface id="n5/n25/e0" name="e0"/>
+      <interface id="n5/n25/e1" name="e1"/>
+      <alias domain="COREID">25</alias>
+      <point lat="47.5765166274" lon="-122.119919463" type="gps"/>
+    </switch>
+    <member type="interface">n2/eth0</member>
+    <member type="interface">n5/n5/e0</member>
+    <member type="interface">n6/eth0</member>
+    <member type="interface">n5/n5/e1</member>
+    <member type="interface">n7/eth0</member>
+    <member type="interface">n5/n5/e2</member>
+    <member type="interface">n8/eth0</member>
+    <member type="interface">n5/n5/e3</member>
+    <member type="interface">n5/n25/e0</member>
+    <member type="interface">n5/n5/e4</member>
+    <member type="interface">n26/eth0</member>
+    <member type="interface">n5/n25/e1</member>
+    <member type="channel">n5/chan0</member>
+    <member type="channel">n5/chan1</member>
+    <member type="channel">n5/chan2</member>
+    <member type="channel">n5/chan3</member>
+    <member type="channel">n5/chan4</member>
+    <member type="channel">n5/chan5</member>
+    <channel id="n5/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n2/eth0</member>
+      <member index="1" type="interface">n5/n5/e0</member>
+    </channel>
+    <channel id="n5/chan1" name="chan1">
+      <type>ethernet</type>
+      <member index="0" type="interface">n6/eth0</member>
+      <member index="1" type="interface">n5/n5/e1</member>
+    </channel>
+    <channel id="n5/chan2" name="chan2">
+      <type>ethernet</type>
+      <member index="0" type="interface">n7/eth0</member>
+      <member index="1" type="interface">n5/n5/e2</member>
+    </channel>
+    <channel id="n5/chan3" name="chan3">
+      <type>ethernet</type>
+      <member index="0" type="interface">n8/eth0</member>
+      <member index="1" type="interface">n5/n5/e3</member>
+    </channel>
+    <channel id="n5/chan4" name="chan4">
+      <type>ethernet</type>
+      <parameter name="delay">5000</parameter>
+      <member index="0" type="interface">n5/n25/e0</member>
+      <member index="1" type="interface">n5/n5/e4</member>
+    </channel>
+    <channel id="n5/chan5" name="chan5">
+      <type>ethernet</type>
+      <member index="0" type="interface">n26/eth0</member>
+      <member index="1" type="interface">n5/n25/e1</member>
+    </channel>
+  </network>
+  <network id="net0" name="net0">
+    <point lat="47.5722987177" lon="-122.119032808" type="gps"/>
+    <type>ethernet</type>
+    <alias domain="COREID">10</alias>
+    <alias domain="COREGREKEY">1</alias>
+    <member type="interface">n19/eth3</member>
+    <member type="tunnel">10.250.0.91/10.250.0.91</member>
+    <member type="channel">net0/chan0</member>
+    <channel id="net0/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n19/eth3</member>
+    </channel>
+  </network>
+  <network id="wlan15" name="wlan15">
+    <point lat="47.5688199465" lon="-122.130099712" type="gps"/>
+    <type>wireless</type>
+    <alias domain="COREID">15</alias>
+    <member type="interface">n11/eth0</member>
+    <member type="interface">n12/eth0</member>
+    <member type="interface">n13/eth0</member>
+    <member type="interface">n14/eth0</member>
+    <member type="channel">wlan15/wireless</member>
+    <channel id="wlan15/wireless" name="wireless">
+      <type domain="CORE">basic_range</type>
+      <parameter name="range">275</parameter>
+      <parameter name="bandwidth">54000000</parameter>
+      <parameter name="jitter">0</parameter>
+      <parameter name="delay">20000</parameter>
+      <parameter name="error">0</parameter>
+      <member index="0" type="interface">n11/eth0</member>
+      <member index="1" type="interface">n12/eth0</member>
+      <member index="2" type="interface">n13/eth0</member>
+      <member index="3" type="interface">n14/eth0</member>
+    </channel>
+  </network>
+  <network id="wlan24" name="wlan24">
+    <point lat="47.578223648" lon="-122.131380109" type="gps"/>
+    <type>wireless</type>
+    <alias domain="COREID">24</alias>
+    <member type="interface">n20/eth0</member>
+    <member type="interface">n21/eth0</member>
+    <member type="interface">n22/eth0</member>
+    <member type="interface">n23/eth0</member>
+    <member type="channel">wlan24/wireless</member>
+    <channel id="wlan24/wireless" name="wireless">
+      <type domain="CORE">emane_ieee80211abg</type>
+      <parameter name="mode">0</parameter>
+      <parameter name="enablepromiscuousmode">off</parameter>
+      <parameter name="distance">1000</parameter>
+      <parameter name="unicastrate">4</parameter>
+      <parameter name="multicastrate">1</parameter>
+      <parameter name="rtsthreshold">0</parameter>
+      <parameter name="pcrcurveuri">/usr/share/emane/models/ieee80211abg/xml/ieee80211pcr.xml</parameter>
+      <parameter name="flowcontrolenable">off</parameter>
+      <parameter name="flowcontroltokens">10</parameter>
+      <parameter name="wmmenable">off</parameter>
+      <parameter name="queuesize">0:255 1:255 2:255 3:255</parameter>
+      <parameter name="cwmin">0:32 1:32 2:16 3:8</parameter>
+      <parameter name="cwmax">0:1024 1:1024 2:64 3:16</parameter>
+      <parameter name="aifs">0:2 1:2 2:2 3:1</parameter>
+      <parameter name="txop">0:0 1:0 2:0 3:0</parameter>
+      <parameter name="retrylimit">0:3 1:3 2:3 3:3</parameter>
+      <parameter name="bandwidth">1M</parameter>
+      <parameter name="frequency">2.347G</parameter>
+      <parameter name="frequencyofinterest">2.347G</parameter>
+      <parameter name="subid">1</parameter>
+      <parameter name="systemnoisefigure">4.0</parameter>
+      <parameter name="txpower">0.0</parameter>
+      <parameter name="antennagain">0.0</parameter>
+      <parameter name="antennaazimuth">0.0</parameter>
+      <parameter name="antennaelevation">0.0</parameter>
+      <parameter name="antennaprofileid">1</parameter>
+      <parameter name="antennaprofileenable">off</parameter>
+      <parameter name="defaultconnectivitymode">on</parameter>
+      <parameter name="frequencyofinterestfilterenable">on</parameter>
+      <parameter name="noiseprocessingmode">off</parameter>
+      <parameter name="pathlossmode">2ray</parameter>
+      <member index="0" type="interface">n20/eth0</member>
+      <member index="1" type="interface">n21/eth0</member>
+      <member index="2" type="interface">n22/eth0</member>
+      <member index="3" type="interface">n23/eth0</member>
+    </channel>
+  </network>
+  <network id="net1" name="net1">
+    <type>ethernet</type>
+    <alias domain="COREID">65025</alias>
+    <member type="interface">n1/eth0</member>
+    <member type="interface">n3/eth1</member>
+    <member type="channel">net1/chan0</member>
+    <channel id="net1/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n1/eth0</member>
+      <member index="1" type="interface">n3/eth1</member>
+    </channel>
+  </network>
+  <network id="net2" name="net2">
+    <type>ethernet</type>
+    <alias domain="COREID">13362</alias>
+    <member type="interface">n1/eth1</member>
+    <member type="interface">n2/eth1</member>
+    <member type="channel">net2/chan0</member>
+    <channel id="net2/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n1/eth1</member>
+      <member index="1" type="interface">n2/eth1</member>
+    </channel>
+  </network>
+  <network id="net3" name="net3">
+    <type>ethernet</type>
+    <alias domain="COREID">57270</alias>
+    <member type="interface">n19/eth1</member>
+    <member type="interface">n2/eth2</member>
+    <member type="channel">net3/chan0</member>
+    <channel id="net3/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n19/eth1</member>
+      <member index="1" type="interface">n2/eth2</member>
+    </channel>
+  </network>
+  <network id="net4" name="net4">
+    <type>ethernet</type>
+    <alias domain="COREID">64186</alias>
+    <member type="interface">n3/eth3</member>
+    <member type="interface">n11/eth1</member>
+    <member type="channel">net4/chan0</member>
+    <channel id="net4/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n3/eth3</member>
+      <member index="1" type="interface">n11/eth1</member>
+    </channel>
+  </network>
+  <network id="net5" name="net5">
+    <type>ethernet</type>
+    <alias domain="COREID">35978</alias>
+    <member type="interface">n20/eth1</member>
+    <member type="interface">n1/eth2</member>
+    <member type="channel">net5/chan0</member>
+    <channel id="net5/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n20/eth1</member>
+      <member index="1" type="interface">n1/eth2</member>
+    </channel>
+  </network>
+  <network id="net6" name="net6">
+    <type>ethernet</type>
+    <alias domain="COREID">11727</alias>
+    <member type="interface">n3/eth2</member>
+    <member type="interface">n19/eth0</member>
+    <member type="channel">net6/chan0</member>
+    <channel id="net6/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n3/eth2</member>
+      <member index="1" type="interface">n19/eth0</member>
+    </channel>
+  </network>
+  <network id="net7" name="net7">
+    <type>ethernet</type>
+    <alias domain="COREID">58482</alias>
+    <member type="interface">n19/eth2</member>
+  </network>
+  <router id="n1" name="n1">
+    <type domain="CORE">router</type>
+    <interface id="n1/eth0" name="eth0">
+      <member index="0" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:08</address>
+      <address type="IPv4">10.0.2.1/24</address>
+      <address type="IPv6">2001:2::1/64</address>
+    </interface>
+    <interface id="n1/eth1" name="eth1">
+      <member index="0" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:0a</address>
+      <address type="IPv4">10.0.3.1/24</address>
+      <address type="IPv6">2001:3::1/64</address>
+    </interface>
+    <interface id="n1/eth2" name="eth2">
+      <member index="1" type="channel">net5/chan0</member>
+      <member type="network">net5</member>
+      <address type="mac">00:00:00:aa:00:24</address>
+      <address type="IPv4">10.0.11.2/24</address>
+      <address type="IPv6">2001:11::2/64</address>
+    </interface>
+    <alias domain="COREID">1</alias>
+    <point lat="47.5755961801" lon="-122.126636617" type="gps"/>
+    <CORE:presentation icon="$CORE_DATA_DIR/icons/normal/router_red.gif"/>
+  </router>
+  <router id="n2" name="n2">
+    <type domain="CORE">router</type>
+    <interface id="n2/eth0" name="eth0">
+      <member index="0" type="channel">n5/chan0</member>
+      <member type="network">n5</member>
+      <address type="mac">00:00:00:aa:00:06</address>
+      <address type="IPv4">10.0.0.1/24</address>
+      <address type="IPv6">2001::1/64</address>
+    </interface>
+    <interface id="n2/eth1" name="eth1">
+      <member index="1" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:0b</address>
+      <address type="IPv4">10.0.3.2/24</address>
+      <address type="IPv6">2001:3::2/64</address>
+    </interface>
+    <interface id="n2/eth2" name="eth2">
+      <member index="1" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:00:12</address>
+      <address type="IPv4">10.0.5.2/24</address>
+      <address type="IPv6">2001:5::2/64</address>
+    </interface>
+    <alias domain="COREID">2</alias>
+    <point lat="47.5755523009" lon="-122.120893012" type="gps"/>
+  </router>
+  <router id="n3" name="n3">
+    <type domain="CORE">router</type>
+    <interface id="n3/eth0" name="eth0">
+      <member index="0" type="channel">n4/chan0</member>
+      <member type="network">n4</member>
+      <address type="mac">00:00:00:aa:00:07</address>
+      <address type="IPv4">10.0.1.1/24</address>
+      <address type="IPv6">2001:1::1/64</address>
+    </interface>
+    <interface id="n3/eth1" name="eth1">
+      <member index="1" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:09</address>
+      <address type="IPv4">10.0.2.2/24</address>
+      <address type="IPv6">2001:2::2/64</address>
+    </interface>
+    <interface id="n3/eth2" name="eth2">
+      <member index="0" type="channel">net6/chan0</member>
+      <member type="network">net6</member>
+      <address type="mac">00:00:00:aa:00:0f</address>
+      <address type="IPv4">10.0.4.1/24</address>
+      <address type="IPv6">2001:4::1/64</address>
+    </interface>
+    <interface id="n3/eth3" name="eth3">
+      <member index="0" type="channel">net4/chan0</member>
+      <member type="network">net4</member>
+      <address type="mac">00:00:00:aa:00:1d</address>
+      <address type="IPv4">10.0.9.1/24</address>
+      <address type="IPv6">2001:9::1/64</address>
+    </interface>
+    <alias domain="COREID">3</alias>
+    <point lat="47.5736528407" lon="-122.126668932" type="gps"/>
+    <CORE:presentation icon="$CORE_DATA_DIR/icons/normal/router_red.gif"/>
+  </router>
+  <host id="n6" name="n6">
+    <type domain="CORE">host</type>
+    <interface id="n6/eth0" name="eth0">
+      <member index="0" type="channel">n5/chan1</member>
+      <member type="network">n5</member>
+      <address type="mac">00:00:00:aa:00:0c</address>
+      <address type="IPv4">10.0.0.10/24</address>
+      <address type="IPv6">2001::10/64</address>
+    </interface>
+    <alias domain="COREID">6</alias>
+    <point lat="47.5761669806" lon="-122.116574421" type="gps"/>
+  </host>
+  <host id="n7" name="n7">
+    <type domain="CORE">host</type>
+    <interface id="n7/eth0" name="eth0">
+      <member index="0" type="channel">n5/chan2</member>
+      <member type="network">n5</member>
+      <address type="mac">00:00:00:aa:00:0d</address>
+      <address type="IPv4">10.0.0.11/24</address>
+      <address type="IPv6">2001::11/64</address>
+    </interface>
+    <alias domain="COREID">7</alias>
+    <point lat="47.5751953137" lon="-122.116590765" type="gps"/>
+  </host>
+  <host id="n8" name="n8">
+    <type domain="CORE">host</type>
+    <interface id="n8/eth0" name="eth0">
+      <member index="0" type="channel">n5/chan3</member>
+      <member type="network">n5</member>
+      <address type="mac">00:00:00:aa:00:0e</address>
+      <address type="IPv4">10.0.0.12/24</address>
+      <address type="IPv6">2001::12/64</address>
+    </interface>
+    <alias domain="COREID">8</alias>
+    <point lat="47.5742236466" lon="-122.116607108" type="gps"/>
+  </host>
+  <host id="test0" name="test0">
+    <type domain="CORE">rj45</type>
+    <interface id="test0/test0" name="test0"/>
+    <alias domain="COREID">9</alias>
+    <point lat="47.5719895168" lon="-122.120952642" type="gps"/>
+  </host>
+  <router id="n11" name="n11">
+    <type domain="CORE">mdr</type>
+    <interface id="n11/eth0" name="eth0">
+      <member index="0" type="channel">wlan15/wireless</member>
+      <member type="network">wlan15</member>
+      <address type="mac">00:00:00:aa:00:19</address>
+      <address type="IPv4">10.0.8.1/32</address>
+      <address type="IPv6">2001:8::1/128</address>
+    </interface>
+    <interface id="n11/eth1" name="eth1">
+      <member index="1" type="channel">net4/chan0</member>
+      <member type="network">net4</member>
+      <address type="mac">00:00:00:aa:00:1e</address>
+      <address type="IPv4">10.0.9.2/24</address>
+      <address type="IPv6">2001:9::2/64</address>
+    </interface>
+    <alias domain="COREID">11</alias>
+    <point lat="47.5707378303" lon="-122.126717397" type="gps"/>
+    <CORE:services name="n11">
+      <service custom="True" name="zebra" startup_idx="35">
+        <directory name="/usr/local/etc/quagga"/>
+        <directory name="/var/run/quagga"/>
+        <file name="/usr/local/etc/quagga/Quagga.conf">
+interface eth0
+  ip address 10.0.8.1/32
+  ipv6 address 2001:8::1/128
+  ipv6 ospf6 instance-id 65
+  ipv6 ospf6 hello-interval 2
+  ipv6 ospf6 dead-interval 6
+  ipv6 ospf6 retransmit-interval 5
+  ipv6 ospf6 network manet-designated-router
+  ipv6 ospf6 diffhellos
+  ipv6 ospf6 adjacencyconnectivity uniconnected
+  ipv6 ospf6 lsafullness mincostlsa
+!
+interface eth1
+  ip address 10.0.9.2/24
+  ipv6 address 2001:9::2/64
+!
+router ospf
+  router-id 10.0.8.1
+  network 10.0.8.1/32 area 0
+  network 10.0.9.0/24 area 0
+  redistribute connected metric-type 1
+  redistribute ospf6 metric-type 1
+!
+router ospf6
+  router-id 10.0.8.1
+  interface eth0 area 0.0.0.0
+  redistribute connected
+  redistribute ospf
+!
+</file>
+        <file name="quaggaboot.sh"/>
+        <file name="/usr/local/etc/quagga/vtysh.conf"/>
+        <command type="start">sh quaggaboot.sh zebra</command>
+        <command type="stop">killall zebra</command>
+        <command type="validate">pidof zebra</command>
+      </service>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3MDR" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+  </router>
+  <router id="n12" name="n12">
+    <type domain="CORE">mdr</type>
+    <interface id="n12/eth0" name="eth0">
+      <member index="1" type="channel">wlan15/wireless</member>
+      <member type="network">wlan15</member>
+      <address type="mac">00:00:00:aa:00:1a</address>
+      <address type="IPv4">10.0.8.2/32</address>
+      <address type="IPv6">2001:8::2/128</address>
+    </interface>
+    <alias domain="COREID">12</alias>
+    <point lat="47.5684377246" lon="-122.122447966" type="gps"/>
+  </router>
+  <router id="n13" name="n13">
+    <type domain="CORE">mdr</type>
+    <interface id="n13/eth0" name="eth0">
+      <member index="2" type="channel">wlan15/wireless</member>
+      <member type="network">wlan15</member>
+      <address type="mac">00:00:00:aa:00:1b</address>
+      <address type="IPv4">10.0.8.3/32</address>
+      <address type="IPv6">2001:8::3/128</address>
+    </interface>
+    <alias domain="COREID">13</alias>
+    <point lat="47.570049846" lon="-122.121463746" type="gps"/>
+  </router>
+  <router id="n14" name="n14">
+    <type domain="CORE">mdr</type>
+    <interface id="n14/eth0" name="eth0">
+      <member index="3" type="channel">wlan15/wireless</member>
+      <member type="network">wlan15</member>
+      <address type="mac">00:00:00:aa:00:1c</address>
+      <address type="IPv4">10.0.8.4/32</address>
+      <address type="IPv6">2001:8::4/128</address>
+    </interface>
+    <alias domain="COREID">14</alias>
+    <point lat="47.5684046885" lon="-122.118140853" type="gps"/>
+  </router>
+  <host id="n16" name="n16">
+    <type domain="CORE">PC</type>
+    <interface id="n16/eth0" name="eth0">
+      <member index="0" type="channel">n4/chan1</member>
+      <member type="network">n4</member>
+      <address type="mac">00:00:00:aa:00:13</address>
+      <address type="IPv4">10.0.1.20/24</address>
+      <address type="IPv6">2001:1::20/64</address>
+    </interface>
+    <alias domain="COREID">16</alias>
+    <point lat="47.5730341512" lon="-122.130508591" type="gps"/>
+  </host>
+  <host id="n17" name="n17">
+    <type domain="CORE">PC</type>
+    <interface id="n17/eth0" name="eth0">
+      <member index="0" type="channel">n4/chan2</member>
+      <member type="network">n4</member>
+      <address type="mac">00:00:00:aa:00:14</address>
+      <address type="IPv4">10.0.1.21/24</address>
+      <address type="IPv6">2001:1::21/64</address>
+    </interface>
+    <alias domain="COREID">17</alias>
+    <point lat="47.5710908089" lon="-122.13054076" type="gps"/>
+  </host>
+  <host id="n18" name="n18">
+    <type domain="CORE">PC</type>
+    <interface id="n18/eth0" name="eth0">
+      <member index="0" type="channel">n4/chan3</member>
+      <member type="network">n4</member>
+      <address type="mac">00:00:00:aa:00:15</address>
+      <address type="IPv4">10.0.1.22/24</address>
+      <address type="IPv6">2001:1::22/64</address>
+    </interface>
+    <alias domain="COREID">18</alias>
+    <point lat="47.5720624801" lon="-122.130524676" type="gps"/>
+  </host>
+  <router id="n19" name="n19">
+    <type domain="CORE">router</type>
+    <interface id="n19/eth0" name="eth0">
+      <member index="1" type="channel">net6/chan0</member>
+      <member type="network">net6</member>
+      <address type="mac">00:00:00:aa:00:10</address>
+      <address type="IPv4">10.0.4.2/24</address>
+      <address type="IPv6">2001:4::2/64</address>
+    </interface>
+    <interface id="n19/eth1" name="eth1">
+      <member index="0" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:00:11</address>
+      <address type="IPv4">10.0.5.1/24</address>
+      <address type="IPv6">2001:5::1/64</address>
+    </interface>
+    <interface id="n19/eth2" name="eth2">
+      <address type="mac">00:00:00:aa:00:16</address>
+      <address type="IPv4">10.0.6.1/24</address>
+      <address type="IPv6">2001:6::1/64</address>
+    </interface>
+    <interface id="n19/eth3" name="eth3">
+      <member index="0" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:00:17</address>
+      <address type="IPv4">10.0.7.1/24</address>
+      <address type="IPv6">2001:7::1/64</address>
+    </interface>
+    <alias domain="COREID">19</alias>
+    <point lat="47.5736089644" lon="-122.120925539" type="gps"/>
+  </router>
+  <router id="n20" name="n20">
+    <type domain="CORE">mdr</type>
+    <interface id="n20/eth0" name="eth0">
+      <member index="0" type="channel">wlan24/wireless</member>
+      <member type="network">wlan24</member>
+      <address type="mac">00:00:00:aa:00:1f</address>
+      <address type="IPv4">10.0.10.1/32</address>
+      <address type="IPv6">2001:10::1/128</address>
+    </interface>
+    <interface id="n20/eth1" name="eth1">
+      <member index="0" type="channel">net5/chan0</member>
+      <member type="network">net5</member>
+      <address type="mac">00:00:00:aa:00:23</address>
+      <address type="IPv4">10.0.11.1/24</address>
+      <address type="IPv6">2001:11::1/64</address>
+    </interface>
+    <alias domain="COREID">20</alias>
+    <point lat="47.5768917394" lon="-122.126615072" type="gps"/>
+    <CORE:services name="n20">
+      <service custom="True" name="zebra" startup_idx="35">
+        <directory name="/usr/local/etc/quagga"/>
+        <directory name="/var/run/quagga"/>
+        <file name="/usr/local/etc/quagga/Quagga.conf">
+interface eth0
+  ip address 10.0.10.1/32
+  ipv6 address 2001:10::1/128
+  ipv6 ospf6 instance-id 65
+  ipv6 ospf6 hello-interval 2
+  ipv6 ospf6 dead-interval 6
+  ipv6 ospf6 retransmit-interval 5
+  ipv6 ospf6 network manet-designated-router
+  ipv6 ospf6 diffhellos
+  ipv6 ospf6 adjacencyconnectivity uniconnected
+  ipv6 ospf6 lsafullness mincostlsa
+!
+interface eth1
+  ip address 10.0.11.1/24
+  ipv6 address 2001:11::1/64
+!
+router ospf
+  router-id 10.0.10.1
+  network 10.0.10.1/32 area 0
+  network 10.0.11.0/24 area 0
+  redistribute connected metric-type 1
+  redistribute ospf6 metric-type 1
+!
+router ospf6
+  router-id 10.0.10.1
+  interface eth0 area 0.0.0.0
+  redistribute connected
+  redistribute ospf
+!
+</file>
+        <file name="quaggaboot.sh"/>
+        <file name="/usr/local/etc/quagga/vtysh.conf"/>
+        <command type="start">sh quaggaboot.sh zebra</command>
+        <command type="stop">killall zebra</command>
+        <command type="validate">pidof zebra</command>
+      </service>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3MDR" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+  </router>
+  <router id="n21" name="n21">
+    <type domain="CORE">mdr</type>
+    <interface id="n21/eth0" name="eth0">
+      <member index="1" type="channel">wlan24/wireless</member>
+      <member type="network">wlan24</member>
+      <address type="mac">00:00:00:aa:00:20</address>
+      <address type="IPv4">10.0.10.2/32</address>
+      <address type="IPv6">2001:10::2/128</address>
+    </interface>
+    <alias domain="COREID">21</alias>
+    <point lat="47.578518474" lon="-122.12754546" type="gps"/>
+  </router>
+  <router id="n22" name="n22">
+    <type domain="CORE">mdr</type>
+    <interface id="n22/eth0" name="eth0">
+      <member index="2" type="channel">wlan24/wireless</member>
+      <member type="network">wlan24</member>
+      <address type="mac">00:00:00:aa:00:21</address>
+      <address type="IPv4">10.0.10.3/32</address>
+      <address type="IPv6">2001:10::3/128</address>
+    </interface>
+    <alias domain="COREID">22</alias>
+    <point lat="47.5784783022" lon="-122.122280194" type="gps"/>
+  </router>
+  <router id="n23" name="n23">
+    <type domain="CORE">mdr</type>
+    <interface id="n23/eth0" name="eth0">
+      <member index="3" type="channel">wlan24/wireless</member>
+      <member type="network">wlan24</member>
+      <address type="mac">00:00:00:aa:00:22</address>
+      <address type="IPv4">10.0.10.4/32</address>
+      <address type="IPv6">2001:10::4/128</address>
+    </interface>
+    <alias domain="COREID">23</alias>
+    <point lat="47.5769135721" lon="-122.12948695" type="gps"/>
+  </router>
+  <host id="n26" name="n26">
+    <type domain="CORE">PC</type>
+    <interface id="n26/eth0" name="eth0">
+      <member index="0" type="channel">n5/chan5</member>
+      <member type="network">n5</member>
+      <address type="mac">00:00:00:aa:00:25</address>
+      <address type="IPv4">10.0.0.20/24</address>
+      <address type="IPv6">2001::20/64</address>
+    </interface>
+    <alias domain="COREID">26</alias>
+    <point lat="47.5771496987" lon="-122.117994017" type="gps"/>
+  </host>
+  <CORE:defaultservices>
+    <device type="mdr">
+      <service name="zebra"/>
+      <service name="OSPFv3MDR"/>
+      <service name="vtysh"/>
+      <service name="IPForward"/>
+    </device>
+    <device type="router">
+      <service name="zebra"/>
+      <service name="OSPFv2"/>
+      <service name="OSPFv3"/>
+      <service name="vtysh"/>
+      <service name="IPForward"/>
+    </device>
+    <device type="host">
+      <service name="DefaultRoute"/>
+      <service name="SSH"/>
+    </device>
+    <device type="PC">
+      <service name="DefaultRoute"/>
+    </device>
+  </CORE:defaultservices>
+  <CORE:sessionconfig>
+    <origin alt="150.0" lat="47.5791667" lon="-122.132322" scale100="150.0"/>
+    <options>
+      <parameter name="enablesdt">1</parameter>
+    </options>
+    <metadata>
+      <parameter name="global_options">interface_names=no ip_addresses=yes ipv6_addresses=yes node_labels=yes link_labels=yes show_api=no background_images=no annotations=yes grid=yes traffic_start=0</parameter>
+      <parameter name="canvas c1">{name {Canvas1}} {refpt {0 0 47.5791667 -122.132322 150}} {scale {150.0}} {size {1000 1000}}</parameter>
+      <parameter name="comments">Kitchen Sink
+============
+
+Contains every type of node available in CORE, except for the Xen and physical (prouter)
+machine types, and nodes distributed on other emulation servers.
+
+To get the RJ45 node to work, a test0 interface should first be created like this:
+    sudo ip link add name test0 type veth peer name test0.1
+
+wlan15 uses the basic range model, while wlan24 uses EMANE 802.11
+
+gateway nodes n11 and n20 are customized to redistribute routing between OSPFv2 and
+OSPFv3 MDR (the MANET networks)</parameter>
+      <parameter name="annotation a5">{iconcoords {648.0 72.0}} {type text} {label {see scenario comments}} {labelcolor black} {fontfamily {FreeSans}} {fontsize {12}} {canvas c1}</parameter>
+      <parameter name="annotation a4">{iconcoords {600.0 48.0}} {type text} {label {Kitchen Sink Scenario}} {labelcolor black} {fontfamily {FreeSans}} {fontsize {16}} {effects {bold}} {canvas c1}</parameter>
+      <parameter name="annotation a3">{iconcoords {200 218 655 463}} {type rectangle} {label {}} {labelcolor black} {fontfamily {Arial}} {fontsize {12}} {color #f4f1f0} {width 0} {border black} {rad 0} {canvas c1}</parameter>
+      <parameter name="annotation a2">{iconcoords {642 189 821 404}} {type rectangle} {label {}} {labelcolor black} {fontfamily {Arial}} {fontsize {12}} {color #e6f4f4} {width 0} {border black} {rad 0} {canvas c1}</parameter>
+      <parameter name="annotation a1">{iconcoords {45.0 431.0 220.0 642.0}} {type rectangle} {label {}} {labelcolor black} {fontfamily {Arial}} {fontsize {12}} {color #e6f4f4} {width 0} {border black} {rad 0} {canvas c1}</parameter>
+    </metadata>
+  </CORE:sessionconfig>
+</scenario>
