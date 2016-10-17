@@ -14,15 +14,8 @@
 
 #include "ns3/netanim-module.h"
 
-//#include <string>
-//#include <iostream>
-//#include <sstream>
-//#include <fstream>
-//#include <sys/stat.h>
 #include <regex>
 
-//#include "ns3/imnHelper.h"
-//#include "ns3/xmlGenerator.h"
 #include "ns3/LatLong-UTMconversion.h"
 
 #include <boost/optional/optional.hpp>
@@ -47,6 +40,9 @@ using boost::property_tree::ptree;
 using boost::optional;
 
 using namespace ns3;
+
+NS_LOG_COMPONENT_DEFINE ("CORE_to_NS3_scenario");
+
 // globals for position conversion
 static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
 static double x = 0.0;
@@ -140,6 +136,7 @@ void getAddresses(ptree pt, string sourceNode, string peerNode){
 }
 
 void assignDeviceAddress(const Ptr<NetDevice> device){
+  NS_LOG_INFO ("Assign IP Addresses.");
   Ptr<Node> node = device->GetNode ();
   int32_t deviceInterface;
   if(mac_addr.compare("skip") != 0){
@@ -215,12 +212,17 @@ void assignDeviceAddress(const Ptr<NetDevice> device){
 int main (int argc, char *argv[]) {
   Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
 
+  // The below value configures the default behavior of global routing.
+  // By default, it is disabled.  To respond to interface events, set to true
+  Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
+
   // config locals
   double duration = 10.0;
   regex cartesian("[0-9]+");
   string peer, peer2, type;
   string topo_name = "",
-         traceFile = "/dev/null";
+         ns2_mobility = "/dev/null",
+         trace_prefix = "core2ns3_Logs/";
 
   // simulation locals
   NodeContainer nodes;
@@ -229,9 +231,9 @@ int main (int argc, char *argv[]) {
   // read command-line parameters
   CommandLine cmd;
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
-  cmd.AddValue("traceFile","Ns2 movement trace file", traceFile);
+  cmd.AddValue("ns2","Ns2 mobility script file", ns2_mobility);
   cmd.AddValue("duration","Duration of Simulation",duration);
-  //cmd.AddValue ("logFile", "Log file", logFile);
+  cmd.AddValue ("traceDir", "Directory in which to store trace files", trace_prefix);
   cmd.Parse (argc, argv);
 
   // Check command line arguments
@@ -239,19 +241,23 @@ int main (int argc, char *argv[]) {
     std::cout << "Usage of " << argv[0] << " :\n\n"
     "./waf --run \"scratch/xml_to_ns3_scenario"
     " --topo=imn2ns3/imn_sample_files/sample1.xml"
-    " --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements"
+    " --Ns2=imn2ns3/imn_sample_files/sample1.ns_movements"
+    " --traceDir=core2ns3_Logs/"
     //" --logFile=ns2-mob.log"
     " --duration=27.0\" \n\n";
 
     return 0;
   }
 
+  AsciiTraceHelper ascii;
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (trace_prefix + "core-to-ns3-scenario.tr");
+
   //holds entire list of nodes and list links containers  
   ptree pt;
   read_xml(topo_name, pt); 
 
   // Create Ns2MobilityHelper with the specified trace log file as parameter
-  Ns2MobilityHelper ns2 = Ns2MobilityHelper (traceFile);
+  Ns2MobilityHelper ns2 = Ns2MobilityHelper (ns2_mobility);
 
   // open log file for output
   //ofstream os;
@@ -299,6 +305,7 @@ int main (int argc, char *argv[]) {
 //=================P2P===============
 //===================================
     if(type.compare("p2p") == 0){
+      NS_LOG_INFO ("Create Point to Point channel.");
       NodeContainer p2pNodes;
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
@@ -308,6 +315,12 @@ int main (int argc, char *argv[]) {
       bool fst = true;
       int band = 0;
       int dela = 0;
+
+      optional<const ptree&> channel_exists = child.get_child_optional("channel");
+
+      if(!channel_exists){
+        continue;
+      }
 
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "member" && p0.second.get<string>("<xmlattr>.type") == "interface"){
@@ -394,6 +407,9 @@ int main (int argc, char *argv[]) {
       device = p2pDevices.Get (1);
       assignDeviceAddress(device);
 
+      p2p.EnableAsciiAll (stream);
+      //internetP2P.EnableAsciiIpv4All (stream);
+      p2p.EnablePcapAll (trace_prefix + "core-to-ns3-scenario");
 /*     //
      // Create a BulkSendApplication and install it on peer2
      //
@@ -442,6 +458,7 @@ int main (int argc, char *argv[]) {
 //=================Wifi===============
 //====================================
     if(type.compare("wireless") == 0){
+      NS_LOG_INFO ("Create Wireless channel.");
       int j = 0;
       string ipv4_addr, ipv6_addr, mac_addr;
       peer = nod.second.get<string>("<xmlattr>.name");
@@ -506,6 +523,10 @@ int main (int argc, char *argv[]) {
           assignDeviceAddress(device);
         }
       }
+      wifiPhy.EnableAsciiAll(stream);
+      //wifiInternet.EnableAsciiIpv4All (stream);
+      wifiPhy.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+
 /*    //
     // Create OnOff applications to send UDP to the bridge, on the first pair.
     //
@@ -544,6 +565,7 @@ int main (int argc, char *argv[]) {
 //=================Hub/Switch===============
 //==========================================
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
+      NS_LOG_INFO ("Create CSMA channel.");
       int j = 0;
       string ipv4_addr, ipv6_addr, mac_addr;
       peer = nod.second.get<string>("<xmlattr>.name");
@@ -593,6 +615,8 @@ int main (int argc, char *argv[]) {
               }
             }
           }
+
+  NS_ABORT_MSG_IF (peer2.compare(peer) == 0, "CSMA builder : Bridge to bridge broadcast storm detected.");
 
           bool p2Nflag = false;
           for(int i = 0; i < nNodes; i++){
@@ -653,8 +677,13 @@ int main (int argc, char *argv[]) {
           Ptr<NetDevice> device = csmaDevices.Get (j++);
           assignDeviceAddress(device);
 
+          csma.EnableAsciiAll(stream);
+          csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+
           cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
         }
+
+      //internetCsma.EnableAsciiIpv4All(stream);
       }
 /*      //
       // Create OnOff applications to send UDP to the bridge, on the first pair.
@@ -745,7 +774,7 @@ int main (int argc, char *argv[]) {
     }
 
     int n = Names::Find<Node>(nodeName)->GetId();
-    cout << type << " " << nodeName << " with id " << n;
+    cout << nodeName << " with id " << n << " (rouge)";
 
     getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
                   nod.second.get<double>("point.<xmlattr>.lon"), x, y);
@@ -771,6 +800,12 @@ int main (int argc, char *argv[]) {
   // Turn on global static routing so we can actually be routed across the network.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
+  // Trace routing tables 
+  Ipv4GlobalRoutingHelper g;
+  Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (trace_prefix + "core2ns3-global-routing.routes", std::ios::out);
+  g.PrintRoutingTableAllAt (Seconds (duration), routingStream);
+
+
   // Configure callback for logging
 //  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
 //                   MakeBoundCallback (&CourseChange, &os));
@@ -783,6 +818,7 @@ int main (int argc, char *argv[]) {
   //ndn::AppDelayTracer::InstallAll ((trace_prefix + "/app-delays-trace.txt").c_str());
   //wifiPhy.EnablePcap ((trace_prefix + "/wifi.pcap").c_str(), wifi_devices);
 
+  NS_LOG_INFO ("Run Simulation.");
   Simulator::Run ();
   Simulator::Destroy ();
   
