@@ -11,6 +11,7 @@
 #include "ns3/traffic-control-helper.h"
 #include "ns3/traffic-control-layer.h"
 #include "ns3/ns2-mobility-helper.h"
+#include "ns3/flow-monitor-helper.h"
 
 #include "ns3/netanim-module.h"
 
@@ -206,9 +207,39 @@ void assignDeviceAddress(const Ptr<NetDevice> device){
   ipv6_addr = "skip";
 }
 
+
+void createApp(ptree pt, double duration){
+  NS_LOG_INFO ("Create Applications.");
 //
+// Create one udpServer applications on node one.
+//
+  uint16_t port = 4000;
+  UdpServerHelper server (port);
+  ApplicationContainer apps = server.Install (NodeContainer("n6"));
+  apps.Start (Seconds (1.0));
+  apps.Stop (Seconds (duration));
+
+//
+// Create one UdpClient application to send UDP datagrams from n17 to n6.
+//
+  uint32_t MaxPacketSize = 1024;  // Back off 20 (IP) + 8 (UDP) bytes from MTU
+  Time interPacketInterval = Seconds (0.05);
+  uint32_t maxPacketCount = 320;
+  UdpClientHelper client (Ipv4Address("10.0.0.10"), port);
+  client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("Interval", TimeValue (interPacketInterval));
+  client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+  apps = client.Install (NodeContainer("n17"));
+  apps.Start (Seconds (2.0));
+  apps.Stop (Seconds (duration));
+
+
+
+
+}
+/////////////////////////////////////////////////////////
 // Parse CORE XML and create an ns3 scenario file from it
-//
+/////////////////////////////////////////////////////////
 int main (int argc, char *argv[]) {
   Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
 
@@ -732,7 +763,7 @@ int main (int argc, char *argv[]) {
 ////////////////////////////////
 
 
-
+  createApp(pt, duration);
 
 
 
@@ -804,6 +835,10 @@ int main (int argc, char *argv[]) {
   Ipv4GlobalRoutingHelper g;
   Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (trace_prefix + "core2ns3-global-routing.routes", std::ios::out);
   g.PrintRoutingTableAllAt (Seconds (duration), routingStream);
+
+  // Flow monitor
+  FlowMonitorHelper flowHelper;
+  flowHelper.InstallAll ();
 
 
   // Configure callback for logging
