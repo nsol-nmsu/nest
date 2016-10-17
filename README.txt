@@ -64,7 +64,7 @@ or
 
 or
 
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/imn_sample_files/WideAreaNetwork3.xml --trace=core2ns3_Logs/ --duration=30.0"
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/imn_sample_files/WideAreaNetwork3.xml --traceDir=core2ns3_Logs/ --duration=30.0"
 
 
 //***************************BUGS/ERRORS/TO-DO******************************//
