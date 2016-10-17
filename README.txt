@@ -43,6 +43,7 @@ $ ./NetAnim
   typing 'make'           Copies files to their destination, and runs ./waf to
                           compile/link NS3 files.
   typing 'make clean'     Removes <some of> the added files.
+  typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
 **Current developed XML Schema can be viewed here:**
 https://docs.google.com/drawings/d/19wQD3N5gthTcy9LZ4ggZMSBA0dCI5UfvjWj8bXUmjLs/edit?usp=sharing
@@ -55,12 +56,15 @@ https://docs.google.com/drawings/d/19wQD3N5gthTcy9LZ4ggZMSBA0dCI5UfvjWj8bXUmjLs/
 
 or
 
-./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample4-nrlsmf.imn --traceFile=imn2ns3/imn_sample_files/sample4.ns_movements --duration=250.0"
+./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample4-nrlsmf.imn --ns2=imn2ns3/imn_sample_files/sample4.ns_movements --duration=250.0"
 
 or
 
-./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample1.xml --traceFile=imn2ns3/imn_sample_files/sample1.ns_movements --duration=27.0"
+./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample1.xml --ns2=imn2ns3/imn_sample_files/sample1.ns_movements --duration=27.0"
 
+or
+
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/imn_sample_files/WideAreaNetwork3.xml --trace=core2ns3_Logs/ --duration=30.0"
 
 
 //***************************BUGS/ERRORS/TO-DO******************************//
