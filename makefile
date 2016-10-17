@@ -23,6 +23,7 @@ copy: makeDir
 makeDir:
 	mkdir -vp ../src/topology-read/imn_reader
 	mkdir -vp ../src/topology-read/UTM_conversion
+	mkdir -vp ../core2ns3_Logs
 
 clean:
 	rm -f ../scratch/imn_to_ns3_scenario.cc
@@ -34,3 +35,5 @@ clean:
 	rm -rf ../src/topology-read/wscript
 	mv ../src/topology-read/wscript.old ../src/topology-read/wscript
 
+cleanLogs:
+	rm -rf ../core2ns3_Logs/*
