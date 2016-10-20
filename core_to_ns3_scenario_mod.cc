@@ -1,34 +1,7 @@
 
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/wifi-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/csma-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/bridge-module.h"
-#include "ns3/traffic-control-helper.h"
-#include "ns3/traffic-control-layer.h"
-#include "ns3/ns2-mobility-helper.h"
-#include "ns3/flow-monitor-helper.h"
-
-#include "ns3/netanim-module.h"
-
-#include <regex>
-#include <sys/stat.h>
-
-#include "ns3/LatLong-UTMconversion.h"
-
-#include <boost/optional/optional.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/foreach.hpp>
-#include <exception>
-#include <set>
-
+#include "ns3/core-to-ns3-helper.h"
 //things from namespace std
-
+/*
 using std::cout;
 using std::endl;
 using std::cerr;
@@ -42,293 +15,10 @@ using boost::property_tree::ptree;
 using boost::optional;
 
 using namespace ns3;
-
+*/
 NS_LOG_COMPONENT_DEFINE ("CORE_to_NS3_scenario");
 
-// globals for position conversion
-static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
-static double x = 0.0;
-static double y = 0.0;
-static double refX = 0.0; // in orginal calculations but uneeded
-static double refY = 0.0; // in orginal calculations but uneeded
-static int refZoneNum;
-static char refUTMZone;
 
-// globals for splitting strings
-regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
-regex addrIpv6("[/]{1}[0-9]+");
-regex name("[a-zA-Z0-9]+");
-smatch r_match;
-
-// globals for get/set addresses
-static string mac_addr  = "skip";// some may not exists, skip them
-static string ipv4_addr = "skip";
-static string ipv6_addr = "skip";
-
-enum AppType{
-  UDP,
-  TCP,
-  BURST,
-  BULK,
-  SINK,
-  DEFUALT
-};
-
-// convert latitude/longitude location data to y/x Cartasian coordinates
-void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
-  char UTMZone;
-  int zoneNum;
-  double Locx, meterX;
-  double Locy, meterY;
-  // convert latitude/longitude location data to UTM meter coordinates
-  LLtoUTM(23, Lat, Lon, Locy, Locx, UTMZone, zoneNum);
-
-  if(refZoneNum != zoneNum){
-    double tempX,tempY, xShift, yShift;
-    double lon2 = refLon + 6 * (zoneNum - refZoneNum);
-    double lat2 = refLat + (double)(UTMZone - refUTMZone);
-    char tempC;
-    int tempI;
-
-    // get easting shift to get position x in meters
-    LLtoUTM(23, refLat, lon2, tempY, tempX, tempC, tempI);
-    xShift = haversine(refLon, refLat, lon2, refLat) - tempX;
-    meterX = Locx + xShift;
-
-    // get northing shift to get position y in meters
-    LLtoUTM(23, lat2, refLon, tempY, tempX, tempC, tempI);
-    yShift = -(haversine(refLon, refLat, refLon, lat2) + tempY);
-    meterY = Locy + yShift;
-
-    // convert meters to pixels to match CORE canvas coordinates
-    rx = (100.0 * (meterX / refScale)) + refX;
-    ry = -((100.0 * (meterY / refScale)) + refY);
-  }
-  else{
-    meterX = Locx - refLocx;
-    meterY = Locy - refLocy;
-
-    // convert meters to pixels to match CORE canvas coordinates
-    rx = (100.0 * (meterX / refScale)) + refX;
-    ry = -((100.0 * (meterY / refScale)) + refY);
-  }
-}
-
-void getAddresses(ptree pt, string sourceNode, string peerNode){
-  BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-    if(pl1.first != "host" && pl1.first != "router"){
-      continue;
-    }
-    if(pl1.second.get<string>("<xmlattr>.name") == sourceNode){
-      getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                    pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
-      // set node coordinates while we're here
-      AnimationInterface::SetConstantPosition(Names::Find<Node>(sourceNode), x, y);
-
-      BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-        if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == peerNode){
-          BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-            if(pl3.first == "address"){
-              if(pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                ipv4_addr = pl3.second.data();
-              }
-              else if(pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                ipv6_addr = pl3.second.data();
-              }
-              else if(pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                mac_addr = pl3.second.data();
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-void assignDeviceAddress(string type, const Ptr<NetDevice> device){
-  NS_LOG_INFO ("Assign IP Addresses.");
-  Ptr<Node> node = device->GetNode ();
-  int32_t deviceInterface;
-  if(mac_addr.compare("skip") != 0){
-    device->SetAddress(Mac48Address(mac_addr.c_str()));
-  }
-
-  if(ipv4_addr.compare("skip") != 0){
-    regex_search(ipv4_addr, r_match, addr);
-    string tempIpv4 = r_match.str();
-    string tempMask = r_match.suffix().str();
-
-    // NS3 Routing has a bug with netMask 32 in wireless networks
-    // This is a temporary work around
-    if(type.compare("wireless") == 0 && tempMask.compare("/32") == 0){
-      tempMask = "/24";
-    }
-
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-    deviceInterface = ipv4->GetInterfaceForDevice (device);
-    if (deviceInterface == -1)
-      {
-      deviceInterface = ipv4->AddInterface (device);
-      }
-    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv4AddressHelper::Assign(): "
-                   "Interface index not found");
-
-    Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-    ipv4->AddAddress (deviceInterface, ipv4Addr);
-    ipv4->SetMetric (deviceInterface, 1);
-    ipv4->SetUp (deviceInterface);
-}
-
-  if(ipv6_addr.compare("skip") != 0){
-    regex_search(ipv6_addr, r_match, addrIpv6);
-    string tempIpv6 = r_match.prefix().str();
-    string tempIpv6Mask = r_match.str();
-
-    if(type.compare("wireless") == 0 && tempIpv6Mask.compare("/128") == 0){
-      tempIpv6Mask = "/64";
-    }
-
-    Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
-    deviceInterface = ipv6->GetInterfaceForDevice (device);
-    if (deviceInterface == -1)
-      {
-      deviceInterface = ipv6->AddInterface (device);
-      }
-    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                   "Interface index not found");
-
-    Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
-    ipv6->SetMetric (deviceInterface, 1);
-    ipv6->AddAddress (deviceInterface, ipv6Addr);
-    ipv6->SetUp (deviceInterface);
-}
-
-  Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
-  if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-     {
-     //NS_LOG_LOGIC ("Installing default traffic control configuration");
-     TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-     tcHelper.Install (device);
-     }
-
-  mac_addr  = "skip";
-  ipv4_addr = "skip";
-  ipv6_addr = "skip";
-}
-
-void udpDSTApp(ptree pt, double d){
-//
-// Create one udpServer applications on node one.
-//
-  uint16_t port = 4000;
-  UdpServerHelper server (port);
-  ApplicationContainer apps = server.Install (NodeContainer("n6"));
-  apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (d));
-
-//
-// Create one UdpClient application to send UDP datagrams from n17 to n6.
-//
-  uint32_t MaxPacketSize = 1024;  // Back off 20 (IP) + 8 (UDP) bytes from MTU
-  Time interPacketInterval = Seconds (0.05);
-  uint32_t maxPacketCount = 320;
-  UdpClientHelper client (Ipv4Address("10.0.0.10"), port);
-  client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
-  client.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
-  apps = client.Install (NodeContainer("n17"));
-  apps.Start (Seconds (2.0));
-  apps.Stop (Seconds (d));
-
-}
-
-void tcpDSTApp(ptree pt, double d){
-  ApplicationContainer apps;
-  OnOffHelper onoff = OnOffHelper ("ns3::TcpSocketFactory",
-                                   InetSocketAddress (Ipv4Address ("10.2.0.2"), 2000));
-  onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-
-  onoff.SetAttribute ("Remote", AddressValue (InetSocketAddress (Ipv4Address ("10.0.0.10"), 2000)));
-  onoff.SetAttribute ("PacketSize", StringValue ("1024"));
-  onoff.SetAttribute ("DataRate", StringValue ("1Mbps"));
-  onoff.SetAttribute ("StartTime", TimeValue (Seconds (1)));
-  apps = onoff.Install (NodeContainer("n6"));
-
-  PacketSinkHelper sink = PacketSinkHelper ("ns3::TcpSocketFactory",
-                                            InetSocketAddress (Ipv4Address::GetAny (), 2000));
-  apps = sink.Install (NodeContainer("n17"));
-  apps.Start (Seconds (d));
-
-}
-
-void sinkDSTApp(ptree pt, double d){
-  uint16_t port = 50000;
-  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
-  PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
-  ApplicationContainer sinkApp = sinkHelper.Install (NodeContainer("n6"));
-  sinkApp.Start (Seconds (1.0));
-  sinkApp.Stop (Seconds (d));
-
-  Address remoteAddress (InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
-  OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
-  clientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  clientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  ApplicationContainer clientApp = clientHelper.Install (NodeContainer("n17"));
-  clientApp.Start (Seconds (1.0)); /* delay startup depending on node number */
-  clientApp.Stop (Seconds (d));
-
-//  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Names::Find<Node>("n17"), TcpSocketFactory::GetTypeId ());
-
-//  Ptr<MyApp> app = CreateObject<MyApp> ();
-//  app->Setup (ns3TcpSocket, sinkAddress, 1460, 1000000, DataRate ("100Mbps"));
-//  Names::Find<Node>("n17")->AddApplication (app);
-//  app->SetStartTime (Seconds (1.));
-//  app->SetStopTime (Seconds (d));
-}
-
-void burstApp(ptree pt, double d){
-
-}
-
-void bulkApp(ptree pt, double d){
-//
-// Create a BulkSendApplication and install it on node 0
-//
-  uint16_t port = 9;  // well-known echo port number
-
-
-  BulkSendHelper source ("ns3::TcpSocketFactory",
-                         InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
-  // Set the amount of data to send in bytes.  Zero is unlimited.
-  source.SetAttribute ("MaxBytes", UintegerValue (1024));
-  ApplicationContainer sourceApps = source.Install (Names::Find<Node>("n6"));
-  sourceApps.Start (Seconds (1.0));
-  sourceApps.Stop (Seconds (d));
-
-//
-// Create a PacketSinkApplication and install it on node 1
-//
-  PacketSinkHelper sink ("ns3::TcpSocketFactory",
-                         InetSocketAddress (Ipv4Address::GetAny (), port));
-  ApplicationContainer sinkApps = sink.Install (Names::Find<Node>("n17"));
-  sinkApps.Start (Seconds (1.0));
-  sinkApps.Stop (Seconds (d));
-
-}
-
-void createApp(AppType type, ptree pt, double duration){
-  NS_LOG_INFO ("Create Applications.");
-  switch(type){
-    case UDP   : udpDSTApp(pt, duration); break;
-    case TCP   : tcpDSTApp(pt, duration); break;
-    case SINK  : sinkDSTApp(pt, duration); break;
-    case BURST : burstApp(pt, duration); break;
-    case BULK  : bulkApp(pt, duration); break;
-    default    : cout << "App type not yet supported\n";
-  }
-}
 /////////////////////////////////////////////////////////
 // Parse CORE XML and create an ns3 scenario file from it
 /////////////////////////////////////////////////////////
@@ -548,48 +238,7 @@ int main (int argc, char *argv[]) {
       p2p.EnableAsciiAll (stream);
       //internetP2P.EnableAsciiIpv4All (stream);
       p2p.EnablePcapAll (trace_prefix + "core-to-ns3-scenario");
-/*     //
-     // Create a BulkSendApplication and install it on peer2
-     //
-      uint16_t port = 9;  // well-known echo port number
-      deviceInterface = ipv4->GetInterfaceForDevice (device);
-      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
 
-      BulkSendHelper source ("ns3::TcpSocketFactory",
-                         InetSocketAddress (addri, port));
-      // Set the amount of data to send in bytes.  Zero is unlimited.
-      source.SetAttribute ("MaxBytes", UintegerValue (2000000));
-      ApplicationContainer sourceApps = source.Install (peer2);
-      sourceApps.Start (Seconds (1.0));
-      sourceApps.Stop (Seconds (duration / 10));
-
-      //
-      // Create a PacketSinkApplication and install it on peer
-      //
-      PacketSinkHelper sink ("ns3::TcpSocketFactory",
-                         InetSocketAddress (Ipv4Address::GetAny (), port));
-      ApplicationContainer sinkApps = sink.Install (peer);
-      sinkApps.Start (Seconds (2.0));
-      sinkApps.Stop (Seconds (duration / 10));
-*/
-/*
-      UdpEchoServerHelper echoServer (9);
-
-      ApplicationContainer serverApps = echoServer.Install (peer2);
-      serverApps.Start (Seconds (1.0));
-      serverApps.Stop (Seconds (duration / 10));
-
-      deviceInterface = ipv4->GetInterfaceForDevice (device);
-      Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
-      UdpEchoClientHelper echoClient (addri, 9);
-      echoClient.SetAttribute ("MaxPackets", UintegerValue (1));
-      echoClient.SetAttribute ("Interval", TimeValue (Seconds (1.0)));
-      echoClient.SetAttribute ("PacketSize", UintegerValue (1024));
-
-      ApplicationContainer clientApps = echoClient.Install (peer);
-      clientApps.Start (Seconds (2.0));
-      clientApps.Stop (Seconds (duration / 10));
-*/
       cout << "\nCreating point-to-point connection with " << peer << " and " << peer2 << endl;
     }
 //====================================
@@ -664,40 +313,6 @@ int main (int argc, char *argv[]) {
       wifiPhy.EnableAsciiAll(stream);
       //wifiInternet.EnableAsciiIpv4All (stream);
       wifiPhy.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
-
-/*    //
-    // Create OnOff applications to send UDP to the bridge, on the first pair.
-    //
-      uint16_t port = 50000;
-      j = 0;
-      BOOST_FOREACH(ptree::value_type const& p, child.get_child("interface.channel")){
-        if(p.first == "peer" && j == 0){
-          peer = p.second.get<string>("<xmlattr>.name");
-          j++;
-
-          Ptr<NetDevice> device = wifiDevices.Get (0);
-          Ptr<Ipv4> ipv4 = Names::Find<Node>(peer)->GetObject<Ipv4>();
-          int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
-          Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
-
-          ApplicationContainer spokeApps;
-          OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
-
-          BOOST_FOREACH(ptree::value_type const& p2, child.get_child("interface.channel")){
-            if(p2.first == "peer" && p2.second.get<string>("<xmlattr>.name") != peer){
-              peer2 = p2.second.get<string>("<xmlattr>.name");
-              spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
-              spokeApps.Start (Seconds (1.0));
-              spokeApps.Stop (Seconds (duration / 10));
-            }
-          }
-        }
-      }
-      PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
-      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer));
-      sink1.Start(Seconds(1.0));
-      sink1.Stop(Seconds(duration / 10));
-*/
     }
 //==========================================
 //=================Hub/Switch===============
@@ -823,40 +438,7 @@ int main (int argc, char *argv[]) {
 
       //internetCsma.EnableAsciiIpv4All(stream);
       }
-/*      //
-      // Create OnOff applications to send UDP to the bridge, on the first pair.
-      //
-      uint16_t port = 50000;
-      string peer1;
-      j = 0;
-      BOOST_FOREACH(ptree::value_type const& pa1, child.get_child("interface")){
-        if(pa1.first == "channel" && j == 0){
-          peer1 = pa1.second.get<string>("peer.<xmlattr>.name");
-          j++;
 
-          Ptr<NetDevice> device = csmaDevices.Get (0);
-          Ptr<Ipv4> ipv4 = Names::Find<Node>(peer1)->GetObject<Ipv4>();
-          int32_t deviceInterface = ipv4->GetInterfaceForDevice (device);
-          Ipv4Address addri = ipv4->GetAddress(deviceInterface, 0).GetLocal();
-
-          ApplicationContainer spokeApps;
-          OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address (InetSocketAddress(addri)));
-
-          BOOST_FOREACH(ptree::value_type const& pa2, child.get_child("interface")){
-            if(pa2.first == "channel" && pa2.second.get<string>("peer.<xmlattr>.name") != peer1){
-              peer2 = pa2.second.get<string>("peer.<xmlattr>.name");
-              spokeApps = onOffHelper.Install(Names::Find<Node>(peer2));
-              spokeApps.Start (Seconds (1.0));
-              spokeApps.Stop (Seconds (duration / 10));
-            }
-          }
-        }
-      }
-      PacketSinkHelper sink("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address::GetAny(), port)));
-      ApplicationContainer sink1 = sink.Install(Names::Find<Node>(peer1));
-      sink1.Start(Seconds(1.0));
-      sink1.Stop(Seconds(duration / 10));
-*/
       BridgeHelper bridgeHelp;
       bridgeHelp.Install(peer, bridgeDevice);
     }
@@ -870,7 +452,7 @@ int main (int argc, char *argv[]) {
 ////////////////////////////////
 
 
-  //createApp(UDP, pt, duration);
+  createApp(UDP, pt, duration);
 
 
 
