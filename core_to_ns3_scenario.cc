@@ -16,6 +16,7 @@
 #include "ns3/netanim-module.h"
 
 #include <regex>
+#include <sys/stat.h>
 
 #include "ns3/LatLong-UTMconversion.h"
 
@@ -60,9 +61,18 @@ regex name("[a-zA-Z0-9]+");
 smatch r_match;
 
 // globals for get/set addresses
-static string mac_addr  = "skip";
+static string mac_addr  = "skip";// some may not exists, skip them
 static string ipv4_addr = "skip";
 static string ipv6_addr = "skip";
+
+enum AppType{
+  UDP,
+  TCP,
+  BURST,
+  BULK,
+  SINK,
+  DEFUALT
+};
 
 // convert latitude/longitude location data to y/x Cartasian coordinates
 void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
@@ -112,7 +122,7 @@ void getAddresses(ptree pt, string sourceNode, string peerNode){
     if(pl1.second.get<string>("<xmlattr>.name") == sourceNode){
       getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
                     pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
-
+      // set node coordinates while we're here
       AnimationInterface::SetConstantPosition(Names::Find<Node>(sourceNode), x, y);
 
       BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
@@ -136,7 +146,7 @@ void getAddresses(ptree pt, string sourceNode, string peerNode){
   }
 }
 
-void assignDeviceAddress(const Ptr<NetDevice> device){
+void assignDeviceAddress(string type, const Ptr<NetDevice> device){
   NS_LOG_INFO ("Assign IP Addresses.");
   Ptr<Node> node = device->GetNode ();
   int32_t deviceInterface;
@@ -149,9 +159,9 @@ void assignDeviceAddress(const Ptr<NetDevice> device){
     string tempIpv4 = r_match.str();
     string tempMask = r_match.suffix().str();
 
-    // NS3 Routing has a bug with netMask 32
+    // NS3 Routing has a bug with netMask 32 in wireless networks
     // This is a temporary work around
-    if(tempMask.compare("/32") == 0){
+    if(type.compare("wireless") == 0 && tempMask.compare("/32") == 0){
       tempMask = "/24";
     }
 
@@ -175,7 +185,7 @@ void assignDeviceAddress(const Ptr<NetDevice> device){
     string tempIpv6 = r_match.prefix().str();
     string tempIpv6Mask = r_match.str();
 
-    if(tempIpv6Mask.compare("/128") == 0){
+    if(type.compare("wireless") == 0 && tempIpv6Mask.compare("/128") == 0){
       tempIpv6Mask = "/64";
     }
 
@@ -207,9 +217,7 @@ void assignDeviceAddress(const Ptr<NetDevice> device){
   ipv6_addr = "skip";
 }
 
-
-void createApp(ptree pt, double duration){
-  NS_LOG_INFO ("Create Applications.");
+void udpDSTApp(ptree pt, double d){
 //
 // Create one udpServer applications on node one.
 //
@@ -217,7 +225,7 @@ void createApp(ptree pt, double duration){
   UdpServerHelper server (port);
   ApplicationContainer apps = server.Install (NodeContainer("n6"));
   apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (duration));
+  apps.Stop (Seconds (d));
 
 //
 // Create one UdpClient application to send UDP datagrams from n17 to n6.
@@ -231,11 +239,95 @@ void createApp(ptree pt, double duration){
   client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
   apps = client.Install (NodeContainer("n17"));
   apps.Start (Seconds (2.0));
-  apps.Stop (Seconds (duration));
+  apps.Stop (Seconds (d));
+
+}
+
+void tcpDSTApp(ptree pt, double d){
+  ApplicationContainer apps;
+  OnOffHelper onoff = OnOffHelper ("ns3::TcpSocketFactory",
+                                   InetSocketAddress (Ipv4Address ("10.2.0.2"), 2000));
+  onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+
+  onoff.SetAttribute ("Remote", AddressValue (InetSocketAddress (Ipv4Address ("10.0.0.10"), 2000)));
+  onoff.SetAttribute ("PacketSize", StringValue ("1024"));
+  onoff.SetAttribute ("DataRate", StringValue ("1Mbps"));
+  onoff.SetAttribute ("StartTime", TimeValue (Seconds (1)));
+  apps = onoff.Install (NodeContainer("n6"));
+
+  PacketSinkHelper sink = PacketSinkHelper ("ns3::TcpSocketFactory",
+                                            InetSocketAddress (Ipv4Address::GetAny (), 2000));
+  apps = sink.Install (NodeContainer("n17"));
+  apps.Start (Seconds (d));
+
+}
+
+void sinkDSTApp(ptree pt, double d){
+  uint16_t port = 50000;
+  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
+  PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
+  ApplicationContainer sinkApp = sinkHelper.Install (NodeContainer("n6"));
+  sinkApp.Start (Seconds (1.0));
+  sinkApp.Stop (Seconds (d));
+
+  Address remoteAddress (InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
+  OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
+  clientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  clientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  ApplicationContainer clientApp = clientHelper.Install (NodeContainer("n17"));
+  clientApp.Start (Seconds (1.0)); /* delay startup depending on node number */
+  clientApp.Stop (Seconds (d));
+
+//  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Names::Find<Node>("n17"), TcpSocketFactory::GetTypeId ());
+
+//  Ptr<MyApp> app = CreateObject<MyApp> ();
+//  app->Setup (ns3TcpSocket, sinkAddress, 1460, 1000000, DataRate ("100Mbps"));
+//  Names::Find<Node>("n17")->AddApplication (app);
+//  app->SetStartTime (Seconds (1.));
+//  app->SetStopTime (Seconds (d));
+}
+
+void burstApp(ptree pt, double d){
+
+}
+
+void bulkApp(ptree pt, double d){
+//
+// Create a BulkSendApplication and install it on node 0
+//
+  uint16_t port = 9;  // well-known echo port number
 
 
+  BulkSendHelper source ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
+  // Set the amount of data to send in bytes.  Zero is unlimited.
+  source.SetAttribute ("MaxBytes", UintegerValue (1024));
+  ApplicationContainer sourceApps = source.Install (Names::Find<Node>("n6"));
+  sourceApps.Start (Seconds (1.0));
+  sourceApps.Stop (Seconds (d));
 
+//
+// Create a PacketSinkApplication and install it on node 1
+//
+  PacketSinkHelper sink ("ns3::TcpSocketFactory",
+                         InetSocketAddress (Ipv4Address::GetAny (), port));
+  ApplicationContainer sinkApps = sink.Install (Names::Find<Node>("n17"));
+  sinkApps.Start (Seconds (1.0));
+  sinkApps.Stop (Seconds (d));
 
+}
+
+void createApp(AppType type, ptree pt, double duration){
+  NS_LOG_INFO ("Create Applications.");
+  switch(type){
+    case UDP   : udpDSTApp(pt, duration); break;
+    case TCP   : tcpDSTApp(pt, duration); break;
+    case SINK  : sinkDSTApp(pt, duration); break;
+    case BURST : burstApp(pt, duration); break;
+    case BULK  : bulkApp(pt, duration); break;
+    default    : cout << "App type not yet supported\n";
+  }
 }
 /////////////////////////////////////////////////////////
 // Parse CORE XML and create an ns3 scenario file from it
@@ -254,6 +346,8 @@ int main (int argc, char *argv[]) {
   string topo_name = "",
          ns2_mobility = "/dev/null",
          trace_prefix = "core2ns3_Logs/";
+
+  struct stat st;
 
   // simulation locals
   NodeContainer nodes;
@@ -278,6 +372,19 @@ int main (int argc, char *argv[]) {
     " --duration=27.0\" \n\n";
 
     return 0;
+  }
+
+  string trace_check = trace_prefix;
+
+  // Verify that trace directory exists
+  if(trace_check.at(trace_check.length() - 1) == '/') // trim trailing slash
+  	trace_check = trace_check.substr(0, trace_check.length() - 1);
+  if(stat(trace_check.c_str(), &st) != 0 || (st.st_mode & S_IFDIR) == 0){
+  	std::cerr << "Error: trace directory " << trace_check << " doesn't exist!" << std::endl;
+  	return -1;
+  }
+  else{
+  	std::cout << "Writing traces to directory `" << trace_check << "`." << std::endl;
   }
 
   AsciiTraceHelper ascii;
@@ -349,7 +456,7 @@ int main (int argc, char *argv[]) {
 
       optional<const ptree&> channel_exists = child.get_child_optional("channel");
 
-      if(!channel_exists){
+      if(!channel_exists){ // CORE occasionally produces empty p2p networks, we skip them
         continue;
       }
 
@@ -432,11 +539,11 @@ int main (int argc, char *argv[]) {
       // Get then set addresses
       getAddresses(pt, peer, name_holder);
       Ptr<NetDevice> device = p2pDevices.Get (0);
-      assignDeviceAddress(device);
+      assignDeviceAddress(type, device);
 
       getAddresses(pt, peer2, name_holder2);
       device = p2pDevices.Get (1);
-      assignDeviceAddress(device);
+      assignDeviceAddress(type, device);
 
       p2p.EnableAsciiAll (stream);
       //internetP2P.EnableAsciiIpv4All (stream);
@@ -551,7 +658,7 @@ int main (int argc, char *argv[]) {
           // Get then set address
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
-          assignDeviceAddress(device);
+          assignDeviceAddress(type, device);
         }
       }
       wifiPhy.EnableAsciiAll(stream);
@@ -706,7 +813,7 @@ int main (int argc, char *argv[]) {
           // Get then set address
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = csmaDevices.Get (j++);
-          assignDeviceAddress(device);
+          assignDeviceAddress(type, device);
 
           csma.EnableAsciiAll(stream);
           csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
@@ -763,7 +870,7 @@ int main (int argc, char *argv[]) {
 ////////////////////////////////
 
 
-  createApp(pt, duration);
+  //createApp(UDP, pt, duration);
 
 
 
@@ -820,13 +927,11 @@ int main (int argc, char *argv[]) {
   }
 
   AnimationInterface anim("NetAnim-core-to-ns3.xml");
-  //anim.EnablePacketMetadata(true);
+  anim.EnablePacketMetadata(true);
   //anim.EnableIpv4RouteTracking ("testRouteTrackingXml.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
 
   // install ns2 mobility script
   ns2.Install();
-
-  cout << "Setting simulation time..." << endl;
 
   // Turn on global static routing so we can actually be routed across the network.
   Ipv4GlobalRoutingHelper::PopulateRoutingTables();
@@ -844,6 +949,8 @@ int main (int argc, char *argv[]) {
   // Configure callback for logging
 //  Config::Connect ("/NodeList/*/$ns3::MobilityModel/CourseChange",
 //                   MakeBoundCallback (&CourseChange, &os));
+
+  cout << "Simulating..." << endl;
 
   Simulator::Stop (Seconds (duration));
   // traces
