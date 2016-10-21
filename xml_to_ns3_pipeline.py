@@ -8,7 +8,7 @@ def find(name, path):
       return os.path.join(root, name)
 
 def addOptions(topo, traceDir, ns2_file, duration):
-  run_command = "scratch/xml_to_ns3_scenario"
+  run_command = "scratch/core_to_ns3_scenario"
   if topo != "":
     run_command = run_command + " --topo=imn2ns3/imn_sample_files/" + topo
   if traceDir != "":
@@ -23,8 +23,8 @@ def addOptions(topo, traceDir, ns2_file, duration):
   return waf_command
       
 def main(argv):
-  f = find("xml_to_ns3_scenario.cc", os.path.expanduser('~'))
-  path_to_file = f.replace('/scratch/xml_to_ns3_scenario.cc','')
+  f = find("core_to_ns3_scenario.cc", os.path.expanduser('~'))
+  path_to_file = f.replace('/imn2ns3/core_to_ns3_scenario.cc','')
   os.chdir(path_to_file)
   
   topo = ''
