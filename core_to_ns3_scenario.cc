@@ -62,10 +62,10 @@ static char refUTMZone;
 //--------------------------------------------------------------------
 // globals for splitting strings
 //--------------------------------------------------------------------
-regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
-regex addrIpv6("[/]{1}[0-9]+");
-regex name("[a-zA-Z0-9]+");
-smatch r_match;
+static regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
+static regex addrIpv6("[/]{1}[0-9]+");
+static regex name("[a-zA-Z0-9]+");
+//smatch r_match;
 
 //--------------------------------------------------------------------
 // globals for get/set addresses, routing protocols and packet control
@@ -172,9 +172,10 @@ void getAddresses(ptree pt, string sourceNode, string peerNode){
 // set mac/ipv4/ipv6 addresses if available
 //====================================================================
 void assignDeviceAddress(string type, const Ptr<NetDevice> device){
+  smatch r_match;
   NS_LOG_INFO ("Assign IP Addresses.");
   Ptr<Node> node = device->GetNode ();
-  int32_t deviceInterface;
+  int32_t deviceInterface = -1;
   if(mac_addr.compare("skip") != 0){
     device->SetAddress(Mac48Address(mac_addr.c_str()));
   }
@@ -186,9 +187,9 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 
     // NS3 Routing has a bug with netMask 32 in wireless networks
     // This is a temporary work around
-    //if(type.compare("wireless") == 0 && tempMask.compare("/32") == 0){
-      //tempMask = "/24";
-    //}
+    if(type.compare("wireless") == 0 && tempMask.compare("/32") == 0){
+      tempMask = "/24";
+    }
 
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
     deviceInterface = ipv4->GetInterfaceForDevice (device);
@@ -203,16 +204,16 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
     ipv4->AddAddress (deviceInterface, ipv4Addr);
     ipv4->SetMetric (deviceInterface, 1);
     ipv4->SetUp (deviceInterface);
-}
+  }
 
   if(ipv6_addr.compare("skip") != 0){
     regex_search(ipv6_addr, r_match, addrIpv6);
     string tempIpv6 = r_match.prefix().str();
     string tempIpv6Mask = r_match.str();
 
-    //if(type.compare("wireless") == 0 && tempIpv6Mask.compare("/128") == 0){
-      //tempIpv6Mask = "/64";
-    //}
+    if(type.compare("wireless") == 0 && tempIpv6Mask.compare("/128") == 0){
+      tempIpv6Mask = "/64";
+    }
 
     Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
     deviceInterface = ipv6->GetInterfaceForDevice (device);
@@ -222,8 +223,8 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
       }
     NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
                    "Interface index not found");
-
-    Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), tempIpv6Mask.c_str());
+    
+    Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), atoi(tempIpv6Mask.c_str()+1));
     ipv6->SetMetric (deviceInterface, 1);
     ipv6->AddAddress (deviceInterface, ipv6Addr);
     ipv6->SetUp (deviceInterface);
@@ -376,6 +377,7 @@ int main (int argc, char *argv[]) {
          trace_prefix = "core2ns3_Logs/";
 
   struct stat st;
+  smatch r_match;
 
   // simulation locals
   NodeContainer nodes;
