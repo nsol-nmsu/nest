@@ -49,22 +49,18 @@ $ ./NetAnim
 https://docs.google.com/drawings/d/19wQD3N5gthTcy9LZ4ggZMSBA0dCI5UfvjWj8bXUmjLs/edit?usp=sharing
 
 **to Generate an XML file:**
-./waf --run "scratch/xml_tester --topo=imn2ns3/imn_sample_files/third.imn"
+./waf --run "scratch/xml_tester --topo=imn2ns3/IMN-files/third.imn"
 
 **to generate a scenario, an example syntax would be:**
-./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/imn_sample_files/third.imn"
+./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/IMN-files/third.imn"
 
-or
+**or**
 
-./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample4-nrlsmf.imn --ns2=imn2ns3/imn_sample_files/sample4.ns_movements --duration=250.0"
+./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/IMN-to_XML-files/sample1.xml"
 
-or
+**or**
 
-./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/imn_sample_files/sample1.xml --ns2=imn2ns3/imn_sample_files/sample1.ns_movements --duration=27.0"
-
-or
-
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/imn_sample_files/WideAreaNetwork3.xml --traceDir=core2ns3_Logs/ --duration=30.0"
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/WideAreaNetwork2.xml"
 
 
 //***************************BUGS/ERRORS/TO-DO******************************//
@@ -73,10 +69,9 @@ or
 reason: NS3 doesn't not have a representation for hub/switches, currently
         using bridges. Routing bridge to bridge causes broadcast storm.
 
-- IPv4 error when setting wireless network with other networks,
-  temporary fix by changing /32 mask to /24
-reason: known NS3 bug with routing protocol not yet configured for it.
-        Other possible solution, setting routing individually (not explored)
+- IPv4 routing error when setting wireless nodes with submask of all ones
+reason: current implemetation assumes nodes are in a network, mask of /32 means
+        unique address, not belonging in a network
 
 - Currently has no automated application settings enabled.
 reason: TO-DO
@@ -114,7 +109,17 @@ reason: TO-DO
 
 
 
+//**IN CORE TO NS3 SCENERIO
+- IPv4 routing error when setting wireless nodes with submask of all ones
+reason: current implemetation assumes nodes are in a network, mask of /32 means
+        unique address, not belonging in a network
 
+- Currently cannot handle switch/hub to switch/hub connections
+reason: NS3 doesn't not have a representation for hub/switches, currently
+        using bridges. Routing bridge to bridge causes broadcast storm.
+
+- Currently has no automated application settings enabled.
+reason: TO-DO
 
 
 
