@@ -376,20 +376,68 @@ int main (int argc, char *argv[]) {
       InternetStackHelper wifiInternet;
 
       WifiHelper wifi;
-      YansWifiPhyHelper wifiPhy = YansWifiPhyHelper::Default();
+      YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
+      YansWifiPhy wifiPhy;
       YansWifiChannelHelper wifiChannel;
       WifiMacHelper wifiMac;
-
-      //wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
+      
+      // WifiHelper
+      // <type domain="CORE">emane_ieee80211abg</type> - no direct equivalency for abg
+      wifi.SetStandard(WIFI_PHY_STANDARD_80211a); 
+      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager");
+      // skip SetStandard - By default, all objects are configured for 802.11a
+      //<parameter name="unicastrate">4</parameter>
+      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("wifia-4mbs"));
+      //<parameter name="rtsthreshold">0</parameter>
+      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "RtsCtsThreshold", UintegerValue(0));
+      
+      //<parameter name="retrylimit">0:3 1:3 2:3 3:3</parameter>
+      // included max long and short (respectively) retry limits - do we need both?
+      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSlrc", StringValue ("0:3 1:3 2:3 3:3"));
+      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSsrc", StringValue ("0:3 1:3 2:3 3:3"));
+      
+      //wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
+      //wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
+      
+      // YansWifiPhyHelper
+      wifiPhyHelper.SetChannel(wifiChannel.Create());
+      wifiPhyHelper.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11);
+      
+      // YansWifiPhy
+      // <parameter name="antennagain">0.0</parameter>
+      wifiPhy.SetRxGain(0.0);
+      // <parameter name="txpower">0.0</parameter>
+      wifiPhy.SetTxPowerStart(0.0);
+      //<parameter name="frequency">2.347G</parameter>
+      wifiPhy.SetFrequency(2347);
+      
       //wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
 
+      
+      // <parameter name="delay">8000</parameter>
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-      wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
-      wifiPhy.SetChannel(wifiChannel.Create());
-
+      //<parameter name="pathlossmode">2ray</parameter>
+      wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel");
+      //<parameter name="distance">1000</parameter>
+      wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "minDistance", UintegerValue (1000));
+      
+      
+      //<parameter name="queuesize">0:255 1:255 2:255 3:255</parameter>
+      Config::SetDefault ("ns3::Queue::MaxPackets", StringValue ("0:255 1:255 2:255 3:255"));
+      Config::SetDefault("ns3::UdpClient::MaxPackets", UintegerValue(4));
+      // <parameter name="cwmin">0:32 1:32 2:16 3:8</parameter>
+      Config::SetDefault ("ns3::Dcf::MinCw",StringValue ("0:32 1:32 2:16 3:8")); 
+      Config::SetDefault ("ns3::EdcaTxopN::MinCw",StringValue ("0:32 1:32 2:16 3:8")); 
+      // <parameter name="cwmax">0:1024 1:1024 2:64 3:16</parameter>
+      Config::SetDefault ("ns3::Dcf::MaxCw",StringValue ("0:1024 1:1024 2:64 3:16"));
+      Config::SetDefault ("ns3::EdcaTxopN::MaxCw",StringValue ("0:1024 1:1024 2:64 3:16"));
+      // <parameter name="aifs">0:2 1:2 2:2 3:1</parameter>
+      Config::SetDefault ("ns3::Dcf::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
+      Config::SetDefault ("ns3::EdcaTxopN::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
+      //<parameter name="flowcontroltokens">10</parameter>
+      Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (10));
+      
       string phyMode("DsssRate1Mbps");
-      wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
-      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
 
       cout << "\nCreating new wlan network named " << peer << endl;
       // Go through peer list and add them to the network
@@ -414,7 +462,7 @@ int main (int argc, char *argv[]) {
           }
 
           wifiMac.SetType("ns3::AdhocWifiMac");
-          wifiDevices.Add(wifi.Install(wifiPhy, wifiMac, peer2));
+          wifiDevices.Add(wifi.Install(wifiPhyHelper, wifiMac, peer2));
           cout << "Adding node " << peer2 << " to WLAN " << peer << endl;
 
           MobilityHelper mobility;
