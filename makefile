@@ -1,6 +1,6 @@
 IMNHELPERFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h
-LATLONGUTM = utils/LatLong-UTMconversion.cpp utils/LatLong-UTMconversion.h utils/constants.h
-NSFILES = imn_to_ns3_scenario.cc xml_to_ns3_scenario.cc core_to_ns3_scenario.cc xml_tester.cc
+LATLONGUTM = utils/LatLong-UTMconversion.cpp utils/LatLong-UTMconversion.h utils/constants.h utils/core-to-ns3-helper.cc utils/core-to-ns3-helper.h
+NSFILES = imn_to_ns3_scenario.cc xml_to_ns3_scenario.cc core_to_ns3_scenario.cc xml_tester.cc core_to_ns3_scenario_mod.cc
 HPATH = ../src/topology-read/imn_reader/
 LPATH = ../src/topology-read/UTM_conversion/
 SPATH = ../scratch/
