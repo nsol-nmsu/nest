@@ -369,8 +369,9 @@ int main (int argc, char *argv[]) {
   Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
 
   // config locals
+  bool   pcap = false;
   double duration = 10.0;
-  regex cartesian("[0-9]+");
+  regex  cartesian("[0-9]+");
   string peer, peer2, type;
   string topo_name = "",
          ns2_mobility = "/dev/null",
@@ -388,6 +389,7 @@ int main (int argc, char *argv[]) {
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
   cmd.AddValue("ns2","Ns2 mobility script file", ns2_mobility);
   cmd.AddValue("duration","Duration of Simulation",duration);
+  cmd.AddValue("pcap","Enable pcap files",pcap);
   cmd.AddValue ("traceDir", "Directory in which to store trace files", trace_prefix);
   cmd.Parse (argc, argv);
 
@@ -398,6 +400,7 @@ int main (int argc, char *argv[]) {
     " --topo=imn2ns3/imn_sample_files/sample1.xml"
     " --Ns2=imn2ns3/imn_sample_files/sample1.ns_movements"
     " --traceDir=core2ns3_Logs/"
+    " --pcap=true"
     //" --logFile=ns2-mob.log"
     " --duration=27.0\" \n\n";
 
@@ -585,7 +588,9 @@ int main (int argc, char *argv[]) {
 
       p2p.EnableAsciiAll (stream);
       //internetP2P.EnableAsciiIpv4All (stream);
-      p2p.EnablePcapAll (trace_prefix + "core-to-ns3-scenario");
+      if(pcap){
+        p2p.EnablePcapAll (trace_prefix + "core-to-ns3-scenario");
+      }
 
       cout << "\nCreating point-to-point connection with " << peer << " and " << peer2 << endl;
     }
@@ -595,6 +600,7 @@ int main (int argc, char *argv[]) {
     if(type.compare("wireless") == 0){
       NS_LOG_INFO ("Create Wireless channel.");
       int j = 0;
+      double dist = 0.0;
       string ipv4_addr, ipv6_addr, mac_addr;
       peer = nod.second.get<string>("<xmlattr>.name");
       NodeContainer wifiNodes;
@@ -607,64 +613,120 @@ int main (int argc, char *argv[]) {
       YansWifiChannelHelper wifiChannel;
       WifiMacHelper wifiMac;
 
-//wifiPhy.Set("RxGain", DoubleValue(0.0));//may not be needed
-//wifiPhy.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11_RADIO);//?
       // WifiHelper
       // <type domain="CORE">emane_ieee80211abg</type> - no direct equivalency for abg
-      wifi.SetStandard(WIFI_PHY_STANDARD_80211a); 
       wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager");
+      //wifi.SetStandard(WIFI_PHY_STANDARD_80211a); //default if not set anyway 
 
-      // skip SetStandard - By default, all objects are configured for 802.11a
-      //<parameter name="unicastrate">4</parameter>
-      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("wifia-4mbs"));
-      //<parameter name="rtsthreshold">0</parameter>
-      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "RtsCtsThreshold", UintegerValue(0));
-      
-      //<parameter name="retrylimit">0:3 1:3 2:3 3:3</parameter>
-      // included max long and short (respectively) retry limits - do we need both?
-      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSlrc", StringValue ("0:3 1:3 2:3 3:3"));
-      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSsrc", StringValue ("0:3 1:3 2:3 3:3"));
-
-      // YansWifiPhyHelper
-      wifiPhyHelper.SetChannel(wifiChannel.Create());
-      wifiPhyHelper.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11);
-      
-      // YansWifiPhy
-      // <parameter name="antennagain">0.0</parameter>
-      wifiPhy.SetRxGain(0.0);
-      // <parameter name="txpower">0.0</parameter>
-      wifiPhy.SetTxPowerStart(0.0);
-      //<parameter name="frequency">2.347G</parameter>
-      wifiPhy.SetFrequency(2347);
-
+      BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
+        if(p0.first == "parameter"){
+          if(p0.second.get<string>("<xmlattr>.name") == "mode"){
+            switch(stoi(p0.second.data())){
+              case 0 :
+              case 1 : wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+                       break;
+              case 2 :
+              case 3 : wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
+                       break;
+              default : cout << "Incorrect wireless mode detected " << p0.second.data() << endl;
+                        exit(-2);
+            }
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "distance"){
+            dist = stod(p0.second.data());
+            wifiChannel.AddPropagationLoss ("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (dist));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "unicastrate"){
+            switch(stoi(p0.second.data())){
+              case 1 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate1Mbps"),
+                                                                                     "ControlMode", StringValue ("DsssRate1Mbps"));
+                       break;
+              case 2 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate2Mbps"),
+                                                                                     "ControlMode", StringValue ("DsssRate2Mbps"));
+                       break;
+              case 3 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate5_5Mbps"),
+                                                                                     "ControlMode", StringValue ("DsssRate5_5Mbps"));
+                       break;
+              case 4 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate11Mbps"),
+                                                                                     "ControlMode", StringValue ("DsssRate11Mbps"));
+                       break;
+              case 5 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate6Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate6Mbps"));
+                       break;
+              case 6 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate9Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate9Mbps"));
+                       break;
+              case 7 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate12Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate12Mbps"));
+                       break;
+              case 8 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate18Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate18Mbps"));
+                       break;
+              case 9 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate24Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate24Mbps"));
+                       break;
+              case 10 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate36Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate36Mbps"));
+                       break;
+              case 11 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate48Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate48Mbps"));
+                       break;
+              case 12 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate54Mbps"),
+                                                                                     "ControlMode", StringValue ("OfdmRate54Mbps"));
+                       break;
+              default : cout << "Incorrect wireless unicast rate detected " << p0.second.data() << endl;
+                        exit(-3);
+            }
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "rtsthreshold"){
+            wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "RtsCtsThreshold", UintegerValue(stoi(p0.second.data())));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "retrylimit"){
+            wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSlrc", StringValue (p0.second.data()));
+            wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "MaxSsrc", StringValue (p0.second.data()));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "antennagain"){
+            wifiPhy.SetRxGain(stod(p0.second.data()));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "txpower"){
+            wifiPhy.SetTxPowerStart(stod(p0.second.data()));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "frequency"){
+            wifiPhy.SetFrequency(stoi(p0.second.data()));
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "pathlossmode"){
+            //if(dist > 0){
+              //wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "minDistance", UintegerValue (dist));
+            //}
+            //else{
+            wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel");
+            //}
+          }
+          //else if(p0.second.get<string>("<xmlattr>.name") == "queuesize"){
+            //Config::SetDefault ("ns3::Queue::MaxPackets", StringValue (p0.second.data()));
+            //Config::SetDefault("ns3::UdpClient::MaxPackets", UintegerValue(4));
+          //}
+          //else if(p0.second.get<string>("<xmlattr>.name") == "cwmin"){
+            //Config::SetDefault ("ns3::Dcf::MinCw",StringValue (p0.second.data())); 
+            //Config::SetDefault ("ns3::EdcaTxopN::MinCw",StringValue (p0.second.data()));
+          //}
+          //else if(p0.second.get<string>("<xmlattr>.name") == "cwmax"){
+            //Config::SetDefault ("ns3::Dcf::MaxCw",StringValue (p0.second.data()));
+            //Config::SetDefault ("ns3::EdcaTxopN::MaxCw",StringValue (p0.second.data()));
+          //}
+          //else if(p0.second.get<string>("<xmlattr>.name") == "aifs"){
+            //Config::SetDefault ("ns3::Dcf::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
+            //Config::SetDefault ("ns3::EdcaTxopN::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
+          //}
+          //else if(p0.second.get<string>("<xmlattr>.name") == "flowcontroltokens"){
+            //Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (stoi(p0.second.data())));
+          //}
+        }
+      }
 
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-//      wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
-//      wifiPhy.SetChannel(wifiChannel.Create());
-      //<parameter name="pathlossmode">2ray</parameter>
-      wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel");
-      //<parameter name="distance">1000</parameter>
-      wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "minDistance", UintegerValue (1000));
-
-      //<parameter name="queuesize">0:255 1:255 2:255 3:255</parameter>
-      Config::SetDefault ("ns3::Queue::MaxPackets", StringValue ("0:255 1:255 2:255 3:255"));
-      Config::SetDefault("ns3::UdpClient::MaxPackets", UintegerValue(4));
-      // <parameter name="cwmin">0:32 1:32 2:16 3:8</parameter>
-      Config::SetDefault ("ns3::Dcf::MinCw",StringValue ("0:32 1:32 2:16 3:8")); 
-      Config::SetDefault ("ns3::EdcaTxopN::MinCw",StringValue ("0:32 1:32 2:16 3:8")); 
-      // <parameter name="cwmax">0:1024 1:1024 2:64 3:16</parameter>
-      Config::SetDefault ("ns3::Dcf::MaxCw",StringValue ("0:1024 1:1024 2:64 3:16"));
-      Config::SetDefault ("ns3::EdcaTxopN::MaxCw",StringValue ("0:1024 1:1024 2:64 3:16"));
-      // <parameter name="aifs">0:2 1:2 2:2 3:1</parameter>
-      Config::SetDefault ("ns3::Dcf::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
-      Config::SetDefault ("ns3::EdcaTxopN::Aifs",StringValue ("0:2 1:2 2:2 3:1")); 
-      //<parameter name="flowcontroltokens">10</parameter>
-      Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (10));
-
-
-//      string phyMode("DsssRate1Mbps");
-//      wifi.SetStandard(WIFI_PHY_STANDARD_80211g);
-//      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
+      wifiPhyHelper.SetChannel(wifiChannel.Create());
+      wifiPhyHelper.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11);
 
       cout << "\nCreating new wlan network named " << peer << endl;
       // Go through peer list and add them to the network
@@ -757,9 +819,11 @@ int main (int argc, char *argv[]) {
           assignDeviceAddress(type, device);
         }
       }
-      wifiPhy.EnableAsciiAll(stream);
+      wifiPhyHelper.EnableAsciiAll(stream);
       //wifiInternet.EnableAsciiIpv4All (stream);
-      wifiPhy.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+      if(pcap){
+        wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+      }
     }
 //===================================================================
 // HUB/SWITCH
@@ -883,7 +947,9 @@ int main (int argc, char *argv[]) {
           assignDeviceAddress(type, device);
 
           csma.EnableAsciiAll(stream);
-          csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+          if(pcap){
+            csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+          }
 
           cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
         }
