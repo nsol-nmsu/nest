@@ -248,48 +248,69 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 //====================================================================
 void udpDSTApp(ptree pt, double d){
 //
-// Create one udpServer applications on node one.
+// Create one udpServer applications on destination.
 //
   uint16_t port = 4000;
   UdpServerHelper server (port);
-  ApplicationContainer apps = server.Install (NodeContainer("n6"));
+  ApplicationContainer apps = server.Install (NodeContainer("n20"));
   apps.Start (Seconds (1.0));
   apps.Stop (Seconds (d));
 
 //
-// Create one UdpClient application to send UDP datagrams from n17 to n6.
+// Create one UdpClient application to send UDP datagrams from source to destination.
 //
-  uint32_t MaxPacketSize = 1024;  // Back off 20 (IP) + 8 (UDP) bytes from MTU
+  uint32_t MaxPacketSize = 1024;
   Time interPacketInterval = Seconds (0.05);
   uint32_t maxPacketCount = 320;
-  UdpClientHelper client (Ipv4Address("10.0.0.10"), port);
+  UdpClientHelper client (Ipv4Address("10.0.4.20"), port);
   client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
   client.SetAttribute ("Interval", TimeValue (interPacketInterval));
   client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
-  apps = client.Install (NodeContainer("n17"));
+  apps = client.Install (NodeContainer("n10"));
   apps.Start (Seconds (2.0));
   apps.Stop (Seconds (d));
-
 }
 
 void tcpDSTApp(ptree pt, double d){
-  ApplicationContainer apps;
+  uint16_t port = 8080;
+  PacketSinkHelper sink ("ns3::TcpSocketFactory",Address
+                         (InetSocketAddress (Ipv4Address::GetAny (), port)));
+  //set a node as reciever
+  ApplicationContainer app = sink.Install (NodeContainer("n60"));
+  app.Start (Seconds (1.0));
+  app.Stop (Seconds (d));
+
+  OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address
+                     (InetSocketAddress (Ipv4Address ("10.0.103.2"), port)));
+  onOffHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+  onOffHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+
+  //onOffHelper.SetAttribute ("DataRate",StringValue ("2Mbps"));
+  onOffHelper.SetAttribute ("PacketSize",UintegerValue(1280));
+  // ApplicationContainer
+  app = onOffHelper.Install (NodeContainer("n1"));
+  // Start the application
+  app.Start (Seconds (1.0));
+  app.Stop (Seconds (d));
+
+/*  ApplicationContainer apps;
   OnOffHelper onoff = OnOffHelper ("ns3::TcpSocketFactory",
-                                   InetSocketAddress (Ipv4Address ("10.2.0.2"), 2000));
+                                   InetSocketAddress (Ipv4Address ("10.0.103.2"), 2000)); // dest n60
   onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
   onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
 
-  onoff.SetAttribute ("Remote", AddressValue (InetSocketAddress (Ipv4Address ("10.0.0.10"), 2000)));
+  onoff.SetAttribute ("Remote", AddressValue (InetSocketAddress (Ipv4Address ("10.0.0.1"), 2000)));
   onoff.SetAttribute ("PacketSize", StringValue ("1024"));
-  onoff.SetAttribute ("DataRate", StringValue ("1Mbps"));
+  //onoff.SetAttribute ("DataRate", StringValue ("1Mbps"));
   onoff.SetAttribute ("StartTime", TimeValue (Seconds (1)));
-  apps = onoff.Install (NodeContainer("n6"));
+  apps = onoff.Install (NodeContainer("n60"));
 
   PacketSinkHelper sink = PacketSinkHelper ("ns3::TcpSocketFactory",
                                             InetSocketAddress (Ipv4Address::GetAny (), 2000));
-  apps = sink.Install (NodeContainer("n17"));
-  apps.Start (Seconds (d));
-
+  apps = sink.Install (NodeContainer("n1"));
+  apps.Start(Seconds(1.0));
+  apps.Stop(Seconds(d));
+*/
 }
 
 void sinkDSTApp(ptree pt, double d){
@@ -493,6 +514,7 @@ int main (int argc, char *argv[]) {
       int band = 0;
       int dela = 0;
 
+      // grap the node names from net
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "member" && p0.second.get<string>("<xmlattr>.type") == "interface"){
           if(fst){
@@ -540,7 +562,7 @@ int main (int argc, char *argv[]) {
         Names::Add(peer, p2pNodes.Get(0));
         p2pNodes.Add(peer2);
       }
-
+      // set channel parameters
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "parameter"){
           if(p0.second.get<string>("<xmlattr>.name") == "bw"){
@@ -556,24 +578,25 @@ int main (int argc, char *argv[]) {
         }
       }
 
+      // add internet stack if not yet created, add routing if found
       p2pDevices.Add(p2p.Install(peer, peer2));
       InternetStackHelper internetP2P;
-      Ipv4ListRoutingHelper staticonly;
-      Ipv4ListRoutingHelper staticRouting;
+      //Ipv4ListRoutingHelper staticonly;
+      //Ipv4ListRoutingHelper staticRouting;
 
       if(!pflag && !p2flag){
-        staticonly.Add (staticRouting, 0);
-        internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //staticonly.Add (staticRouting, 0);
+        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
         internetP2P.Install(p2pNodes);
       }
       else if(pflag && !p2flag){
-        staticonly.Add (staticRouting, 0);
-        internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //staticonly.Add (staticRouting, 0);
+        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
         internetP2P.Install(peer2);
       }
       else if(!pflag && p2flag){
-        staticonly.Add (staticRouting, 0);
-        internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //staticonly.Add (staticRouting, 0);
+        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
         internetP2P.Install(peer);
       }
 
@@ -609,14 +632,26 @@ int main (int argc, char *argv[]) {
 
       WifiHelper wifi;
       YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
-      YansWifiPhy wifiPhy;
+      //YansWifiPhy wifiPhy;
       YansWifiChannelHelper wifiChannel;
       WifiMacHelper wifiMac;
 
-      // WifiHelper
+      // working default
+      wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+      wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+      wifiPhyHelper.SetChannel(wifiChannel.Create());
+
+      string phyMode("DsssRate1Mbps");
+      wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
+
+
+/*      // set emane ieee80211abg settings if any
       // <type domain="CORE">emane_ieee80211abg</type> - no direct equivalency for abg
       wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager");
       //wifi.SetStandard(WIFI_PHY_STANDARD_80211a); //default if not set anyway 
+      wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate1Mbps"),
+                                                                    "ControlMode", StringValue ("DsssRate1Mbps"));
 
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "parameter"){
@@ -695,12 +730,17 @@ int main (int argc, char *argv[]) {
             wifiPhy.SetFrequency(stoi(p0.second.data()));
           }
           else if(p0.second.get<string>("<xmlattr>.name") == "pathlossmode"){
-            //if(dist > 0){
-              //wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "minDistance", UintegerValue (dist));
-            //}
-            //else{
-            wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel");
-            //}
+            //if(p0.second.data() == "2ray"){
+              //if(dist > 0){
+                //wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel", "minDistance", UintegerValue (dist));
+              //}
+              //else{
+              wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel");
+              //}
+            }
+            else{
+              wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+            }
           }
           //else if(p0.second.get<string>("<xmlattr>.name") == "queuesize"){
             //Config::SetDefault ("ns3::Queue::MaxPackets", StringValue (p0.second.data()));
@@ -726,8 +766,8 @@ int main (int argc, char *argv[]) {
 
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
       wifiPhyHelper.SetChannel(wifiChannel.Create());
-      wifiPhyHelper.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11);
-
+      //wifiPhyHelper.SetPcapDataLinkType(YansWifiPhyHelper::DLT_IEEE802_11);
+*/
       cout << "\nCreating new wlan network named " << peer << endl;
       // Go through peer list and add them to the network
       BOOST_FOREACH(ptree::value_type const& p, child.get_child("channel")){
@@ -750,6 +790,7 @@ int main (int argc, char *argv[]) {
             }
           }
 
+          // install the internet stack and routing
           if(!p2flag){
             NS_LOG_INFO ("Enabling OLSR Routing.");
             OlsrHelper olsr;
@@ -801,7 +842,7 @@ int main (int argc, char *argv[]) {
 
             wifiNodes.Create(1);
             Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
-            wifiInternet.SetRoutingHelper (list); // has effect on the next Install ()
+            //wifiInternet.SetRoutingHelper (list); // has effect on the next Install ()
             wifiInternet.Install(peer2);
             nodes.Add(peer2);
           }
@@ -842,13 +883,15 @@ int main (int argc, char *argv[]) {
       int nNodes = nodes.GetN();
       int bNodes = bridges.GetN();
       bool pflag = false;
+      // Set the name for the hub/switch
+      // Get the name of the hub/switch, if it was previously defined.
       for(int i = 0; i < bNodes; i++){
         if(peer.compare(Names::FindName(bridges.Get(i))) == 0){
           pflag = true;
           break;
         }
       }
-
+      //add hub/switch to container and set its coordinates
       if(!pflag){
         bridgeNode.Create(1);
         Names::Add(peer, bridgeNode.Get(0));
@@ -867,7 +910,7 @@ int main (int argc, char *argv[]) {
         if(p0.first == "channel"){
           string param, name_holder;
           CsmaHelper csma;
-
+          // we want to skip anything that isn't the connected neighboring node
           BOOST_FOREACH(ptree::value_type const& tp0, p0.second){
             if(tp0.first == "member"){
               name_holder = tp0.second.data();
@@ -879,7 +922,7 @@ int main (int argc, char *argv[]) {
               }
             }
           }
-
+  // TODO : temp fix for switch-switch connection issue, complex to set from xml
   NS_ABORT_MSG_IF (peer2.compare(peer) == 0, "CSMA builder : Bridge to bridge broadcast storm detected.");
 
           bool p2Nflag = false;
@@ -896,21 +939,20 @@ int main (int argc, char *argv[]) {
               break;
             }
           }
-          // TODO: check if peer is another hub/lanswitch
-          // to avoid broadcast storm
+          // create node and add internet stack if not yet previously created
           if(!p2Nflag && !p2Bflag){
-              Ipv4ListRoutingHelper staticonly;
-              Ipv4ListRoutingHelper staticRouting;
+              //Ipv4ListRoutingHelper staticonly;
+              //Ipv4ListRoutingHelper staticRouting;
 
-              staticonly.Add (staticRouting, 0);
-              internetCsma.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+              //staticonly.Add (staticRouting, 0);
+              //internetCsma.SetRoutingHelper (staticonly);  // has effect on the next Install ()
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
               internetCsma.Install(peer2);
           }
 
-            BOOST_FOREACH(ptree::value_type const& p1, p0.second){
+          BOOST_FOREACH(ptree::value_type const& p1, p0.second){
             if(p1.first == "parameter"){
               if(p1.second.get<string>("<xmlattr>.name") == "bw"){
                 csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data())));
@@ -924,22 +966,11 @@ int main (int argc, char *argv[]) {
               }
             }
           }
-
+          // set the link between node and hub/switch
           NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
 
-          //if(pType.compare("hub") != 0 && pType.compare("lanswitch") != 0){
-            csmaDevices.Add(link.Get(0));
-            bridgeDevice.Add(link.Get(1));
-          //}
-          //else{
-            //bridgeDevice.Add(link.Get(0));
-            //bridgeDevice.Add(link.Get(1));
-            //bridgeDevice.Add(link);
-            //BridgeHelper bridgeHelp;
-            //bridgeHelp.Install(peer2, link.Get(0));
-            //cout << "Linking " << pType << " " << peer2 << " to a csma(" << type << ") " << peer << endl;
-            //continue;
-          //}
+          csmaDevices.Add(link.Get(0));
+          bridgeDevice.Add(link.Get(1));
 
           // Get then set address
           getAddresses(pt, peer2, name_holder);
@@ -970,7 +1001,7 @@ int main (int argc, char *argv[]) {
 
 
   //createApp(UDP, pt, duration);
-
+  //createApp(TCP, pt, duration);
 
 
   cout << endl << nodes.GetN() << " defined node names with their respective id's..." << endl;
@@ -1033,7 +1064,7 @@ int main (int argc, char *argv[]) {
   ns2.Install();
 
   // Turn on global static routing so we can actually be routed across the network.
-  //Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
