@@ -252,45 +252,33 @@ void udpApp(ptree pt, double d){
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
-  uint32_t MaxPacketSize = 1024;
+  uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
-  BOOST_FOREACH(ptree::value_type const& nod, pt){
-    if(nod.first != "sender"){
-      sender = nod.second.get<string>("node");
-      sPort = pt.get<uint16_t>("application.special.port");
-    }
-    if(nod.first != "receiver"){
-      receiver = nod.second.get<string>("node");
-      rAddress = nod.second.get<string>("ipv4Address");
-      rPort = pt.get<uint16_t>("application.special.port");
-    }
-    if(nod.first != "startTime"){
-      start = stoi(nod.second.data());
-    }
-    if(nod.first != "endTime"){
-      end = stoi(nod.second.data());
-    }
+
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
+
+  cout << "Creating UDP application with sender " << sender << " and receiver " << receiver << endl;
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
-//  if(if_exists){
-//    port = pt.get<uint16_t>("application.special.port");
-//  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
-    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if_exists = pt.get_child_optional("special.packetIntervalTime");
   if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
-  if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
   }
 
   // make sure end time is not beyond simulation time
@@ -308,9 +296,9 @@ void udpApp(ptree pt, double d){
 // Create one UdpClient application to send UDP datagrams from source to destination.
 //
   UdpClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
-  client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("MaxPackets", UintegerValue (packetSize * maxPacketCount));
   client.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("PacketSize", UintegerValue (packetSize));
   apps = client.Install (NodeContainer(sender));
   apps.Start (Seconds (start));
   apps.Stop (Seconds (end));
@@ -321,45 +309,33 @@ void udpEchoApp(ptree pt, double d){
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
-  uint32_t MaxPacketSize = 1024;
+  uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
-  //BOOST_FOREACH(ptree::value_type const& nod, pt){
-    //if(nod.first != "sender"){
-      sender = pt.get<string>("sender.node");//nod.second.get<string>("node");
-      sPort = pt.get<uint16_t>("sender.port");//nod.second.get<uint16_t>("port");
-    //}
-    //if(nod.first != "receiver"){
-      receiver = pt.get<string>("receiver.node"); //nod.second.get<string>("node");
-      rAddress = pt.get<string>("receiver.ipv4Address");//nod.second.get<string>("ipv4Address");
-      rPort = pt.get<uint16_t>("receiver.port");//nod.second.get<uint16_t>("port");
-    //}
-    //if(nod.first != "startTime"){
-      start = pt.get<uint32_t>("startTime");//stoi(nod.second.data());
-    //}
-    //if(nod.first != "endTime"){
-      end = pt.get<uint32_t>("endTime");//stoi(nod.second.data());
-    //}
-  //}
 
-//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
-//  if(if_exists){
-//    port = pt.get<uint16_t>("application.special.port");
-//  }
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
 
-  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  cout << "Creating UDPECHO application with sender " << sender << " and receiver " << receiver << endl;
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
-    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+    packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
+  if_exists = pt.get_child_optional("special.packetIntervalTime");
   if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
   }
 
   // make sure end time is not beyond simulation time
@@ -377,9 +353,9 @@ void udpEchoApp(ptree pt, double d){
 // Create one UdpClient application to send UDP datagrams from source to destination.
 //
   UdpEchoClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
-  client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("MaxPackets", UintegerValue (packetSize * maxPacketCount));
   client.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("PacketSize", UintegerValue (packetSize));
   apps = client.Install (NodeContainer(sender));
   apps.Start (Seconds (start));
   apps.Stop (Seconds (end));
@@ -390,46 +366,33 @@ void tcpApp(ptree pt, double d){
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
-  uint32_t MaxPacketSize = 1024;
+  uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
-  BOOST_FOREACH(ptree::value_type const& nod, pt){
-    if(nod.first != "sender"){
-      sender = nod.second.get<string>("node");
-      sAddress = nod.second.get<string>("ipv4Address");
-      sPort = nod.second.get<uint16_t>("port");
-    }
-    if(nod.first != "receiver"){
-      receiver = nod.second.get<string>("node");
-      rAddress = nod.second.get<string>("ipv4Address");
-      rPort = nod.second.get<uint16_t>("port");
-    }
-    if(nod.first != "startTime"){
-      start = stoi(nod.second.data());
-    }
-    if(nod.first != "endTime"){
-      end = stoi(nod.second.data());
-    }
+
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
+
+  cout << "Creating TCP application with sender " << sender << " and receiver " << receiver << endl;
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
-//  if(if_exists){
-//    port = pt.get<uint16_t>("application.special.port");
-//  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
-    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if_exists = pt.get_child_optional("special.packetIntervalTime");
   if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
-  if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
   }
 
   // make sure end time is not beyond simulation time
@@ -444,7 +407,7 @@ void tcpApp(ptree pt, double d){
   onOffHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
   onOffHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
 
-  onOffHelper.SetAttribute("PacketSize",UintegerValue(MaxPacketSize));
+  onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
 
   ApplicationContainer clientApp;
   clientApp = onOffHelper.Install (NodeContainer(sender));
@@ -457,46 +420,33 @@ void sinkApp(ptree pt, double d){
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
-  uint32_t MaxPacketSize = 1024;
+  uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
-  BOOST_FOREACH(ptree::value_type const& nod, pt){
-    //if(nod.first != "sender"){
-      //sender = nod.second.data();
-      //sAddress = nod.second.get<string>("ipv4Address");
-    //}
-cout << nod.first << " where we are\n\n\n";
-    if(nod.first != "receiver"){
-      receiver = nod.second.get<string>("node");
-      rAddress = nod.second.get<string>("ipv4Address");
-      rPort = pt.get<uint16_t>("application.special.port");
-    }
-    if(nod.first != "startTime"){
-      start = stoi(nod.second.data());
-    }
-    if(nod.first != "endTime"){
-      end = stoi(nod.second.data());
-    }
+
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
+
+  cout << "Creating SINK application with sender " << sender << " and receiver/s ";
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
-//  if(if_exists){
-//    port = pt.get<uint16_t>("application.special.port");
-//  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
-    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if_exists = pt.get_child_optional("special.packetIntervalTime");
   if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
-  if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
   }
 
   // make sure end time is not beyond simulation time
@@ -510,10 +460,12 @@ cout << nod.first << " where we are\n\n\n";
   sinkApp.Stop (Seconds (end));
 
   BOOST_FOREACH(ptree::value_type const& nod, pt){
-    if(nod.first != "sender"){
+    if(nod.first == "sender"){
       sender = nod.second.get<string>("node");
       //sAddress = nod.second.get<string>("ipv4Address");
-      sPort = pt.get<uint16_t>("application.special.port");
+      sPort = nod.second.get<uint16_t>("port");
+
+      cout << receiver << " ";
 
       Address remoteAddress (InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort));
       OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
@@ -525,6 +477,7 @@ cout << nod.first << " where we are\n\n\n";
       clientApp.Stop (Seconds (end));
     }
   }
+  cout << endl;
 //  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Names::Find<Node>("n17"), TcpSocketFactory::GetTypeId ());
 
 //  Ptr<MyApp> app = CreateObject<MyApp> ();
@@ -533,35 +486,60 @@ cout << nod.first << " where we are\n\n\n";
 //  app->SetStartTime (Seconds (1.));
 //  app->SetStopTime (Seconds (d));
 }
-
+//////////////////////////////////////////////////////////////
+// TODO TODO TODO
+//////////////////////////////////////////////////////////////
 void burstApp(ptree pt, double d){
 
 }
 
 void bulkApp(ptree pt, double d){
-//
-// Create a BulkSendApplication and install it on node 0
-//
-  uint16_t port = 9;  // well-known echo port number
+  string receiver, sender, rAddress, sAddress;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t packetSize = 1024;
+  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
 
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
 
-  BulkSendHelper source ("ns3::TcpSocketFactory",
-                         InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
-  // Set the amount of data to send in bytes.  Zero is unlimited.
-  source.SetAttribute ("MaxBytes", UintegerValue (1024));
-  ApplicationContainer sourceApps = source.Install (Names::Find<Node>("n6"));
-  sourceApps.Start (Seconds (1.0));
-  sourceApps.Stop (Seconds (d));
+  cout << "Creating SINK application with sender " << sender << " and receiver/s ";
 
-//
-// Create a PacketSinkApplication and install it on node 1
-//
-  PacketSinkHelper sink ("ns3::TcpSocketFactory",
-                         InetSocketAddress (Ipv4Address::GetAny (), port));
-  ApplicationContainer sinkApps = sink.Install (Names::Find<Node>("n17"));
-  sinkApps.Start (Seconds (1.0));
-  sinkApps.Stop (Seconds (d));
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
+  }
 
+  if_exists = pt.get_child_optional("special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
+  }
+
+  if_exists = pt.get_child_optional("special.packetIntervalTime");
+  if(if_exists){
+    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
+  }
+
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
+  PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), rPort));
+  ApplicationContainer sinkApps = sink.Install (Names::Find<Node>(receiver));
+  sinkApps.Start (Seconds (start));
+  sinkApps.Stop (Seconds (end));
+
+  BulkSendHelper source ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address (sAddress.c_str()), sPort));
+  source.SetAttribute ("MaxBytes", UintegerValue (packetSize));
+  ApplicationContainer sourceApps = source.Install (Names::Find<Node>(sender));
+  sourceApps.Start (Seconds (start));
+  sourceApps.Stop (Seconds (end));
 }
 
 void createApp(ptree pt, double duration){
@@ -570,14 +548,13 @@ void createApp(ptree pt, double duration){
   BOOST_FOREACH(ptree::value_type const& app, pt.get_child("Applications")){
     if(app.first == "application"){
       string protocol = app.second.get<string>("type");
-cout << protocol << endl;
-      if(protocol.compare("Udp"))          { udpApp(app.second, duration); }
-      else if(protocol.compare("UdpEcho")) { udpEchoApp(app.second, duration); }
-      else if(protocol.compare("Tcp"))     { tcpApp(app.second, duration); }
-      else if(protocol.compare("Sink"))    { sinkApp(app.second, duration); }
-      else if(protocol.compare("Burst"))   { burstApp(app.second, duration); }
-      else if(protocol.compare("Bulk"))    { bulkApp(app.second, duration); }
-      else { cout << "App type not yet supported\n";}
+      if(protocol.compare("Udp") == 0)          { udpApp(app.second, duration); }
+      else if(protocol.compare("UdpEcho") == 0) { udpEchoApp(app.second, duration); }
+      else if(protocol.compare("Tcp") == 0)     { tcpApp(app.second, duration); }
+      else if(protocol.compare("Sink") == 0)    { sinkApp(app.second, duration); }
+      else if(protocol.compare("Burst") == 0)   { burstApp(app.second, duration); }
+      else if(protocol.compare("Bulk") == 0)    { bulkApp(app.second, duration); }
+      else { cout << protocol << " protocol type not supported\n";}
     }
   }
 }
@@ -1227,15 +1204,18 @@ int main (int argc, char *argv[]) {
 //END OF TOPOLOGY BUILDER
 ////////////////////////////////
   cout << "\nCORE topology imported..." << endl; 
-////////////////////////////////
-//START OF APPLICATION GENERATOR TODO
-////////////////////////////////
 
+  //create applications if given
   if(!apps_file.empty()){
-    //create apps if given
     ptree a_pt;
-    read_xml(apps_file, a_pt);
-    createApp(a_pt, duration);
+
+    try{
+      read_xml(apps_file, a_pt);
+      createApp(a_pt, duration);
+    } catch(const boost::property_tree::xml_parser::xml_parser_error& ex){
+      cerr << "error in file " << ex.filename() << " line " << ex.line() << endl;
+      exit(-5);
+    }
   }
 
   cout << endl << nodes.GetN() << " defined node names with their respective id's..." << endl;
@@ -1290,6 +1270,7 @@ int main (int argc, char *argv[]) {
     cout << extra << " rouge (unconnected) node(s) detected!" << endl;
   }
 
+  // Create NetAnim xml file
   AnimationInterface anim("NetAnim-core-to-ns3.xml");
   anim.EnablePacketMetadata(true);
   //anim.EnableIpv4RouteTracking ("testRouteTrackingXml.xml", Seconds(1.0), Seconds(3.0), Seconds(5));
