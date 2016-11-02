@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Applications>
+    <application>
+        <type>Tcp</type>
+        <name>tcp_0</name>
+        <sender>
+            <node>n1</node>
+            <port>1717</port>
+            <ipv4Address>10.0.0.1</ipv4Address>
+        </sender>
+        <receiver>
+            <node>n2</node>
+            <port>1717</port>
+            <ipv4Address>10.0.0.2</ipv4Address>
+        </receiver>
+        <startTime>2</startTime>
+        <endTime>11</endTime>
+        <special></special>
+    </application>
+    <application>
+        <type>Udp</type>
+        <name>udp_0</name>
+        <sender>
+            <node>n60</node>
+            <port>80</port>
+            <ipv4Address>10.0.102.2</ipv4Address>
+        </sender>
+        <receiver>
+            </node>n59</node>
+            <port>80</port>
+            <ipv4Address>10.0.102.1</ipv4Address>
+        </receiver>
+        <startTime>1</startTime>
+        <endTime>10</endTime>
+        <special>
+            <packetSize>1024</packetSize>
+            <maxPacketCount>1</maxPacketCount>
+            <packetIntervalTime>1.0</packetIntervalTime>
+        </special>
+    </application>
+</Applications>
