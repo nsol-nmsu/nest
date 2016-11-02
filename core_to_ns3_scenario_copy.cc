@@ -76,6 +76,7 @@ static string ipv6_addr = "skip";
 
 enum AppType{
   UDP,
+  UDPECHO,
   TCP,
   BURST,
   BULK,
@@ -246,89 +247,284 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 //====================================================================
 // applications
 //====================================================================
-void udpDSTApp(ptree pt, double d){
+void udpApp(ptree pt, double d){
+  string receiver, sender, rAddress;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t MaxPacketSize = 1024;
+  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
+  BOOST_FOREACH(ptree::value_type const& nod, pt){
+    if(nod.first != "sender"){
+      sender = nod.second.get<string>("node");
+      sPort = pt.get<uint16_t>("application.special.port");
+    }
+    if(nod.first != "receiver"){
+      receiver = nod.second.get<string>("node");
+      rAddress = nod.second.get<string>("ipv4Address");
+      rPort = pt.get<uint16_t>("application.special.port");
+    }
+    if(nod.first != "startTime"){
+      start = stoi(nod.second.data());
+    }
+    if(nod.first != "endTime"){
+      end = stoi(nod.second.data());
+    }
+  }
+
+//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
+//  if(if_exists){
+//    port = pt.get<uint16_t>("application.special.port");
+//  }
+
+  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if(if_exists){
+    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
+  }
+
+  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
+  if(if_exists){
+    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+  }
+
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
 //
 // Create one udpServer applications on destination.
 //
-  uint16_t port = 4000;
-  UdpServerHelper server (port);
-  ApplicationContainer apps = server.Install (NodeContainer("n20"));
-  apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (d));
+  UdpServerHelper server (rPort);
+  ApplicationContainer apps = server.Install (NodeContainer(receiver));
+  apps.Start (Seconds (start));
+  apps.Stop (Seconds (end));
 
 //
 // Create one UdpClient application to send UDP datagrams from source to destination.
 //
-  uint32_t MaxPacketSize = 1024;
-  Time interPacketInterval = Seconds (0.05);
-  uint32_t maxPacketCount = 320;
-  UdpClientHelper client (Ipv4Address("10.0.4.20"), port);
+  UdpClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
   client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
   client.SetAttribute ("Interval", TimeValue (interPacketInterval));
   client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
-  apps = client.Install (NodeContainer("n10"));
-  apps.Start (Seconds (2.0));
-  apps.Stop (Seconds (d));
+  apps = client.Install (NodeContainer(sender));
+  apps.Start (Seconds (start));
+  apps.Stop (Seconds (end));
 }
 
-void tcpDSTApp(ptree pt, double d){
-  uint16_t port = 8080;
-  PacketSinkHelper sink ("ns3::TcpSocketFactory",Address
-                         (InetSocketAddress (Ipv4Address::GetAny (), port)));
-  //set a node as reciever
-  ApplicationContainer app = sink.Install (NodeContainer("n60"));
-  app.Start (Seconds (1.0));
-  app.Stop (Seconds (d));
+void udpEchoApp(ptree pt, double d){
+  string receiver, sender, rAddress;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t MaxPacketSize = 1024;
+  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
+  //BOOST_FOREACH(ptree::value_type const& nod, pt){
+    //if(nod.first != "sender"){
+      sender = pt.get<string>("sender.node");//nod.second.get<string>("node");
+      sPort = pt.get<uint16_t>("sender.port");//nod.second.get<uint16_t>("port");
+    //}
+    //if(nod.first != "receiver"){
+      receiver = pt.get<string>("receiver.node"); //nod.second.get<string>("node");
+      rAddress = pt.get<string>("receiver.ipv4Address");//nod.second.get<string>("ipv4Address");
+      rPort = pt.get<uint16_t>("receiver.port");//nod.second.get<uint16_t>("port");
+    //}
+    //if(nod.first != "startTime"){
+      start = pt.get<uint32_t>("startTime");//stoi(nod.second.data());
+    //}
+    //if(nod.first != "endTime"){
+      end = pt.get<uint32_t>("endTime");//stoi(nod.second.data());
+    //}
+  //}
 
-  OnOffHelper onOffHelper ("ns3::TcpSocketFactory", Address
-                     (InetSocketAddress (Ipv4Address ("10.0.103.2"), port)));
-  onOffHelper.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  onOffHelper.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
+//  if(if_exists){
+//    port = pt.get<uint16_t>("application.special.port");
+//  }
 
-  //onOffHelper.SetAttribute ("DataRate",StringValue ("2Mbps"));
-  onOffHelper.SetAttribute ("PacketSize",UintegerValue(1280));
-  // ApplicationContainer
-  app = onOffHelper.Install (NodeContainer("n1"));
-  // Start the application
-  app.Start (Seconds (1.0));
-  app.Stop (Seconds (d));
+  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if(if_exists){
+    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+  }
 
-/*  ApplicationContainer apps;
-  OnOffHelper onoff = OnOffHelper ("ns3::TcpSocketFactory",
-                                   InetSocketAddress (Ipv4Address ("10.0.103.2"), 2000)); // dest n60
-  onoff.SetAttribute ("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  onoff.SetAttribute ("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
+  }
 
-  onoff.SetAttribute ("Remote", AddressValue (InetSocketAddress (Ipv4Address ("10.0.0.1"), 2000)));
-  onoff.SetAttribute ("PacketSize", StringValue ("1024"));
-  //onoff.SetAttribute ("DataRate", StringValue ("1Mbps"));
-  onoff.SetAttribute ("StartTime", TimeValue (Seconds (1)));
-  apps = onoff.Install (NodeContainer("n60"));
+  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
+  if(if_exists){
+    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+  }
 
-  PacketSinkHelper sink = PacketSinkHelper ("ns3::TcpSocketFactory",
-                                            InetSocketAddress (Ipv4Address::GetAny (), 2000));
-  apps = sink.Install (NodeContainer("n1"));
-  apps.Start(Seconds(1.0));
-  apps.Stop(Seconds(d));
-*/
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
+//
+// Create one udpServer applications on destination.
+//
+  UdpEchoServerHelper server (rPort);
+  ApplicationContainer apps = server.Install (NodeContainer(receiver));
+  apps.Start (Seconds (start));
+  apps.Stop (Seconds (end));
+
+//
+// Create one UdpClient application to send UDP datagrams from source to destination.
+//
+  UdpEchoClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
+  client.SetAttribute ("MaxPackets", UintegerValue (MaxPacketSize));
+  client.SetAttribute ("Interval", TimeValue (interPacketInterval));
+  client.SetAttribute ("PacketSize", UintegerValue (MaxPacketSize));
+  apps = client.Install (NodeContainer(sender));
+  apps.Start (Seconds (start));
+  apps.Stop (Seconds (end));
 }
 
-void sinkDSTApp(ptree pt, double d){
-  uint16_t port = 50000;
-  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), port));
+void tcpApp(ptree pt, double d){
+  string receiver, sender, rAddress, sAddress;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t MaxPacketSize = 1024;
+  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
+  BOOST_FOREACH(ptree::value_type const& nod, pt){
+    if(nod.first != "sender"){
+      sender = nod.second.get<string>("node");
+      sAddress = nod.second.get<string>("ipv4Address");
+      sPort = nod.second.get<uint16_t>("port");
+    }
+    if(nod.first != "receiver"){
+      receiver = nod.second.get<string>("node");
+      rAddress = nod.second.get<string>("ipv4Address");
+      rPort = nod.second.get<uint16_t>("port");
+    }
+    if(nod.first != "startTime"){
+      start = stoi(nod.second.data());
+    }
+    if(nod.first != "endTime"){
+      end = stoi(nod.second.data());
+    }
+  }
+
+//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
+//  if(if_exists){
+//    port = pt.get<uint16_t>("application.special.port");
+//  }
+
+  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if(if_exists){
+    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
+  }
+
+  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
+  if(if_exists){
+    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+  }
+
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
+  PacketSinkHelper sink ("ns3::TcpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), rPort)));
+  ApplicationContainer sinkApp = sink.Install (NodeContainer(receiver));
+  sinkApp.Start(Seconds(start));
+  sinkApp.Stop(Seconds(end));
+
+  OnOffHelper onOffHelper("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
+  onOffHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
+  onOffHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+
+  onOffHelper.SetAttribute("PacketSize",UintegerValue(MaxPacketSize));
+
+  ApplicationContainer clientApp;
+  clientApp = onOffHelper.Install (NodeContainer(sender));
+  clientApp.Start (Seconds (start));
+  clientApp.Stop (Seconds (end));
+}
+
+void sinkApp(ptree pt, double d){
+  string receiver, sender, rAddress, sAddress;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t MaxPacketSize = 1024;
+  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
+  BOOST_FOREACH(ptree::value_type const& nod, pt){
+    //if(nod.first != "sender"){
+      //sender = nod.second.data();
+      //sAddress = nod.second.get<string>("ipv4Address");
+    //}
+cout << nod.first << " where we are\n\n\n";
+    if(nod.first != "receiver"){
+      receiver = nod.second.get<string>("node");
+      rAddress = nod.second.get<string>("ipv4Address");
+      rPort = pt.get<uint16_t>("application.special.port");
+    }
+    if(nod.first != "startTime"){
+      start = stoi(nod.second.data());
+    }
+    if(nod.first != "endTime"){
+      end = stoi(nod.second.data());
+    }
+  }
+
+//  optional<ptree&> if_exists = pt.get_child_optional("application.special.port");
+//  if(if_exists){
+//    port = pt.get<uint16_t>("application.special.port");
+//  }
+
+  optional<ptree&> if_exists = pt.get_child_optional("application.special.packetSize");
+  if(if_exists){
+    MaxPacketSize = pt.get<uint32_t>("application.special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("application.special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("application.special.maxPacketCount");
+  }
+
+  if_exists = pt.get_child_optional("application.special.packetIntervalTime");
+  if(if_exists){
+    interPacketInterval = Seconds(pt.get<double>("application.special.packetIntervalTime"));
+  }
+
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
+  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), rPort));
   PacketSinkHelper sinkHelper ("ns3::TcpSocketFactory", sinkLocalAddress);
-  ApplicationContainer sinkApp = sinkHelper.Install (NodeContainer("n6"));
-  sinkApp.Start (Seconds (1.0));
-  sinkApp.Stop (Seconds (d));
+  //PacketSinkHelper sinkHelper ("ns3::UdpSocketFactory", sinkLocalAddress);
+  ApplicationContainer sinkApp = sinkHelper.Install (NodeContainer(receiver));
+  sinkApp.Start (Seconds (start));
+  sinkApp.Stop (Seconds (end));
 
-  Address remoteAddress (InetSocketAddress (Ipv4Address ("10.0.0.10"), port));
-  OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
-  clientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-  clientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
-  ApplicationContainer clientApp = clientHelper.Install (NodeContainer("n17"));
-  clientApp.Start (Seconds (1.0)); /* delay startup depending on node number */
-  clientApp.Stop (Seconds (d));
+  BOOST_FOREACH(ptree::value_type const& nod, pt){
+    if(nod.first != "sender"){
+      sender = nod.second.get<string>("node");
+      //sAddress = nod.second.get<string>("ipv4Address");
+      sPort = pt.get<uint16_t>("application.special.port");
 
+      Address remoteAddress (InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort));
+      OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
+      //OnOffHelper clientHelper ("ns3::UdpSocketFactory", remoteAddress);
+      clientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
+      clientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+      ApplicationContainer clientApp = clientHelper.Install (NodeContainer(sender));
+      clientApp.Start (Seconds (start));
+      clientApp.Stop (Seconds (end));
+    }
+  }
 //  Ptr<Socket> ns3TcpSocket = Socket::CreateSocket (Names::Find<Node>("n17"), TcpSocketFactory::GetTypeId ());
 
 //  Ptr<MyApp> app = CreateObject<MyApp> ();
@@ -368,15 +564,21 @@ void bulkApp(ptree pt, double d){
 
 }
 
-void createApp(AppType type, ptree pt, double duration){
+void createApp(ptree pt, double duration){
   NS_LOG_INFO ("Create Applications.");
-  switch(type){
-    case UDP   : udpDSTApp(pt, duration); break;
-    case TCP   : tcpDSTApp(pt, duration); break;
-    case SINK  : sinkDSTApp(pt, duration); break;
-    case BURST : burstApp(pt, duration); break;
-    case BULK  : bulkApp(pt, duration); break;
-    default    : cout << "App type not yet supported\n";
+
+  BOOST_FOREACH(ptree::value_type const& app, pt.get_child("Applications")){
+    if(app.first == "application"){
+      string protocol = app.second.get<string>("type");
+cout << protocol << endl;
+      if(protocol.compare("Udp"))          { udpApp(app.second, duration); }
+      else if(protocol.compare("UdpEcho")) { udpEchoApp(app.second, duration); }
+      else if(protocol.compare("Tcp"))     { tcpApp(app.second, duration); }
+      else if(protocol.compare("Sink"))    { sinkApp(app.second, duration); }
+      else if(protocol.compare("Burst"))   { burstApp(app.second, duration); }
+      else if(protocol.compare("Bulk"))    { bulkApp(app.second, duration); }
+      else { cout << "App type not yet supported\n";}
+    }
   }
 }
 //###################################################################
@@ -395,6 +597,7 @@ int main (int argc, char *argv[]) {
   regex  cartesian("[0-9]+");
   string peer, peer2, type;
   string topo_name = "",
+         apps_file = "",
          ns2_mobility = "/dev/null",
          trace_prefix = "core2ns3_Logs/";
 
@@ -408,6 +611,7 @@ int main (int argc, char *argv[]) {
   // read command-line parameters
   CommandLine cmd;
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
+  cmd.AddValue("apps", "Path to application generator file", apps_file);
   cmd.AddValue("ns2","Ns2 mobility script file", ns2_mobility);
   cmd.AddValue("duration","Duration of Simulation",duration);
   cmd.AddValue("pcap","Enable pcap files",pcap);
@@ -417,9 +621,10 @@ int main (int argc, char *argv[]) {
   // Check command line arguments
   if (topo_name.empty ()){
     std::cout << "Usage of " << argv[0] << " :\n\n"
-    "./waf --run \"scratch/xml_to_ns3_scenario"
-    " --topo=imn2ns3/imn_sample_files/sample1.xml"
-    " --Ns2=imn2ns3/imn_sample_files/sample1.ns_movements"
+    "./waf --run \"scratch/core_to_ns3_scenario"
+    " --topo=imn2ns3/CORE-XML-files/sample1.xml"
+    " --apps=imn2ns3/apps-files/sample1.xml"
+    " --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements"
     " --traceDir=core2ns3_Logs/"
     " --pcap=true"
     //" --logFile=ns2-mob.log"
@@ -872,10 +1077,37 @@ int main (int argc, char *argv[]) {
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       NS_LOG_INFO ("Create CSMA channel.");
       int j = 0;
+      int k = 0; //index latest added extra hub/switch
+      int hub_count = 0;
+      int switch_count = 0;
       string ipv4_addr, ipv6_addr, mac_addr;
+
       peer = nod.second.get<string>("<xmlattr>.name");
+
+      // check for real type and if network includes more than one hub/switch
+      BOOST_FOREACH(ptree::value_type const& p0, child){
+        if(p0.first == "hub" && p0.second.get<string>("<xmlattr>.name") != peer){
+          hub_count++;
+        }
+        else if(p0.first == "switch" && p0.second.get<string>("<xmlattr>.name") != peer){
+          switch_count++;
+        }
+        else if(p0.first == "host" && p0.second.get<string>("<xmlattr>.name") != peer){
+          if(p0.second.get<string>("type") == "hub"){
+            hub_count++;
+          }
+          else if(p0.second.get<string>("type") == "lanswitch"){
+            switch_count++;
+          }
+        }
+        else if(p0.first == "hub" || p0.first == "switch" || p0.first == "host" && p0.second.get<string>("<xmlattr>.name") == peer){
+          type = p0.second.get<string>("type");
+        }
+      }
+
       NodeContainer csmaNodes;
       NodeContainer bridgeNode;
+      NodeContainer hubNode;
       NetDeviceContainer csmaDevices;
       NetDeviceContainer bridgeDevice;
       InternetStackHelper internetCsma;
@@ -999,10 +1231,12 @@ int main (int argc, char *argv[]) {
 //START OF APPLICATION GENERATOR TODO
 ////////////////////////////////
 
-
-  //createApp(UDP, pt, duration);
-  //createApp(TCP, pt, duration);
-
+  if(!apps_file.empty()){
+    //create apps if given
+    ptree a_pt;
+    read_xml(apps_file, a_pt);
+    createApp(a_pt, duration);
+  }
 
   cout << endl << nodes.GetN() << " defined node names with their respective id's..." << endl;
 
@@ -1064,7 +1298,7 @@ int main (int argc, char *argv[]) {
   ns2.Install();
 
   // Turn on global static routing so we can actually be routed across the network.
-  Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  //Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
