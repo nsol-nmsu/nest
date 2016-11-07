@@ -584,6 +584,7 @@ int main (int argc, char *argv[]) {
   // simulation locals
   NodeContainer nodes;
   NodeContainer bridges;
+  NodeContainer hubs;
 
   // read command-line parameters
   CommandLine cmd;
@@ -689,8 +690,8 @@ int main (int argc, char *argv[]) {
       NodeContainer p2pNodes;
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
-      string ipv4_addr, ipv6_addr, mac_addr;
-      string ipv4_addr2, ipv6_addr2, mac_addr2;
+      //string ipv4_addr, ipv6_addr, mac_addr;
+      //string ipv4_addr2, ipv6_addr2, mac_addr2;
       string name_holder, name_holder2;
       bool fst = true;
       int band = 0;
@@ -806,7 +807,7 @@ int main (int argc, char *argv[]) {
       NS_LOG_INFO ("Create Wireless channel.");
       int j = 0;
       double dist = 0.0;
-      string ipv4_addr, ipv6_addr, mac_addr;
+      //string ipv4_addr, ipv6_addr, mac_addr;
       peer = nod.second.get<string>("<xmlattr>.name");
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
@@ -1057,23 +1058,40 @@ int main (int argc, char *argv[]) {
       int k = 0; //index latest added extra hub/switch
       int hub_count = 0;
       int switch_count = 0;
-      string ipv4_addr, ipv6_addr, mac_addr;
+      string tempName = "";
+      //string ipv4_addr, ipv6_addr, mac_addr;
 
       peer = nod.second.get<string>("<xmlattr>.name");
 
       // check for real type and if network includes more than one hub/switch
       BOOST_FOREACH(ptree::value_type const& p0, child){
         if(p0.first == "hub" && p0.second.get<string>("<xmlattr>.name") != peer){
+          tempName = p0.second.get<string>("<xmlattr>.name");
+          Ptr<Node> h1 = CreateObject<Node>();
+          Names::Add(tempName, h1);
+          hubs.Add(tempName);
           hub_count++;
         }
         else if(p0.first == "switch" && p0.second.get<string>("<xmlattr>.name") != peer){
+          tempName = p0.second.get<string>("<xmlattr>.name");
+          Ptr<Node> s1 = CreateObject<Node>();
+          Names::Add(tempName, s1);
+          bridges.Add(tempName);
           switch_count++;
         }
         else if(p0.first == "host" && p0.second.get<string>("<xmlattr>.name") != peer){
           if(p0.second.get<string>("type") == "hub"){
+            tempName = p0.second.get<string>("<xmlattr>.name");
+            Ptr<Node> h2 = CreateObject<Node>();
+            Names::Add(tempName, h2);
+            hubs.Add(tempName);
             hub_count++;
           }
           else if(p0.second.get<string>("type") == "lanswitch"){
+            tempName = p0.second.get<string>("<xmlattr>.name");
+            Ptr<Node> s2 = CreateObject<Node>();
+            Names::Add(tempName, s2);
+            bridges.Add(tempName);
             switch_count++;
           }
         }
@@ -1091,6 +1109,7 @@ int main (int argc, char *argv[]) {
 
       int nNodes = nodes.GetN();
       int bNodes = bridges.GetN();
+      int hNodes = hubs.GetN();
       bool pflag = false;
       // Set the name for the hub/switch
       // Get the name of the hub/switch, if it was previously defined.
@@ -1100,13 +1119,30 @@ int main (int argc, char *argv[]) {
           break;
         }
       }
+      for(int i = 0; i < hNodes; i++){
+        if(peer.compare(Names::FindName(hubs.Get(i))) == 0){
+          pflag = true;
+          break;
+        }
+      }
       //add hub/switch to container and set its coordinates
       if(!pflag){
-        bridgeNode.Create(1);
-        Names::Add(peer, bridgeNode.Get(0));
-        bridges.Add(peer);
-        bNodes++;
-
+        if(type.compare("lanswitch") == 0){
+          bridgeNode.Create(1);
+          Names::Add(peer, bridgeNode.Get(0));
+          bridges.Add(peer);
+          bNodes++;
+        }
+        else if(type.compare("hub") == 0){
+          hubNode.Create(1);
+          Names::Add(peer, hubNode.Get(0));
+          hubs.Add(peer);
+          hNodes++;
+        }
+        else{
+          cout << type << " Ethernet type not supported\n";
+          exit(-3);
+        }
         getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
                       nod.second.get<double>("point.<xmlattr>.lon"), x, y);
 
