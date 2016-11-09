@@ -65,6 +65,7 @@ static char refUTMZone;
 static regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
 static regex addrIpv6("[/]{1}[0-9]+");
 static regex name("[a-zA-Z0-9]+");
+static regex interId("[a-zA-Z0-9]+[/]{1}[a-zA-Z0-9]+");
 //smatch r_match;
 
 //--------------------------------------------------------------------
@@ -1059,6 +1060,7 @@ int main (int argc, char *argv[]) {
       int hub_count = 0;
       int switch_count = 0;
       string tempName = "";
+      string ethId = "";
       //string ipv4_addr, ipv6_addr, mac_addr;
 
       peer = nod.second.get<string>("<xmlattr>.name");
@@ -1071,6 +1073,10 @@ int main (int argc, char *argv[]) {
           Names::Add(tempName, h1);
           hubs.Add(tempName);
           hub_count++;
+          getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                        nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+          AnimationInterface::SetConstantPosition(Names::Find<Node>(tempName), x, y);
         }
         else if(p0.first == "switch" && p0.second.get<string>("<xmlattr>.name") != peer){
           tempName = p0.second.get<string>("<xmlattr>.name");
@@ -1078,6 +1084,10 @@ int main (int argc, char *argv[]) {
           Names::Add(tempName, s1);
           bridges.Add(tempName);
           switch_count++;
+          getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                        nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+          AnimationInterface::SetConstantPosition(Names::Find<Node>(tempName), x, y);
         }
         else if(p0.first == "host" && p0.second.get<string>("<xmlattr>.name") != peer){
           if(p0.second.get<string>("type") == "hub"){
@@ -1086,6 +1096,10 @@ int main (int argc, char *argv[]) {
             Names::Add(tempName, h2);
             hubs.Add(tempName);
             hub_count++;
+            getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                          nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+            AnimationInterface::SetConstantPosition(Names::Find<Node>(tempName), x, y);
           }
           else if(p0.second.get<string>("type") == "lanswitch"){
             tempName = p0.second.get<string>("<xmlattr>.name");
@@ -1093,10 +1107,15 @@ int main (int argc, char *argv[]) {
             Names::Add(tempName, s2);
             bridges.Add(tempName);
             switch_count++;
+            getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                          nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+
+            AnimationInterface::SetConstantPosition(Names::Find<Node>(tempName), x, y);
           }
         }
         else if(p0.first == "hub" || p0.first == "switch" || p0.first == "host" && p0.second.get<string>("<xmlattr>.name") == peer){
           type = p0.second.get<string>("type");
+          ethId = p0.second.get<string>("<xmlattr>.id");
         }
       }
 
@@ -1153,7 +1172,7 @@ int main (int argc, char *argv[]) {
       // Go through channels and add neighboring members to the network
       BOOST_FOREACH(ptree::value_type const& p0, child){
         if(p0.first == "channel"){
-          string param, name_holder;
+          string param, name_holder, memInterId;
           CsmaHelper csma;
           // we want to skip anything that isn't the connected neighboring node
           BOOST_FOREACH(ptree::value_type const& tp0, p0.second){
@@ -1162,7 +1181,30 @@ int main (int argc, char *argv[]) {
               regex_search(name_holder, r_match, name);
               peer2 = r_match.str();
 
-              if(peer2.compare(peer) != 0){
+              if(peer2.compare(peer) == 0){
+                regex_search(name_holder, r_match, interId);
+                memInterId = r_match.str();
+
+                cout << ethId << " " << ethId.length() << endl;
+                cout << memInterId << " " << memInterId.length() << endl;
+
+                if(ethId.compare(memInterId) == 0){continue;}
+                int length = peer2.length();
+                //TODO: good place to check multi-switch pathway
+                //n4/n3/e1        <-- connection to hub/switch n3
+                //n4/n4/e0
+                //...
+                //n5/etho0
+                //n4/n4/e1        <-- direct connection to n5
+                //...
+                //n3/n2/e1
+                //n4/n3/e0        <-- connection is n3-n2
+                //...
+                //n1/eth0
+                //n4/n2/e0        <-- connection is n2--n1
+              }
+              else{ //TODO some check if direct connection
+              //else if(peer2.compare(peer) != 0){
                 break;
               }
             }
