@@ -360,6 +360,19 @@ void udpEchoApp(ptree pt, double d){
   apps = client.Install (NodeContainer(sender));
   apps.Start (Seconds (start));
   apps.Stop (Seconds (end));
+
+#if 0
+//
+// Users may find it convenient to initialize echo packets with actual data;
+// the below lines suggest how to do this
+//
+  client.SetFill (apps.Get (0), "Hello World");
+
+  client.SetFill (apps.Get (0), 0xa5, 1024);
+
+  uint8_t fill[] = { 0, 1, 2, 3, 4, 5, 6};
+  client.SetFill (apps.Get (0), fill, sizeof(fill), 1024);
+#endif
 }
 
 void tcpApp(ptree pt, double d){
@@ -1059,11 +1072,23 @@ int main (int argc, char *argv[]) {
       int k = 0; //index latest added extra hub/switch
       int hub_count = 0;
       int switch_count = 0;
+      int nNodes = nodes.GetN();
+      int bNodes = bridges.GetN();
+      int hNodes = hubs.GetN();
+
       string tempName = "";
+      string tempType = "";
       string ethId = "";
       //string ipv4_addr, ipv6_addr, mac_addr;
 
       peer = nod.second.get<string>("<xmlattr>.name");
+
+      NodeContainer csmaNodes;
+      NodeContainer bridgeNode;
+      NodeContainer hubNode;
+      NetDeviceContainer csmaDevices;
+      NetDeviceContainer bridgeDevice;
+      InternetStackHelper internetCsma;
 
       // check for real type and if network includes more than one hub/switch
       BOOST_FOREACH(ptree::value_type const& p0, child){
@@ -1116,118 +1141,173 @@ int main (int argc, char *argv[]) {
         else if(p0.first == "hub" || p0.first == "switch" || p0.first == "host" && p0.second.get<string>("<xmlattr>.name") == peer){
           type = p0.second.get<string>("type");
           ethId = p0.second.get<string>("<xmlattr>.id");
-        }
-      }
 
-      NodeContainer csmaNodes;
-      NodeContainer bridgeNode;
-      NodeContainer hubNode;
-      NetDeviceContainer csmaDevices;
-      NetDeviceContainer bridgeDevice;
-      InternetStackHelper internetCsma;
+          if(type.compare("lanswitch") == 0){
+            bridgeNode.Create(1);
+            Names::Add(peer, bridgeNode.Get(0));
+            bridges.Add(peer);
+            bNodes++;
+          }
+          else if(type.compare("hub") == 0){
+            hubNode.Create(1);
+            Names::Add(peer, hubNode.Get(0));
+            hubs.Add(peer);
+            hNodes++;
+          }
 
-      int nNodes = nodes.GetN();
-      int bNodes = bridges.GetN();
-      int hNodes = hubs.GetN();
-      bool pflag = false;
-      // Set the name for the hub/switch
-      // Get the name of the hub/switch, if it was previously defined.
-      for(int i = 0; i < bNodes; i++){
-        if(peer.compare(Names::FindName(bridges.Get(i))) == 0){
-          pflag = true;
-          break;
-        }
-      }
-      for(int i = 0; i < hNodes; i++){
-        if(peer.compare(Names::FindName(hubs.Get(i))) == 0){
-          pflag = true;
-          break;
-        }
-      }
-      //add hub/switch to container and set its coordinates
-      if(!pflag){
-        if(type.compare("lanswitch") == 0){
-          bridgeNode.Create(1);
-          Names::Add(peer, bridgeNode.Get(0));
-          bridges.Add(peer);
-          bNodes++;
-        }
-        else if(type.compare("hub") == 0){
-          hubNode.Create(1);
-          Names::Add(peer, hubNode.Get(0));
-          hubs.Add(peer);
-          hNodes++;
-        }
-        else{
-          cout << type << " Ethernet type not supported\n";
-          exit(-3);
-        }
-        getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
-                      nod.second.get<double>("point.<xmlattr>.lon"), x, y);
+          getXYPosition(nod.second.get<double>("point.<xmlattr>.lat"), 
+                        nod.second.get<double>("point.<xmlattr>.lon"), x, y);
 
-        AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), x, y);
+          AnimationInterface::SetConstantPosition(Names::Find<Node>(peer), x, y);
+        }
       }
 
       cout << "\nCreating new "<< type <<" network named " << peer << endl;
       // Go through channels and add neighboring members to the network
       BOOST_FOREACH(ptree::value_type const& p0, child){
         if(p0.first == "channel"){
-          string param, name_holder, memInterId;
+          string param, name_holder, memInterId, endInterId, linkName;
           CsmaHelper csma;
-          // we want to skip anything that isn't the connected neighboring node
+          int state = 0;
+          //  state 0 = clean,
+          //        1 = something direct detected,
+          //        2 = something indirect detected,
+          //        3 = some router detected,
+          //        4 = some hub/switch detected,
+          //        5 = direct hub/switch found,
+          //        6 = direct router/end device found,
+          //        7 = indirect router/end device found,
+          //        8 = indirect hub/switch found
+
+          // if hub/switch to hub/switch, build through calling function
+          // else if end divices, build through state 6 or 7
           BOOST_FOREACH(ptree::value_type const& tp0, p0.second){
             if(tp0.first == "member"){
               name_holder = tp0.second.data();
+              // get first name for comparison
               regex_search(name_holder, r_match, name);
               peer2 = r_match.str();
+              // get member id to help identify link order
+              regex_search(name_holder, r_match, interId);
+              memInterId = r_match.str();
 
               if(peer2.compare(peer) == 0){
-                regex_search(name_holder, r_match, interId);
-                memInterId = r_match.str();
-
-                cout << ethId << " " << ethId.length() << endl;
                 cout << memInterId << " " << memInterId.length() << endl;
 
-                if(ethId.compare(memInterId) == 0){continue;}
-                int length = peer2.length();
-                //TODO: good place to check multi-switch pathway
-                //n4/n3/e1        <-- connection to hub/switch n3
-                //n4/n4/e0
-                //...
-                //n5/etho0
-                //n4/n4/e1        <-- direct connection to n5
-                //...
-                //n3/n2/e1
-                //n4/n3/e0        <-- connection is n3-n2
-                //...
-                //n1/eth0
-                //n4/n2/e0        <-- connection is n2--n1
+                if(ethId.compare(memInterId) == 0){
+                  if(state == 0){
+                    state = 1;
+                  }
+                  else if(state == 3){ // direct router identified
+                    state = 6;
+                  }
+                  else if(state == 4){// direct hub/switch TODO
+                    state = 5;
+                  }
+                  else{
+                    // do nothing or error on state == 1
+                  }
+                }
+                else{
+                  if(state == 0){ // some hub/switch found
+                    linkName = memInterId.substr(peer.length() + 1);
+                    state = 4;
+                  }
+                  else if(state == 1){ // direct hub/switch identified
+                    linkName = memInterId.substr(peer.length() + 1);
+                    state = 5;
+                  }
+                  else if(state == 3){// indirect router identified
+                    linkName = memInterId.substr(peer.length() + 1);
+                    state = 7;
+                  }
+                  else if(state == 8){//indirect hub/switch to hub/switch
+                    // should already have built it
+                    // do nothing
+                  }
+                  else{
+                    // error
+                  }
+                }
               }
-              else{ //TODO some check if direct connection
-              //else if(peer2.compare(peer) != 0){
+              else{
+                if(state == 0){ // figure out if its router or not
+                  linkName = memInterId.substr(peer.length() + 1);
+
+                  // find if indirect hub/switch link
+                  bool skip = false;
+                  for(int i = 0; i < hNodes; i++){
+                    if(peer2.compare(Names::FindName(hubs.Get(i))) == 0){
+                      // call hub builder
+                      state = 8;
+                      skip = true;
+                      break;
+                    }
+                  }
+                  for(int i = 0; i < bNodes && !skip; i++){
+                    if(peer2.compare(Names::FindName(bridges.Get(i))) == 0){
+                      // call bridge builder
+                      state = 8;
+                      skip = true;
+                      break;
+                    }
+                  }
+                  // else it is some router
+                  if(!skip){
+                    endInterId = name_holder;
+                    state = 3;
+                  }
+                }
+                else if(state == 1){ // direct router identified
+                  endInterId = name_holder;
+                  state = 6;
+                }
+                else if(state == 4){//figure out if its a router or not
+                  // find if indirect hub/switch link
+                  bool skip = false;
+                  for(int i = 0; i < hNodes; i++){
+                    if(peer2.compare(Names::FindName(hubs.Get(i))) == 0){
+                      linkName = memInterId.substr(peer2.length() + 1);
+                      // call hub builder
+                      state = 8;
+                      skip = true;
+                      break;
+                    }
+                  }
+                  for(int i = 0; i < bNodes && !skip; i++){
+                    if(peer2.compare(Names::FindName(bridges.Get(i))) == 0){
+                      linkName = memInterId.substr(peer2.length() + 1);
+                      // call bridge builder
+                      state = 8;
+                      skip = true;
+                      break;
+                    }
+                  }
+                  // else it is indirect router
+                  if(!skip){
+                    endInterId = name_holder;
+                    state = 7;
+                  }
+                }
+                else{
+                  // error
+                }
+              }
+            }
+          }
+  // temp fix for switch-switch connection issue, complex to set from xml
+  NS_ABORT_MSG_IF (peer2.compare(peer) == 0, "CSMA builder : Bridge to bridge broadcast storm detected.");
+
+          if(state == 6){
+            bool p2Nflag = false;
+            for(int i = 0; i < nNodes; i++){
+              if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
+                p2Nflag = true;
                 break;
               }
             }
-          }
-  // TODO : temp fix for switch-switch connection issue, complex to set from xml
-  NS_ABORT_MSG_IF (peer2.compare(peer) == 0, "CSMA builder : Bridge to bridge broadcast storm detected.");
 
-          bool p2Nflag = false;
-          for(int i = 0; i < nNodes; i++){
-            if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
-              p2Nflag = true;
-              break;
-            }
-          }
-          bool p2Bflag = false;
-          for(int i = 0; i < bNodes; i++){
-            if(peer2.compare(Names::FindName(bridges.Get(i))) == 0){
-              p2Bflag = true;
-              break;
-            }
-          }
-          // create node and add internet stack if not yet previously created
-          if(!p2Nflag && !p2Bflag){
+            if(!p2Nflag){
               //Ipv4ListRoutingHelper staticonly;
               //Ipv4ListRoutingHelper staticRouting;
 
@@ -1237,41 +1317,94 @@ int main (int argc, char *argv[]) {
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
               internetCsma.Install(peer2);
-          }
+            }
 
-          BOOST_FOREACH(ptree::value_type const& p1, p0.second){
-            if(p1.first == "parameter"){
-              if(p1.second.get<string>("<xmlattr>.name") == "bw"){
-                csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data())));
-              }
-              else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
-                csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
-              }
-              else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
-                csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
+            BOOST_FOREACH(ptree::value_type const& p1, p0.second){
+              if(p1.first == "parameter"){
+                if(p1.second.get<string>("<xmlattr>.name") == "bw"){
+                  csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data())));
+                }
+                else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
+                  csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
+                }
+                else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
+                }
               }
             }
-          }
-          // set the link between node and hub/switch
-          NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
+            // set the link between node and hub/switch
+            NetDeviceContainer link = csma.Install(NodeContainer(peer2, peer));
 
-          csmaDevices.Add(link.Get(0));
-          bridgeDevice.Add(link.Get(1));
+            csmaDevices.Add(link.Get(0));
+            bridgeDevice.Add(link.Get(1));
 
-          // Get then set address
-          getAddresses(pt, peer2, name_holder);
-          Ptr<NetDevice> device = csmaDevices.Get (j++);
-          assignDeviceAddress(type, device);
+            // Get then set address
+            getAddresses(pt, peer2, endInterId);
+            Ptr<NetDevice> device = csmaDevices.Get (j++);
+            assignDeviceAddress(type, device);
 
-          csma.EnableAsciiAll(stream);
-          if(pcap){
-            csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
-          }
+            csma.EnableAsciiAll(stream);
+            if(pcap){
+              csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+            }
 
-          cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
+            cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
+          }// end direct end device
+          else if(state == 7){
+            bool p2Nflag = false;
+            for(int i = 0; i < nNodes; i++){
+              if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
+                p2Nflag = true;
+                break;
+              }
+            }
+
+            if(!p2Nflag){
+              //Ipv4ListRoutingHelper staticonly;
+              //Ipv4ListRoutingHelper staticRouting;
+
+              //staticonly.Add (staticRouting, 0);
+              //internetCsma.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+              csmaNodes.Create(1);
+              Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
+              nodes.Add(peer2);
+              internetCsma.Install(peer2);
+            }
+
+            BOOST_FOREACH(ptree::value_type const& p1, p0.second){
+              if(p1.first == "parameter"){
+                if(p1.second.get<string>("<xmlattr>.name") == "bw"){
+                  csma.SetChannelAttribute("DataRate", DataRateValue(stoi(p1.second.data())));
+                }
+                else if(p1.second.get<string>("<xmlattr>.name") == "delay"){
+                  csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
+                }
+                else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
+                }
+              }
+            }
+            // set the link between node and hub/switch
+            NetDeviceContainer link = csma.Install(NodeContainer(peer2, linkName));
+
+            csmaDevices.Add(link.Get(0));
+            bridgeDevice.Add(link.Get(1));
+
+            // Get then set address
+            getAddresses(pt, peer2, endInterId);
+            Ptr<NetDevice> device = csmaDevices.Get (j++);
+            assignDeviceAddress(type, device);
+
+            csma.EnableAsciiAll(stream);
+            if(pcap){
+              csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+            }
+
+            cout << "Adding node " << peer2 << " to a csma(" << type << ") " << linkName << endl;
+          }// end indirect end divice
         }
-
       //internetCsma.EnableAsciiIpv4All(stream);
       }
       BridgeHelper bridgeHelp;
