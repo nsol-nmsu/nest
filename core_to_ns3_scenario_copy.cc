@@ -12,6 +12,7 @@
 #include "ns3/traffic-control-layer.h"
 #include "ns3/ns2-mobility-helper.h"
 #include "ns3/flow-monitor-helper.h"
+#include "ns3/olsr-routing-protocol.h"
 #include "ns3/olsr-helper.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
@@ -780,22 +781,32 @@ int main (int argc, char *argv[]) {
       // add internet stack if not yet created, add routing if found
       p2pDevices.Add(p2p.Install(peer, peer2));
       InternetStackHelper internetP2P;
-      //Ipv4ListRoutingHelper staticonly;
-      //Ipv4ListRoutingHelper staticRouting;
 
       if(!pflag && !p2flag){
-        //staticonly.Add (staticRouting, 0);
-        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //OlsrHelper olsr;
+        Ipv4StaticRoutingHelper staticRouting;
+        Ipv4ListRoutingHelper list;
+        list.Add (staticRouting, 0);
+        //list.Add (olsr, 10);
+        internetP2P.SetRoutingHelper (list); // has effect on the next Install ()
         internetP2P.Install(p2pNodes);
       }
       else if(pflag && !p2flag){
-        //staticonly.Add (staticRouting, 0);
-        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //OlsrHelper olsr;
+        Ipv4StaticRoutingHelper staticRouting;
+        Ipv4ListRoutingHelper list;
+        list.Add (staticRouting, 0);
+        //list.Add (olsr, 10);
+        internetP2P.SetRoutingHelper (list); // has effect on the next Install ()
         internetP2P.Install(peer2);
       }
       else if(!pflag && p2flag){
-        //staticonly.Add (staticRouting, 0);
-        //internetP2P.SetRoutingHelper (staticonly);  // has effect on the next Install ()
+        //OlsrHelper olsr;
+        Ipv4StaticRoutingHelper staticRouting;
+        Ipv4ListRoutingHelper list;
+        list.Add (staticRouting, 0);
+        //list.Add (olsr, 10);
+        internetP2P.SetRoutingHelper (list); // has effect on the next Install ()
         internetP2P.Install(peer);
       }
 
@@ -989,10 +1000,12 @@ int main (int argc, char *argv[]) {
             }
           }
 
+          OlsrHelper olsr;
+
           // install the internet stack and routing
           if(!p2flag){
             NS_LOG_INFO ("Enabling OLSR Routing.");
-            OlsrHelper olsr;
+
             Ipv4StaticRoutingHelper staticRouting;
             Ipv4ListRoutingHelper list;
             list.Add (staticRouting, 0);
@@ -1003,6 +1016,14 @@ int main (int argc, char *argv[]) {
             wifiInternet.SetRoutingHelper (list); // has effect on the next Install ()
             wifiInternet.Install(peer2);
             nodes.Add(peer2);
+          }
+          else{
+            Ptr<Node> gateway = Names::Find<Node>(peer2);
+            int nDev = gateway->GetNDevices();
+            for(int inter = 0; inter < nDev; inter++){
+              olsr.ExcludeInterface(gateway, inter);
+            }
+            //olsr.Create(gateway);
           }
 
           wifiMac.SetType("ns3::AdhocWifiMac");
@@ -1016,6 +1037,27 @@ int main (int argc, char *argv[]) {
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
           assignDeviceAddress(type, device);
+
+          if(p2flag){
+            // Obtain olsr::RoutingProtocol instance of gateway node
+            Ptr<Ipv4> stack = Names::Find<Node>(peer2)->GetObject<Ipv4> ();
+            Ptr<Ipv4RoutingProtocol> rp_Gw = (stack->GetRoutingProtocol ());
+            Ptr<Ipv4ListRouting> lrp_Gw = DynamicCast<Ipv4ListRouting> (rp_Gw);
+
+            lrp_Gw->AddRoutingProtocol(olsr.Create(Names::Find<Node>(peer2)), 10);
+
+            Ptr<olsr::RoutingProtocol> olsrrp_Gw;
+
+            for (uint32_t i = 0; i < lrp_Gw->GetNRoutingProtocols ();  i++){
+              int16_t priority;
+              Ptr<Ipv4RoutingProtocol> temp = lrp_Gw->GetRoutingProtocol (i, priority);
+              if (DynamicCast<olsr::RoutingProtocol> (temp)){
+                olsrrp_Gw = DynamicCast<olsr::RoutingProtocol> (temp);
+              }
+            }
+            // Specify the required associations directly.
+            olsrrp_Gw->AddHostNetworkAssociation (Ipv4Address::GetAny (), Ipv4Mask ("255.255.0.0"));
+          }
         }
       }
       wifiPhyHelper.EnableAsciiAll(stream);
@@ -1339,11 +1381,13 @@ int main (int argc, char *argv[]) {
             }
 
             if(!p2Nflag){
-              //Ipv4ListRoutingHelper staticonly;
-              //Ipv4ListRoutingHelper staticRouting;
+              //OlsrHelper olsr;
+              Ipv4StaticRoutingHelper staticRouting;
+              Ipv4ListRoutingHelper list;
+              list.Add (staticRouting, 0);
+              //list.Add (olsr, 10);
+              internetCsma.SetRoutingHelper (list); // has effect on the next Install ()
 
-              //staticonly.Add (staticRouting, 0);
-              //internetCsma.SetRoutingHelper (staticonly);  // has effect on the next Install ()
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
@@ -1397,11 +1441,13 @@ int main (int argc, char *argv[]) {
             }
 
             if(!p2Nflag){
-              //Ipv4ListRoutingHelper staticonly;
-              //Ipv4ListRoutingHelper staticRouting;
+              //OlsrHelper olsr;
+              Ipv4StaticRoutingHelper staticRouting;
+              Ipv4ListRoutingHelper list;
+              list.Add (staticRouting, 0);
+              //list.Add (olsr, 10);
+              internetCsma.SetRoutingHelper (list); // has effect on the next Install ()
 
-              //staticonly.Add (staticRouting, 0);
-              //internetCsma.SetRoutingHelper (staticonly);  // has effect on the next Install ()
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
