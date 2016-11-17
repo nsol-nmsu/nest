@@ -231,7 +231,7 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
     ipv6->SetMetric (deviceInterface, 1);
     ipv6->AddAddress (deviceInterface, ipv6Addr);
     ipv6->SetUp (deviceInterface);
-}
+  }
 
   Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
   if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
@@ -793,10 +793,11 @@ int main (int argc, char *argv[]) {
 
       // add internet stack if not yet created, add routing if found
       p2pDevices.Add(p2p.Install(peer, peer2));
-      InternetStackHelper internetP2P;
 
       OlsrHelper olsr;
       Ipv4StaticRoutingHelper staticRouting;
+      InternetStackHelper internetP2P_1;
+      InternetStackHelper internetP2P_2;
 
       bool applyDefaultServices1 = true;
       bool applyDefaultServices2 = true;
@@ -822,8 +823,8 @@ int main (int argc, char *argv[]) {
                 }
               }
             }
-            internetP2P.SetRoutingHelper(list);
-            internetP2P.Install(peer);
+            internetP2P_1.SetRoutingHelper(list);
+            internetP2P_1.Install(peer);
             applyDefaultServices1 = false;
           }
           if(!p2flag && pl1.second.get<string>("<xmlattr>.name") == peer2){
@@ -839,8 +840,8 @@ int main (int argc, char *argv[]) {
                 }
               }
             }
-            internetP2P.SetRoutingHelper(list); // has effect on the next Install ()
-            internetP2P.Install(peer2);
+            internetP2P_2.SetRoutingHelper(list); // has effect on the next Install ()
+            internetP2P_2.Install(peer2);
             applyDefaultServices2 = false;
           }
         }
@@ -861,8 +862,8 @@ int main (int argc, char *argv[]) {
                 }
               }
             }
-            internetP2P.SetRoutingHelper(list);
-            internetP2P.Install(peer);
+            internetP2P_1.SetRoutingHelper(list);
+            internetP2P_1.Install(peer);
           }
           if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
             Ipv4ListRoutingHelper list;
@@ -877,8 +878,8 @@ int main (int argc, char *argv[]) {
                 }
               }
             }
-            internetP2P.SetRoutingHelper(list);
-            internetP2P.Install(peer2);
+            internetP2P_2.SetRoutingHelper(list);
+            internetP2P_2.Install(peer2);
           }
         }
       }
@@ -939,7 +940,6 @@ int main (int argc, char *argv[]) {
       peer = nod.second.get<string>("<xmlattr>.name");
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
-      InternetStackHelper wifiInternet;
 
       WifiHelper wifi;
       YansWifiPhyHelper wifiPhyHelper = YansWifiPhyHelper::Default();
@@ -1092,101 +1092,93 @@ int main (int argc, char *argv[]) {
             continue;
           }
 
-        // set type for service matching
-        BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-          if(pl1.first != "host" && pl1.first != "router"){
-            continue;
-          }
-          if(pl1.second.get<string>("<xmlattr>.name") == peer2){
-            p2Type = pl1.second.get<string>("type");
-          }
-        }
-
-        int nNodes = nodes.GetN();
-        bool p2flag = false;
-        for(int i = 0; i < nNodes; i++){
-          if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
-            p2flag = true;
-            break;
-          }
-        }
-
-          if(!p2flag){
-            wifiNodes.Create(1);
-            Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
-            nodes.Add(peer2);
-          }
-/*          else{
-            Ptr<Node> gateway = Names::Find<Node>(peer2);
-            int nDev = gateway->GetNDevices();
-            for(int inter = 0; inter < nDev; inter++){
-              olsr.ExcludeInterface(gateway, inter);
+          // set type for service matching
+          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+            if(pl1.first != "host" && pl1.first != "router"){
+              continue;
             }
-            //olsr.Create(gateway);
-          }
-*/
-
-        OlsrHelper olsr;
-        Ipv4StaticRoutingHelper staticRouting;
-        Ipv4ListRoutingHelper list;
-        bool applyDefaultServices2 = true;
-
-        // get local services
-        BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-          if(pl1.first != "host" && pl1.first != "router"){
-            continue;
+            if(pl1.second.get<string>("<xmlattr>.name") == peer2){
+              p2Type = pl1.second.get<string>("type");
+            }
           }
 
-          optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
-          if(service_exists){
-            if(pl1.second.get<string>("<xmlattr>.name") == peer2 && !p2flag){
-              BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-                if(pl2.first == "service"){
-                  if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                    list.Add (staticRouting, 0);
-                  }
-                  else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                    Ptr<Node> gateway = Names::Find<Node>(peer2);
-                    int nDev = gateway->GetNDevices();
-                    for(int inter = 0; inter < nDev; inter++){
-                      olsr.ExcludeInterface(gateway, inter);
+          int nNodes = nodes.GetN();
+          bool p2flag = false;
+          for(int i = 0; i < nNodes; i++){
+            if(peer2.compare(Names::FindName(nodes.Get(i))) == 0){
+              p2flag = true;
+              break;
+            }
+          }
+
+            if(!p2flag){
+              wifiNodes.Create(1);
+              Names::Add(peer2, wifiNodes.Get(wifiNodes.GetN() - 1));
+              nodes.Add(peer2);
+            }
+
+          OlsrHelper olsr;
+          Ipv4StaticRoutingHelper staticRouting;
+          Ipv4ListRoutingHelper list;
+          InternetStackHelper wifiInternet;
+          bool applyDefaultServices2 = true;
+
+          // get local services
+          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+            if(pl1.first != "host" && pl1.first != "router"){
+              continue;
+            }
+
+            optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
+            if(service_exists){
+              if(!p2flag && pl1.second.get<string>("<xmlattr>.name") == peer2){
+                BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
+                  if(pl2.first == "service"){
+                    if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
+                      list.Add (staticRouting, 0);
                     }
+                    else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+                      Ptr<Node> gateway = Names::Find<Node>(peer2);
+                      int nDev = gateway->GetNDevices();
+                      for(int inter = 0; inter < nDev; inter++){
+                        olsr.ExcludeInterface(gateway, inter);
+                      }
 
-                    list.Add(olsr, 10);
+                      list.Add(olsr, 10);
+                    }
                   }
                 }
+                wifiInternet.SetRoutingHelper(list); // has effect on the next Install ()
+                wifiInternet.Install(peer2);
+                applyDefaultServices2 = false;
               }
-              wifiInternet.SetRoutingHelper(list); // has effect on the next Install ()
-              wifiInternet.Install(peer2);
-              applyDefaultServices2 = false;
             }
           }
-        }
-        // if there were no local, set default services according to type
-        BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-          if(pl1.first == "CORE:defaultservices"){
-            if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
-              BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-                if(pl2.first == "service"){
-                  if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                    list.Add (staticRouting, 0);
-                  }
-                  else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                    Ptr<Node> gateway = Names::Find<Node>(peer2);
-                    int nDev = gateway->GetNDevices();
-                    for(int inter = 0; inter < nDev; inter++){
-                      olsr.ExcludeInterface(gateway, inter);
+          // if there were no local, set default services according to type
+          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+            if(pl1.first == "CORE:defaultservices"){
+              if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
+                BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
+                  if(pl2.first == "service"){
+                    if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
+                      list.Add (staticRouting, 0);
                     }
+                    else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+                      Ptr<Node> gateway = Names::Find<Node>(peer2);
+                      int nDev = gateway->GetNDevices();
+                      for(int inter = 0; inter < nDev; inter++){
+                        olsr.ExcludeInterface(gateway, inter);
+                      }
 
-                    list.Add(olsr, 10);
+                      list.Add(olsr, 10);
+                    }
                   }
                 }
+                wifiInternet.SetRoutingHelper(list);
+                wifiInternet.Install(peer2);
               }
-              wifiInternet.SetRoutingHelper(list);
-              wifiInternet.Install(peer2);
             }
           }
-        }
 
           wifiMac.SetType("ns3::AdhocWifiMac");
           wifiDevices.Add(wifi.Install(wifiPhyHelper, wifiMac, peer2));
@@ -1253,7 +1245,6 @@ int main (int argc, char *argv[]) {
       NodeContainer bridgeNode;
       NodeContainer hubNode;
       NetDeviceContainer csmaDevices;
-      InternetStackHelper internetCsma;
 
       // check for real type and if network includes more than one hub/switch
       BOOST_FOREACH(ptree::value_type const& p0, child){
@@ -1563,6 +1554,7 @@ int main (int argc, char *argv[]) {
             OlsrHelper olsr;
             Ipv4StaticRoutingHelper staticRouting;
             Ipv4ListRoutingHelper list;
+            InternetStackHelper internetCsma;
             bool applyDefaultServices2 = true;
 
             // get local services
@@ -1592,6 +1584,7 @@ int main (int argc, char *argv[]) {
                 }
               }
             }
+
             // if there were no local, set default services according to type
             BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
               if(pl1.first == "CORE:defaultservices"){
@@ -1636,9 +1629,8 @@ int main (int argc, char *argv[]) {
 
             // Get then set address
             getAddresses(pt, peer2, endInterId);
-            Ptr<NetDevice> device = csmaDevices.Get (j++);
+            Ptr<NetDevice> device = link.Get(0);//csmaDevices.Get (j++);
             assignDeviceAddress(type, device);
-
             csma.EnableAsciiAll(stream);
             if(pcap){
               csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
@@ -1658,6 +1650,16 @@ int main (int argc, char *argv[]) {
               }
             }
 
+            // set type for service matching
+            BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+              if(pl1.first != "host" && pl1.first != "router"){
+                continue;
+              }
+              if(pl1.second.get<string>("<xmlattr>.name") == peer2){
+                p2Type = pl1.second.get<string>("type");
+              }
+            }
+
             if(!p2Nflag){
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
@@ -1668,6 +1670,7 @@ int main (int argc, char *argv[]) {
             OlsrHelper olsr;
             Ipv4StaticRoutingHelper staticRouting;
             Ipv4ListRoutingHelper list;
+            InternetStackHelper internetCsma;
             bool applyDefaultServices2 = true;
 
             // get local services
@@ -1739,7 +1742,7 @@ int main (int argc, char *argv[]) {
 
             // Get then set address
             getAddresses(pt, peer2, endInterId);
-            Ptr<NetDevice> device = csmaDevices.Get (j++);
+            Ptr<NetDevice> device = link.Get(0);//csmaDevices.Get (j++);
             assignDeviceAddress(type, device);
 
             csma.EnableAsciiAll(stream);
