@@ -15,6 +15,7 @@
 #include "ns3/flow-monitor-helper.h"
 #include "ns3/olsr-routing-protocol.h"
 #include "ns3/olsr-helper.h"
+#include "ns3/aodv-helper.h"
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
 #include "ns3/netanim-module.h"
@@ -29,6 +30,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/foreach.hpp>
 #include <exception>
+#include <iostream>
 #include <set>
 
 //--------------------------------------------------------------------
@@ -40,6 +42,7 @@ using std::cerr;
 using std::string;
 using std::vector;
 using std::ostream;
+using std::ostringstream;
 using std::regex;
 using std::smatch;
 
@@ -251,12 +254,12 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 // applications
 //====================================================================
 void udpApp(ptree pt, double d){
-  string receiver, sender, rAddress;
+  string receiver, sender, rAddress, offVar;
+  ostringstream onVar;
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
-  Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
 
   sender = pt.get<string>("sender.node");
@@ -279,32 +282,37 @@ void udpApp(ptree pt, double d){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("special.packetIntervalTime");
+  if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
+    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ConstantRandomVariable[Constant=0]";
+  }
+
+  if_exists = pt.get_child_optional("special.poisson");
+  if(if_exists){
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
   // make sure end time is not beyond simulation time
   end = (end <= d)? end : d;
 
-//
-// Create one udpServer applications on destination.
-//
-  UdpServerHelper server (rPort);
-  ApplicationContainer apps = server.Install (NodeContainer(receiver));
-  apps.Start (Seconds (start));
-  apps.Stop (Seconds (end));
+  PacketSinkHelper sink ("ns3::UdpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), rPort)));
+  ApplicationContainer sinkApp = sink.Install (NodeContainer(receiver));
+  sinkApp.Start(Seconds(start));
+  sinkApp.Stop(Seconds(end));
 
-//
-// Create one UdpClient application to send UDP datagrams from source to destination.
-//
-  UdpClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
-  client.SetAttribute ("MaxPackets", UintegerValue (packetSize * maxPacketCount));
-  client.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  client.SetAttribute ("PacketSize", UintegerValue (packetSize));
-  apps = client.Install (NodeContainer(sender));
-  apps.Start (Seconds (start));
-  apps.Stop (Seconds (end));
+  OnOffHelper onOffHelper("ns3::UdpSocketFactory", Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
+  onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
+  onOffHelper.SetAttribute("OffTime", StringValue(offVar));
+
+  onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
+  onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
+
+  ApplicationContainer clientApp;
+  clientApp = onOffHelper.Install (NodeContainer(sender));
+  clientApp.Start (Seconds (start));
+  clientApp.Stop (Seconds (end));
 }
 
 void udpEchoApp(ptree pt, double d){
@@ -378,12 +386,12 @@ void udpEchoApp(ptree pt, double d){
 }
 
 void tcpApp(ptree pt, double d){
-  string receiver, sender, rAddress, sAddress;
+  string receiver, sender, rAddress, offVar;
+  ostringstream onVar;
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
-  Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
 
   sender = pt.get<string>("sender.node");
@@ -406,9 +414,16 @@ void tcpApp(ptree pt, double d){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("special.packetIntervalTime");
+  if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
+    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ConstantRandomVariable[Constant=0]";
+  }
+
+  if_exists = pt.get_child_optional("special.poisson");
+  if(if_exists){
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
   // make sure end time is not beyond simulation time
@@ -420,10 +435,11 @@ void tcpApp(ptree pt, double d){
   sinkApp.Stop(Seconds(end));
 
   OnOffHelper onOffHelper("ns3::TcpSocketFactory", Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
-  onOffHelper.SetAttribute("OnTime", StringValue("ns3::ConstantRandomVariable[Constant=1]"));
-  onOffHelper.SetAttribute("OffTime", StringValue("ns3::ConstantRandomVariable[Constant=0]"));
+  onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
+  onOffHelper.SetAttribute("OffTime", StringValue(offVar));
 
   onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
+  onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
 
   ApplicationContainer clientApp;
   clientApp = onOffHelper.Install (NodeContainer(sender));
@@ -431,13 +447,95 @@ void tcpApp(ptree pt, double d){
   clientApp.Stop (Seconds (end));
 }
 
-void sinkApp(ptree pt, double d){
-  string receiver, sender, rAddress, sAddress;
+void patchApp(ptree pt, double d){
+  string receiver, sender, rAddress, offVar, protocol;
+  ostringstream onVar;
   uint32_t start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
-  Time interPacketInterval = Seconds (1.0);
+  uint32_t maxPacketCount = 1;
+
+  sender = pt.get<string>("sender.node");
+  sPort = pt.get<uint16_t>("sender.port");
+  receiver = pt.get<string>("receiver.node");
+  rAddress = pt.get<string>("receiver.ipv4Address");
+  rPort = pt.get<uint16_t>("receiver.port");
+  start = pt.get<uint32_t>("startTime");
+  end = pt.get<uint32_t>("endTime");
+  protocol = pt.get<string>("type");
+
+  cout << "Creating " << protocol << " application with sender " << sender << " and receiver " << receiver << endl;
+
+  if(protocol.compare("Udp") == 0){
+    protocol = "ns3::UdpSocketFactory";
+  }
+  else if(protocol.compare("Tcp") == 0){
+    protocol = "ns3::TcpSocketFactory";
+  }
+  else if(protocol.compare("Sink") == 0){
+    protocol = "ns3::PacketSocketFactory";
+  }
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("special.maxPacketCount");
+  if(if_exists){
+    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
+  }
+
+  if_exists = pt.get_child_optional("special.periodic");
+  if(if_exists){
+    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ConstantRandomVariable[Constant=0]";
+  }
+
+  if_exists = pt.get_child_optional("special.poisson");
+  if(if_exists){
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ExponentialRandomVariable[Mean=0]";
+  }
+
+  // make sure end time is not beyond simulation time
+  end = (end <= d)? end : d;
+
+  PacketSinkHelper sink ("ns3::TcpSocketFactory", Address(InetSocketAddress(Ipv4Address::GetAny(), rPort)));
+  ApplicationContainer sinkApp = sink.Install (NodeContainer(receiver));
+  sinkApp.Start(Seconds(start));
+  sinkApp.Stop(Seconds(end));
+
+  BOOST_FOREACH(ptree::value_type const& nod, pt){
+    if(nod.first == "sender"){
+      sender = nod.second.get<string>("node");
+      sPort = nod.second.get<uint16_t>("port");
+
+      cout << receiver << " ";
+
+      OnOffHelper onOffHelper(protocol, Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
+      onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
+      onOffHelper.SetAttribute("OffTime", StringValue(offVar));
+
+      onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
+      onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
+
+      ApplicationContainer clientApp;
+      clientApp = onOffHelper.Install (NodeContainer(sender));
+      clientApp.Start (Seconds (start));
+      clientApp.Stop (Seconds (end));
+    }
+  }
+}
+
+void sinkApp(ptree pt, double d){
+  string receiver, sender, rAddress, offVar;
+  ostringstream onVar;
+  uint32_t start, end;
+  uint16_t sPort = 4000;
+  uint16_t rPort = 4000;
+  uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
 
   sender = pt.get<string>("sender.node");
@@ -460,9 +558,16 @@ void sinkApp(ptree pt, double d){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
   }
 
-  if_exists = pt.get_child_optional("special.packetIntervalTime");
+  if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
+    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ConstantRandomVariable[Constant=0]";
+  }
+
+  if_exists = pt.get_child_optional("special.poisson");
+  if(if_exists){
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
   // make sure end time is not beyond simulation time
@@ -486,8 +591,8 @@ void sinkApp(ptree pt, double d){
       Address remoteAddress (InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort));
       OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);
       //OnOffHelper clientHelper ("ns3::UdpSocketFactory", remoteAddress);
-      clientHelper.SetAttribute("OnTime", StringValue ("ns3::ConstantRandomVariable[Constant=1]"));
-      clientHelper.SetAttribute("OffTime", StringValue ("ns3::ConstantRandomVariable[Constant=0]"));
+      clientHelper.SetAttribute("OnTime", StringValue (onVar.str()));
+      clientHelper.SetAttribute("OffTime", StringValue (offVar));
       ApplicationContainer clientApp = clientHelper.Install (NodeContainer(sender));
       clientApp.Start (Seconds (start));
       clientApp.Stop (Seconds (end));
@@ -578,7 +683,7 @@ void createApp(ptree pt, double duration){
 // Parse CORE XML and create an ns3 scenario file from it
 //###################################################################
 int main (int argc, char *argv[]) {
-  Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
+  //Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
 
   // The below value configures the default behavior of global routing.
   // By default, it is disabled.  To respond to interface events, set to true
@@ -796,6 +901,7 @@ int main (int argc, char *argv[]) {
       p2pDevices.Add(p2p.Install(peer, peer2));
 
       OlsrHelper olsr;
+      Ipv4GlobalRoutingHelper globalRouting;
       Ipv4StaticRoutingHelper staticRouting;
       RipHelper ripRouting;
       RipNgHelper ripNgRouting;
@@ -825,7 +931,10 @@ int main (int argc, char *argv[]) {
                   list.Add(olsr, 10);
                 }
                 else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 0);
+                  list.Add(ripRouting, 5);
+                }
+                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                  list.Add(globalRouting, -10);
                 }
                 //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                 //  list.Add(ripNgRouting, 0);
@@ -848,7 +957,10 @@ int main (int argc, char *argv[]) {
                   list.Add(olsr, 10);
                 }
                 else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 0);
+                  list.Add(ripRouting, 5);
+                }
+                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                  list.Add(globalRouting, -10);
                 }
                 //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                 //  list.Add(ripNgRouting, 0);
@@ -876,7 +988,10 @@ int main (int argc, char *argv[]) {
                   list.Add(olsr, 10);
                 }
                 else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 0);
+                  list.Add(ripRouting, 5);
+                }
+                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                  list.Add(globalRouting, -10);
                 }
                 //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                 //  list.Add(ripNgRouting, 0);
@@ -898,7 +1013,10 @@ int main (int argc, char *argv[]) {
                   list.Add(olsr, 10);
                 }
                 else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 0);
+                  list.Add(ripRouting, 5);
+                }
+                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                  list.Add(globalRouting, -10);
                 }
                 //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                 //  list.Add(ripNgRouting, 0);
@@ -1140,6 +1258,8 @@ int main (int argc, char *argv[]) {
             }
 
           OlsrHelper olsr;
+          //Ipv4GlobalRoutingHelper globalRouting;
+          //AodvHelper aodv;
           Ipv4StaticRoutingHelper staticRouting;
           RipHelper ripRouting;
           RipNgHelper ripNgRouting;
@@ -1165,7 +1285,11 @@ int main (int argc, char *argv[]) {
                       list.Add(olsr, 10);
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                      list.Add(ripRouting, 0);
+                      list.Add(ripRouting, 5);
+                    }
+                    else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                      list.Add(olsr, 10);
+                    //  list.Add(globalRouting, -10);
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
@@ -1191,7 +1315,11 @@ int main (int argc, char *argv[]) {
                       list.Add(olsr, 10);
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                      list.Add(ripRouting, 0);
+                      list.Add(ripRouting, 5);
+                    }
+                    else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                      list.Add(olsr, 10);
+                    //  list.Add(globalRouting, -10);
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
@@ -1585,6 +1713,7 @@ int main (int argc, char *argv[]) {
             }
 
             OlsrHelper olsr;
+            Ipv4GlobalRoutingHelper globalRouting;
             Ipv4StaticRoutingHelper staticRouting;
             RipHelper ripRouting;
             RipNgHelper ripNgRouting;
@@ -1611,7 +1740,10 @@ int main (int argc, char *argv[]) {
                         list.Add(olsr, 10);
                       }
                       else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 0);
+                        list.Add(ripRouting, 5);
+                      }
+                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                        list.Add(globalRouting, -10);
                       }
                       //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                       //  list.Add(ripNgRouting, 0);
@@ -1638,7 +1770,10 @@ int main (int argc, char *argv[]) {
                         list.Add(olsr, 10);
                       }
                       else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 0);
+                        list.Add(ripRouting, 5);
+                      }
+                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                        list.Add(globalRouting, -10);
                       }
                       //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                       //  list.Add(ripNgRouting, 0);
@@ -1722,6 +1857,7 @@ int main (int argc, char *argv[]) {
             }
 
             OlsrHelper olsr;
+            Ipv4GlobalRoutingHelper globalRouting;
             Ipv4StaticRoutingHelper staticRouting;
             RipHelper ripRouting;
             RipNgHelper ripNgRouting;
@@ -1746,7 +1882,10 @@ int main (int argc, char *argv[]) {
                         list.Add(olsr, 10);
                       }
                       else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 0);
+                        list.Add(ripRouting, 5);
+                      }
+                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                        list.Add(globalRouting, -10);
                       }
                       //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                       //  list.Add(ripNgRouting, 0);
@@ -1772,7 +1911,10 @@ int main (int argc, char *argv[]) {
                         list.Add(olsr, 10);
                       }
                       else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 0);
+                        list.Add(ripRouting, 5);
+                      }
+                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                        list.Add(globalRouting, -10);
                       }
                       //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                       //  list.Add(ripNgRouting, 0);

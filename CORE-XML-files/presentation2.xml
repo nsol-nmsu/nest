@@ -47,7 +47,7 @@
   <network id="n23" name="n23">
     <point lat="47.5726259854" lon="-122.117710982" type="gps"/>
     <type>ethernet</type>
-    <host id="n23/n23" name="n23">
+    <switch id="n23/n23" name="n23">
       <type domain="CORE">lanswitch</type>
       <interface id="n23/n23/e0" name="e0"/>
       <interface id="n23/n23/e1" name="e1"/>
@@ -55,7 +55,7 @@
       <interface id="n23/n23/e3" name="e3"/>
       <alias domain="COREID">23</alias>
       <point lat="47.5726259854" lon="-122.117710982" type="gps"/>
-    </host>
+    </switch>
     <member type="interface">n19/eth1</member>
     <member type="interface">n23/n23/e0</member>
     <member type="interface">n20/eth0</member>
@@ -99,39 +99,11 @@
   </network>
   <network id="net0" name="net0">
     <type>ethernet</type>
-    <alias domain="COREID">63881</alias>
-    <member type="interface">n17/eth1</member>
-    <member type="interface">n18/eth0</member>
-    <member type="channel">net0/chan0</member>
-    <channel id="net0/chan0" name="chan0">
-      <type>ethernet</type>
-      <parameter name="bw">10000000</parameter>
-      <parameter name="delay">160</parameter>
-      <member index="0" type="interface">n17/eth1</member>
-      <member index="1" type="interface">n18/eth0</member>
-    </channel>
-  </network>
-  <network id="net1" name="net1">
-    <type>ethernet</type>
-    <alias domain="COREID">23179</alias>
-    <member type="interface">n18/eth1</member>
-    <member type="interface">n19/eth0</member>
-    <member type="channel">net1/chan0</member>
-    <channel id="net1/chan0" name="chan0">
-      <type>ethernet</type>
-      <parameter name="bw">10000000</parameter>
-      <parameter name="delay">160</parameter>
-      <member index="0" type="interface">n18/eth1</member>
-      <member index="1" type="interface">n19/eth0</member>
-    </channel>
-  </network>
-  <network id="net2" name="net2">
-    <type>ethernet</type>
-    <alias domain="COREID">27865</alias>
+    <alias domain="COREID">63512</alias>
     <member type="interface">n3/eth1</member>
     <member type="interface">n17/eth0</member>
-    <member type="channel">net2/chan0</member>
-    <channel id="net2/chan0" name="chan0">
+    <member type="channel">net0/chan0</member>
+    <channel id="net0/chan0" name="chan0">
       <type>ethernet</type>
       <parameter name="bw">10000000</parameter>
       <parameter name="delay">160</parameter>
@@ -139,12 +111,40 @@
       <member index="1" type="interface">n17/eth0</member>
     </channel>
   </network>
+  <network id="net1" name="net1">
+    <type>ethernet</type>
+    <alias domain="COREID">31257</alias>
+    <member type="interface">n17/eth1</member>
+    <member type="interface">n18/eth0</member>
+    <member type="channel">net1/chan0</member>
+    <channel id="net1/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">10000000</parameter>
+      <parameter name="delay">160</parameter>
+      <member index="0" type="interface">n17/eth1</member>
+      <member index="1" type="interface">n18/eth0</member>
+    </channel>
+  </network>
+  <network id="net2" name="net2">
+    <type>ethernet</type>
+    <alias domain="COREID">43338</alias>
+    <member type="interface">n18/eth1</member>
+    <member type="interface">n19/eth0</member>
+    <member type="channel">net2/chan0</member>
+    <channel id="net2/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">10000000</parameter>
+      <parameter name="delay">160</parameter>
+      <member index="0" type="interface">n18/eth1</member>
+      <member index="1" type="interface">n19/eth0</member>
+    </channel>
+  </network>
   <router id="n1" name="n1">
     <type domain="CORE">router</type>
     <interface id="n1/eth0" name="eth0">
       <member index="0" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:00</address>
+      <address type="mac">00:00:00:aa:00:08</address>
       <address type="IPv4">10.0.0.1/24</address>
       <address type="IPv6">2001::1/128</address>
     </interface>
@@ -156,7 +156,7 @@
     <interface id="n2/eth0" name="eth0">
       <member index="1" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:01</address>
+      <address type="mac">00:00:00:aa:00:09</address>
       <address type="IPv4">10.0.0.2/24</address>
       <address type="IPv6">2001::2/128</address>
     </interface>
@@ -168,26 +168,32 @@
     <interface id="n3/eth0" name="eth0">
       <member index="2" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:02</address>
+      <address type="mac">00:00:00:aa:00:0a</address>
       <address type="IPv4">10.0.0.3/24</address>
       <address type="IPv6">2001::3/128</address>
     </interface>
     <interface id="n3/eth1" name="eth1">
-      <member index="0" type="channel">net2/chan0</member>
-      <member type="network">net2</member>
-      <address type="mac">00:00:00:aa:00:0f</address>
+      <member index="0" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:00:17</address>
       <address type="IPv4">10.0.1.1/24</address>
       <address type="IPv6">2001:1::1/64</address>
     </interface>
     <alias domain="COREID">3</alias>
     <point lat="47.5742783119" lon="-122.125501714" type="gps"/>
+    <CORE:services name="n3">
+      <service name="zebra" startup_idx="35"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="OLSR" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
   </router>
   <router id="n4" name="n4">
     <type domain="CORE">router</type>
     <interface id="n4/eth0" name="eth0">
       <member index="3" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:03</address>
+      <address type="mac">00:00:00:aa:00:0b</address>
       <address type="IPv4">10.0.0.4/24</address>
       <address type="IPv6">2001::4/128</address>
     </interface>
@@ -199,7 +205,7 @@
     <interface id="n5/eth0" name="eth0">
       <member index="4" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:04</address>
+      <address type="mac">00:00:00:aa:00:0c</address>
       <address type="IPv4">10.0.0.5/24</address>
       <address type="IPv6">2001::5/128</address>
     </interface>
@@ -211,7 +217,7 @@
     <interface id="n6/eth0" name="eth0">
       <member index="5" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:05</address>
+      <address type="mac">00:00:00:aa:00:0d</address>
       <address type="IPv4">10.0.0.6/24</address>
       <address type="IPv6">2001::6/128</address>
     </interface>
@@ -223,7 +229,7 @@
     <interface id="n7/eth0" name="eth0">
       <member index="6" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:06</address>
+      <address type="mac">00:00:00:aa:00:0e</address>
       <address type="IPv4">10.0.0.7/24</address>
       <address type="IPv6">2001::7/128</address>
     </interface>
@@ -235,7 +241,7 @@
     <interface id="n8/eth0" name="eth0">
       <member index="7" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:07</address>
+      <address type="mac">00:00:00:aa:00:0f</address>
       <address type="IPv4">10.0.0.8/24</address>
       <address type="IPv6">2001::8/128</address>
     </interface>
@@ -247,7 +253,7 @@
     <interface id="n9/eth0" name="eth0">
       <member index="8" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:08</address>
+      <address type="mac">00:00:00:aa:00:10</address>
       <address type="IPv4">10.0.0.9/24</address>
       <address type="IPv6">2001::9/128</address>
     </interface>
@@ -259,7 +265,7 @@
     <interface id="n10/eth0" name="eth0">
       <member index="9" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:09</address>
+      <address type="mac">00:00:00:aa:00:11</address>
       <address type="IPv4">10.0.0.10/24</address>
       <address type="IPv6">2001::10/128</address>
     </interface>
@@ -271,7 +277,7 @@
     <interface id="n11/eth0" name="eth0">
       <member index="10" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:0a</address>
+      <address type="mac">00:00:00:aa:00:12</address>
       <address type="IPv4">10.0.0.11/24</address>
       <address type="IPv6">2001::11/128</address>
     </interface>
@@ -283,7 +289,7 @@
     <interface id="n12/eth0" name="eth0">
       <member index="11" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:0b</address>
+      <address type="mac">00:00:00:aa:00:13</address>
       <address type="IPv4">10.0.0.12/24</address>
       <address type="IPv6">2001::12/128</address>
     </interface>
@@ -295,7 +301,7 @@
     <interface id="n13/eth0" name="eth0">
       <member index="12" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:0c</address>
+      <address type="mac">00:00:00:aa:00:14</address>
       <address type="IPv4">10.0.0.13/24</address>
       <address type="IPv6">2001::13/128</address>
     </interface>
@@ -307,7 +313,7 @@
     <interface id="n14/eth0" name="eth0">
       <member index="13" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:0d</address>
+      <address type="mac">00:00:00:aa:00:15</address>
       <address type="IPv4">10.0.0.14/24</address>
       <address type="IPv6">2001::14/128</address>
     </interface>
@@ -319,7 +325,7 @@
     <interface id="n15/eth0" name="eth0">
       <member index="14" type="channel">wlan16/wireless</member>
       <member type="network">wlan16</member>
-      <address type="mac">00:00:00:aa:00:0e</address>
+      <address type="mac">00:00:00:aa:00:16</address>
       <address type="IPv4">10.0.0.15/24</address>
       <address type="IPv6">2001::15/128</address>
     </interface>
@@ -329,16 +335,16 @@
   <router id="n17" name="n17">
     <type domain="CORE">router</type>
     <interface id="n17/eth0" name="eth0">
-      <member index="1" type="channel">net2/chan0</member>
-      <member type="network">net2</member>
-      <address type="mac">00:00:00:aa:00:10</address>
+      <member index="1" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:00:18</address>
       <address type="IPv4">10.0.1.2/24</address>
       <address type="IPv6">2001:1::2/64</address>
     </interface>
     <interface id="n17/eth1" name="eth1">
-      <member index="0" type="channel">net0/chan0</member>
-      <member type="network">net0</member>
-      <address type="mac">00:00:00:aa:00:11</address>
+      <member index="0" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:19</address>
       <address type="IPv4">10.0.2.1/24</address>
       <address type="IPv6">2001:2::1/64</address>
     </interface>
@@ -348,16 +354,16 @@
   <router id="n18" name="n18">
     <type domain="CORE">router</type>
     <interface id="n18/eth0" name="eth0">
-      <member index="1" type="channel">net0/chan0</member>
-      <member type="network">net0</member>
-      <address type="mac">00:00:00:aa:00:12</address>
+      <member index="1" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:1a</address>
       <address type="IPv4">10.0.2.2/24</address>
       <address type="IPv6">2001:2::2/64</address>
     </interface>
     <interface id="n18/eth1" name="eth1">
-      <member index="0" type="channel">net1/chan0</member>
-      <member type="network">net1</member>
-      <address type="mac">00:00:00:aa:00:13</address>
+      <member index="0" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:1b</address>
       <address type="IPv4">10.0.3.1/24</address>
       <address type="IPv6">2001:3::1/64</address>
     </interface>
@@ -367,16 +373,16 @@
   <router id="n19" name="n19">
     <type domain="CORE">router</type>
     <interface id="n19/eth0" name="eth0">
-      <member index="1" type="channel">net1/chan0</member>
-      <member type="network">net1</member>
-      <address type="mac">00:00:00:aa:00:14</address>
+      <member index="1" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:1c</address>
       <address type="IPv4">10.0.3.2/24</address>
       <address type="IPv6">2001:3::2/64</address>
     </interface>
     <interface id="n19/eth1" name="eth1">
       <member index="0" type="channel">n23/chan0</member>
       <member type="network">n23</member>
-      <address type="mac">00:00:00:aa:00:15</address>
+      <address type="mac">00:00:00:aa:00:1d</address>
       <address type="IPv4">10.0.4.1/24</address>
       <address type="IPv6">2001:4::1/64</address>
     </interface>
@@ -388,7 +394,7 @@
     <interface id="n20/eth0" name="eth0">
       <member index="0" type="channel">n23/chan1</member>
       <member type="network">n23</member>
-      <address type="mac">00:00:00:aa:00:16</address>
+      <address type="mac">00:00:00:aa:00:1e</address>
       <address type="IPv4">10.0.4.20/24</address>
       <address type="IPv6">2001:4::20/64</address>
     </interface>
@@ -400,7 +406,7 @@
     <interface id="n21/eth0" name="eth0">
       <member index="0" type="channel">n23/chan2</member>
       <member type="network">n23</member>
-      <address type="mac">00:00:00:aa:00:17</address>
+      <address type="mac">00:00:00:aa:00:1f</address>
       <address type="IPv4">10.0.4.21/24</address>
       <address type="IPv6">2001:4::21/64</address>
     </interface>
@@ -412,7 +418,7 @@
     <interface id="n22/eth0" name="eth0">
       <member index="0" type="channel">n23/chan3</member>
       <member type="network">n23</member>
-      <address type="mac">00:00:00:aa:00:18</address>
+      <address type="mac">00:00:00:aa:00:20</address>
       <address type="IPv4">10.0.4.22/24</address>
       <address type="IPv6">2001:4::22/64</address>
     </interface>

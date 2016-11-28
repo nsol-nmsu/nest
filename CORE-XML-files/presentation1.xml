@@ -3116,6 +3116,7 @@
       <service name="OSPFv3"/>
       <service name="vtysh"/>
       <service name="IPForward"/>
+      <service name="StaticRoute"/>
     </device>
   </CORE:defaultservices>
   <CORE:sessionconfig>

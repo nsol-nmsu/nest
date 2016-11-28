@@ -22,34 +22,25 @@
         </special>
     </application>
     <application>
-        <type>Sink</type>
+        <type>Tcp</type>
         <name>sink_0</name>
         <sender>
             <node>n22</node>
             <port>80</port>
             <ipv4Address>10.0.4.22</ipv4Address>
         </sender>
-        <sender>
-            <node>n21</node>
-            <port>80</port>
-            <ipv4Address>10.0.4.21</ipv4Address>
-        </sender>
-        <sender>
-            <node>n20</node>
-            <port>80</port>
-            <ipv4Address>10.0.4.20</ipv4Address>
-        </sender>
+
         <receiver>
-            <node>n19</node>
+            <node>n18</node>
             <port>80</port>
-            <ipv4Address>10.0.4.1</ipv4Address>
+            <ipv4Address>10.0.3.1</ipv4Address>
         </receiver>
         <startTime>1</startTime>
         <endTime>10</endTime>
         <special>
+            <periodic>10.0</periodic>
             <packetSize>1024</packetSize>
-            <maxPacketCount>1</maxPacketCount>
-            <packetIntervalTime>1.0</packetIntervalTime>
+            <maxPacketCount>10</maxPacketCount>
         </special>
     </application>
 </Applications>

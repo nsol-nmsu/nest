@@ -52,6 +52,7 @@ node n3 {
     labelcoords {346.0 393.0}
     interface-peer {eth0 n16}
     interface-peer {eth1 n17}
+    services {zebra vtysh OLSR IPForward}
 }
 
 node n4 {
