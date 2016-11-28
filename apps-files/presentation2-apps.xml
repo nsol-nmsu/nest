@@ -13,7 +13,7 @@
             <port>80</port>
             <ipv4Address>10.0.0.4</ipv4Address>
         </receiver>
-        <startTime>1</startTime>
+        <startTime>3</startTime>
         <endTime>10</endTime>
         <special>
             <packetSize>1024</packetSize>
@@ -22,25 +22,45 @@
         </special>
     </application>
     <application>
-        <type>Tcp</type>
-        <name>sink_0</name>
+        <type>UdpEcho</type>
+        <name>udpEcho_0</name>
         <sender>
             <node>n22</node>
             <port>80</port>
             <ipv4Address>10.0.4.22</ipv4Address>
         </sender>
-
         <receiver>
-            <node>n18</node>
+            <node>n19</node>
             <port>80</port>
-            <ipv4Address>10.0.3.1</ipv4Address>
+            <ipv4Address>10.0.4.1</ipv4Address>
         </receiver>
-        <startTime>1</startTime>
+        <startTime>2</startTime>
+        <endTime>10</endTime>
+        <special>
+            <packetSize>1024</packetSize>
+            <maxPacketCount>10</maxPacketCount>
+            <packetIntervalTime>1.0</packetIntervalTime>
+        </special>
+    </application>
+    <application>
+        <type>Tcp</type>
+        <name>tcp_0</name>
+        <sender>
+            <node>n8</node>
+            <port>80</port>
+            <ipv4Address>10.0.0.8</ipv4Address>
+        </sender>
+        <receiver>
+            <node>n3</node>
+            <port>80</port>
+            <ipv4Address>10.0.0.3</ipv4Address>
+        </receiver>
+        <startTime>2.5</startTime>
         <endTime>10</endTime>
         <special>
             <periodic>10.0</periodic>
             <packetSize>1024</packetSize>
-            <maxPacketCount>10</maxPacketCount>
+            <maxPacketCount>0</maxPacketCount>
         </special>
     </application>
 </Applications>

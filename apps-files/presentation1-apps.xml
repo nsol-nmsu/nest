@@ -16,9 +16,9 @@
         <startTime>2</startTime>
         <endTime>11</endTime>
         <special>
-            <periodic>10.0</periodic>
+            <periodic>1.0</periodic>
             <packetSize>1024</packetSize>
-            <maxPacketCount>50</maxPacketCount>
+            <maxPacketCount>0</maxPacketCount>
         </special>
     </application>
 

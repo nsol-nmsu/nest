@@ -256,19 +256,21 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 void udpApp(ptree pt, double d){
   string receiver, sender, rAddress, offVar;
   ostringstream onVar;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
+  //uint32_t dataRate = 1024;
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
+  double packetsPerSec = 1;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
 
   cout << "Creating UDP application with sender " << sender << " and receiver " << receiver << endl;
 
@@ -277,6 +279,11 @@ void udpApp(ptree pt, double d){
     packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
+  //if_exists = pt.get_child_optional("special.dataRate");
+  //if(if_exists){
+  //  dataRate = pt.get<uint32_t>("special.dataRate");
+  //}
+
   if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
@@ -284,13 +291,15 @@ void udpApp(ptree pt, double d){
 
   if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.periodic");
+    onVar << "ns3::ConstantRandomVariable[Constant=" << packetsPerSec << "]";
     offVar = "ns3::ConstantRandomVariable[Constant=0]";
   }
 
   if_exists = pt.get_child_optional("special.poisson");
   if(if_exists){
-    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.poisson");
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << packetsPerSec << "]";
     offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
@@ -306,6 +315,7 @@ void udpApp(ptree pt, double d){
   onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
   onOffHelper.SetAttribute("OffTime", StringValue(offVar));
 
+  onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize* 8 * packetsPerSec));
   onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
   onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
 
@@ -317,7 +327,7 @@ void udpApp(ptree pt, double d){
 
 void udpEchoApp(ptree pt, double d){
   string receiver, sender, rAddress;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
@@ -329,8 +339,8 @@ void udpEchoApp(ptree pt, double d){
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
 
   cout << "Creating UDPECHO application with sender " << sender << " and receiver " << receiver << endl;
 
@@ -388,19 +398,21 @@ void udpEchoApp(ptree pt, double d){
 void tcpApp(ptree pt, double d){
   string receiver, sender, rAddress, offVar;
   ostringstream onVar;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
+  //uint32_t dataRate = 1024;
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
+  double packetsPerSec = 1;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
 
   cout << "Creating TCP application with sender " << sender << " and receiver " << receiver << endl;
 
@@ -409,6 +421,11 @@ void tcpApp(ptree pt, double d){
     packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
+  //if_exists = pt.get_child_optional("special.dataRate");
+  //if(if_exists){
+  //  dataRate = pt.get<uint32_t>("special.dataRate");
+  //}
+
   if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
@@ -416,13 +433,15 @@ void tcpApp(ptree pt, double d){
 
   if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.periodic");
+    onVar << "ns3::ConstantRandomVariable[Constant=" << packetsPerSec << "]";
     offVar = "ns3::ConstantRandomVariable[Constant=0]";
   }
 
   if_exists = pt.get_child_optional("special.poisson");
   if(if_exists){
-    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.poisson");
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << packetsPerSec << "]";
     offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
@@ -438,6 +457,7 @@ void tcpApp(ptree pt, double d){
   onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
   onOffHelper.SetAttribute("OffTime", StringValue(offVar));
 
+  onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize* 8 * packetsPerSec));
   onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
   onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
 
@@ -450,19 +470,21 @@ void tcpApp(ptree pt, double d){
 void patchApp(ptree pt, double d){
   string receiver, sender, rAddress, offVar, protocol;
   ostringstream onVar;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
+  //uint32_t dataRate = 1024;
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
+  double packetsPerSec = 1;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
   protocol = pt.get<string>("type");
 
   cout << "Creating " << protocol << " application with sender " << sender << " and receiver " << receiver << endl;
@@ -482,6 +504,11 @@ void patchApp(ptree pt, double d){
     packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
+  //if_exists = pt.get_child_optional("special.dataRate");
+  //if(if_exists){
+  //  dataRate = pt.get<uint32_t>("special.dataRate");
+  //}
+
   if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
     maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
@@ -489,13 +516,15 @@ void patchApp(ptree pt, double d){
 
   if_exists = pt.get_child_optional("special.periodic");
   if(if_exists){
-    onVar << "ns3::ConstantRandomVariable[Constant=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.periodic");
+    onVar << "ns3::ConstantRandomVariable[Constant=" << packetsPerSec << "]";
     offVar = "ns3::ConstantRandomVariable[Constant=0]";
   }
 
   if_exists = pt.get_child_optional("special.poisson");
   if(if_exists){
-    onVar << "ns3::ExponentialRandomVariable[Mean=" << pt.get<double>("special.periodic") << "]";
+    packetsPerSec = pt.get<double>("special.poisson");
+    onVar << "ns3::ExponentialRandomVariable[Mean=" << packetsPerSec << "]";
     offVar = "ns3::ExponentialRandomVariable[Mean=0]";
   }
 
@@ -518,6 +547,7 @@ void patchApp(ptree pt, double d){
       onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
       onOffHelper.SetAttribute("OffTime", StringValue(offVar));
 
+      onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize* 8 * packetsPerSec));
       onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
       onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
 
@@ -532,7 +562,7 @@ void patchApp(ptree pt, double d){
 void sinkApp(ptree pt, double d){
   string receiver, sender, rAddress, offVar;
   ostringstream onVar;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
@@ -543,8 +573,8 @@ void sinkApp(ptree pt, double d){
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
 
   cout << "Creating SINK application with sender " << sender << " and receiver/s ";
 
@@ -616,7 +646,7 @@ void burstApp(ptree pt, double d){
 
 void bulkApp(ptree pt, double d){
   string receiver, sender, rAddress, sAddress;
-  uint32_t start, end;
+  float start, end;
   uint16_t sPort = 4000;
   uint16_t rPort = 4000;
   uint32_t packetSize = 1024;
@@ -628,8 +658,8 @@ void bulkApp(ptree pt, double d){
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
   rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<uint32_t>("startTime");
-  end = pt.get<uint32_t>("endTime");
+  start = pt.get<float>("startTime");
+  end = pt.get<float>("endTime");
 
   cout << "Creating SINK application with sender " << sender << " and receiver/s ";
 
@@ -687,7 +717,8 @@ int main (int argc, char *argv[]) {
 
   // The below value configures the default behavior of global routing.
   // By default, it is disabled.  To respond to interface events, set to true
-  Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
+  //Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
+  bool global_is_safe = true;
 
   // config locals
   bool   pcap = false;
@@ -1074,6 +1105,7 @@ int main (int argc, char *argv[]) {
 //-------------------------------------------------------------------
     if(type.compare("wireless") == 0){
       NS_LOG_INFO ("Create Wireless channel.");
+      global_is_safe = false;
       int j = 0;
       double dist = 0.0;
       //string ipv4_addr, ipv6_addr, mac_addr;
@@ -1258,7 +1290,7 @@ int main (int argc, char *argv[]) {
             }
 
           OlsrHelper olsr;
-          //Ipv4GlobalRoutingHelper globalRouting;
+          Ipv4GlobalRoutingHelper globalRouting;
           //AodvHelper aodv;
           Ipv4StaticRoutingHelper staticRouting;
           RipHelper ripRouting;
@@ -1276,20 +1308,24 @@ int main (int argc, char *argv[]) {
             optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
             if(service_exists){
               if(!p2flag && pl1.second.get<string>("<xmlattr>.name") == peer2){
+                bool olsrRoutingSet = false;
+
                 BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
                   if(pl2.first == "service"){
                     if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
                       list.Add (staticRouting, 0);
                     }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
                       list.Add(olsr, 10);
+                      olsrRoutingSet = true;
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
                       list.Add(ripRouting, 5);
                     }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
                       list.Add(olsr, 10);
-                    //  list.Add(globalRouting, -10);
+                      olsrRoutingSet = true;
+                      list.Add(globalRouting, -10);
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
@@ -1306,20 +1342,24 @@ int main (int argc, char *argv[]) {
           BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
             if(pl1.first == "CORE:defaultservices"){
               if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
+                bool olsrRoutingSet = false;
+
                 BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
                   if(pl2.first == "service"){
                     if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
                       list.Add (staticRouting, 0);
                     }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
                       list.Add(olsr, 10);
+                      olsrRoutingSet = true;
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
                       list.Add(ripRouting, 5);
                     }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
                       list.Add(olsr, 10);
-                    //  list.Add(globalRouting, -10);
+                      olsrRoutingSet = true;
+                      list.Add(globalRouting, -10);
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
@@ -2057,7 +2097,9 @@ int main (int argc, char *argv[]) {
   ns2.Install();
 
   // Turn on global static routing so we can actually be routed across the network.
-  //Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  if(global_is_safe){
+    Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+  }
 
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
