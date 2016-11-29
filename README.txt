@@ -1,43 +1,29 @@
-// Authors:
-// Armando
-// John
-// Andres
-//
-// Project description: to create an intermediate program that can take CORE
-// IMUNES files and parse them into an XML format which in turn can be used
-// to create an NS3 scenario or an IMN CORE file. The XML will have a schema
-// to allow human input for traffic flow, routing and logging.
+# CORE To NS-3 Translator #
+  The CORE to NS-3 translator aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
+  It is an intermediate program that can take a CORE XML file and dynamically create an NS3 scenario.
 
-**Short notes:**
+## 1) Build / Install ##
 
-- imn folder must be placed inside folder ns-3.25
-- Libraries for c++11 and boost must be installed
-- We are currently using NetAnim to visualize the scenario output, therefore
-  NetAnim must be installed:
-  Qt4 (4.8 and over) is required to build NetAnim. This can be obtained using
-  the following ways:
+  You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
 
-  For Debian/Ubuntu Linux distributions:
-$ apt-get install qt4-dev-tools
+  The program folder must exists inside the ns-3.25 folder to properly install using only the makefile.
 
-  For Red Hat/Fedora based distribution:
-$ yum install qt4
-$ yum install qt4-devel
+  We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
+  [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-  To build NetAnim use the following commands:
+  to use our program, enter the imn2ns3 folder and run the 'make configure'.
+'''
+cd imn2ns3
+make configure
+'''
 
-$ cd netanim
-$ make clean
-$ qmake NetAnim.pro  (For MAC Users: qmake -spec macx-g++ NetAnim.pro)
-$ make
+  Once waf has finished, run 'make', this will place files where they need to be.
+'''
+make
+'''
 
-  Note: qmake could be “qmake-qt4” in some systems
-  This should create an executable named “NetAnim” in the same directory
-  To run NetAnim:
-$ ./NetAnim
-
-
-- makefile added, 
+  here is a makefile short description:
+ 
   typing 'make configure' Copies files to their destination, configures flags and
                           compiles/links NS3 files.
   typing 'make'           Copies files to their destination, and runs ./waf to
@@ -45,81 +31,52 @@ $ ./NetAnim
   typing 'make clean'     Removes <some of> the added files.
   typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
-**Current developed XML Schema can be viewed here:**
-https://docs.google.com/drawings/d/19wQD3N5gthTcy9LZ4ggZMSBA0dCI5UfvjWj8bXUmjLs/edit?usp=sharing
+  Once all files have been placed and compiled, return to ns3.25 directory and run
+  the following sample for confirmation:
+'''
+cd ..
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
+'''
 
-**to Generate an XML file:**
-./waf --run "scratch/xml_tester --topo=imn2ns3/IMN-files/third.imn"
+  If no errors appear, program has been correctly installed.
+  Program syntax uses the following:
 
-**to generate a scenario, an example syntax would be:**
-./waf --run "scratch/imn_to_ns3_scenario --topo=imn2ns3/IMN-files/third.imn"
+  "topo" Path to intermediate topology file
+    ' --topo=imn2ns3/CORE-XML-files/sample1.xml'
 
-**or**
+  "apps" Path to application generator file
+    ' --apps=imn2ns3/apps-files/sample1.xml'
 
-./waf --run "scratch/xml_to_ns3_scenario --topo=imn2ns3/IMN-to_XML-files/sample1.xml"
+  "ns2" Ns2 mobility script file
+    ' --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements'
 
-**or**
+  "duration" Duration of Simulation
+    ' --duration=27.0\" \n\n'
 
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/WideAreaNetwork2.xml"
+  "pcap" Enable pcap files"
+    ' --pcap=true'
+
+  "traceDir" Directory in which to store trace files
+    ' --traceDir=core2ns3_Logs/'
+
 
 
 //***************************BUGS/ERRORS/TO-DO******************************//
-//**IN IMN/XML TO NS3 SCENARIO
-- Currently cannot handle switch/hub to switch/hub connections
-reason: NS3 doesn't not have a representation for hub/switches, currently
-        using bridges. Routing bridge to bridge causes broadcast storm.
-
-- IPv4 routing error when setting wireless nodes with submask of all ones
-reason: current implemetation assumes nodes are in a network, mask of /32 means
-        unique address, not belonging in a network
-
-- Currently has no automated application settings enabled.
-reason: TO-DO
-
-
-
-
-//**IN IMN TO XML GENERATOR
-- Can erroneously create interfaces with RJ45 and prouters
-reason: when setting p2p links, we don't check if peer nodes types.
-
-- Can create empty interfaces/nodes
-reason: custom-config can have additional settings for existing interfaces where
-        our reader may incorrectly interpret them as new.
-        Empty node may be a byproduct, not yet full understood.
-
-- Can flip interface address/peer
-reason: unknown, may be something more to do with custom-config additional
-        settings.
-
-- ServicePlan must be user inputed once XML intermediate file is created
-reason: complexity of services/scripts
-
-
-
-
-//**IN XML SCHEMA
-- Event time not very useful
-reason: can be used to alter simulation start and stop times but must be
-        user inputted, NS3 currently does this already for stop time.
-
-- ServicePlan unfinished.
-reason: TO-DO
-
-
-
 
 //**IN CORE TO NS3 SCENERIO
-- IPv4 routing error when setting wireless nodes with submask of all ones
-reason: current implemetation assumes nodes are in a network, mask of /32 means
-        unique address, not belonging in a network
+- Network error when setting wireless nodes with submask of all ones
+reason: Current implemetation assumes nodes are in an ad-hoc network, trying to
+        get subnet-directed broadcast address with an all-ones netmask will
+        cause errors.
 
-- Currently cannot handle switch/hub to switch/hub connections
+- Currently implements all hubs and switches as bridge devices
 reason: NS3 doesn't not have a representation for hub/switches, currently
-        using bridges. Routing bridge to bridge causes broadcast storm.
+        using bridges.
 
-- Currently has no automated application settings enabled.
-reason: TO-DO
+- Currently has limited application settings enabled.
+reason: Routing protocols available in CORE may not be available in NS3.25.
 
+        GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
+        nodes therefore cannot be used to link all nodes correctly.
 
-
+        Reading script files to build a route is not supported.
