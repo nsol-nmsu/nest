@@ -12,15 +12,22 @@
   [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
   to use our program, enter the imn2ns3 folder and run the 'make configure'.
-'''
+
+```
+#!terminal
+
 cd imn2ns3
 make configure
-'''
+```
 
-  Once waf has finished, run 'make', this will place files where they need to be.
-'''
+
+  Once waf has finished, run 
+```
+#!terminal
+
 make
-'''
+```
+, this will place files where they need to be.
 
   here is a makefile short description:
  
@@ -35,10 +42,14 @@ make
 
   Once all files have been placed and compiled, return to ns3.25 directory and run
   the following sample for confirmation:
-'''
+
+```
+#!terminal
+
 cd ..
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
-'''
+```
+
 
   Program also supports generating traffic flow using a simple XML Schema.
   Examples of the schema exists inside the apps-files/ directory.
@@ -89,8 +100,6 @@ reason: NS3 doesn't not have a representation for hub/switches, currently
 
 - Currently has limited application settings enabled.
 reason: Routing protocols available in CORE may not be available in NS3.25.
-
         GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
         nodes therefore cannot be used to link all nodes correctly.
-
         Reading script files to build a route is not supported.
