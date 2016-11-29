@@ -28,12 +28,12 @@ Once waf has finished, run 'make', this will place files where they need to be.
 make
 ```
 
-here is a makefile short description:
+Here is a makefile short description:
  
-typing 'make configure' Copies files to their destination, configures flags and compiles/links NS3 files.
-typing 'make'           Copies files to their destination, and runs ./waf to compile/link NS3 files.
-typing 'make clean'     Removes <some of> the added files.
-typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
+* typing 'make configure' Copies files to their destination, configures flags and compiles/links NS3 files.
+* typing 'make'           Copies files to their destination, and runs ./waf to compile/link NS3 files.
+* typing 'make clean'     Removes <some of> the added files.
+* typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
 ## 2) Execute ##
 
@@ -115,16 +115,19 @@ An example of this will look is as follows
 ```
 ***LIMITATIONS/TO-DOS***
 
-- Network error when setting wireless nodes with submask of all ones
+* Network error when setting wireless nodes with submask of all ones.
+
 reason: Current implemetation assumes nodes are in an ad-hoc network, trying to
         get subnet-directed broadcast address with an all-ones netmask will
         cause errors.
 
-- Currently implements all hubs and switches as bridge devices
+* Currently implements all hubs and switches as bridge devices.
+
 reason: NS3 doesn't not have a representation for hub/switches, currently
         using bridges.
 
-- Currently has limited application settings enabled.
+* Currently has limited application settings enabled.
+
 reason: Routing protocols available in CORE may not be available in NS3.25.
         GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
         nodes therefore cannot be used to link all nodes correctly.
