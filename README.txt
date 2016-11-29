@@ -1,44 +1,27 @@
-// Authors:
-// Armando
-// John
-// Andres
-//
-// Project description: to create an intermediate program that can take CORE
-// XML format to create an NS3 scenario with a patch file equivalent to MGEN
-// for program validation.
+# CORE To NS-3 Translator #
+  The CORE to NS-3 translator aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
+  It is an intermediate program that can take a CORE XML file and dynamically create an NS3 scenario.
 
-**Short notes:**
+## 1) Build / Install ##
 
-- imn folder must be placed inside folder ns-3.25
-- Libraries for c++11 and boost must be installed
-- We are currently using NetAnim to visualize the scenario output, therefore
-  NetAnim should be installed:
+  You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
 
-  Qt4 (4.8 and over) is required to build NetAnim. This can be obtained using
-  the following ways:
+  The program folder must exists inside the ns-3.25 folder to properly install using only the makefile.
 
-  For Debian/Ubuntu Linux distributions:
-$ apt-get install qt4-dev-tools
+  We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
+  [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-  For Red Hat/Fedora based distribution:
-$ yum install qt4
-$ yum install qt4-devel
+  to use our program, enter the imn2ns3 folder and run the 'make configure'.
+'''
+cd imn2ns3
+make configure
+'''
 
-  To build NetAnim use the following commands:
+  Once waf has finished, run 'make', this will place files where they need to be.
+'''
+make
+'''
 
-$ cd netanim
-$ make clean
-$ qmake NetAnim.pro  (For MAC Users: qmake -spec macx-g++ NetAnim.pro)
-$ make
-
-  Note: qmake could be “qmake-qt4” in some systems
-  This should create an executable named “NetAnim” in the same directory
-  To run NetAnim:
-$ ./NetAnim
-
-- to use our program, enter the imn2ns3 folder and run the 'make configure'
-  to compile waf with needed flags.
-- Once waf has finished, run 'make', this will place files where they need to be.
   here is a makefile short description:
  
   typing 'make configure' Copies files to their destination, configures flags and
@@ -48,31 +31,33 @@ $ ./NetAnim
   typing 'make clean'     Removes <some of> the added files.
   typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
-- Once all files have been placed and compiled, return to ns3.25 directory and run
+  Once all files have been placed and compiled, return to ns3.25 directory and run
   the following sample for confirmation:
+'''
+cd ..
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
+'''
 
-$ ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
-
-- If no errors appear, program has been correctly installed.
-- Program syntax uses the following:
+  If no errors appear, program has been correctly installed.
+  Program syntax uses the following:
 
   "topo" Path to intermediate topology file
-    " --topo=imn2ns3/CORE-XML-files/sample1.xml"
+    ' --topo=imn2ns3/CORE-XML-files/sample1.xml'
 
   "apps" Path to application generator file
-    " --apps=imn2ns3/apps-files/sample1.xml"
+    ' --apps=imn2ns3/apps-files/sample1.xml'
 
   "ns2" Ns2 mobility script file
-    " --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements"
+    ' --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements'
 
   "duration" Duration of Simulation
-    " --duration=27.0\" \n\n";
+    ' --duration=27.0\" \n\n'
 
   "pcap" Enable pcap files"
-    " --pcap=true"
+    ' --pcap=true'
 
   "traceDir" Directory in which to store trace files
-    " --traceDir=core2ns3_Logs/"
+    ' --traceDir=core2ns3_Logs/'
 
 
 
@@ -95,6 +80,3 @@ reason: Routing protocols available in CORE may not be available in NS3.25.
         nodes therefore cannot be used to link all nodes correctly.
 
         Reading script files to build a route is not supported.
-
-
-
