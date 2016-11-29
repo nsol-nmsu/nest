@@ -31,6 +31,8 @@ make
   typing 'make clean'     Removes <some of> the added files.
   typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
+## 2) Execute ##
+
   Once all files have been placed and compiled, return to ns3.25 directory and run
   the following sample for confirmation:
 '''
@@ -38,20 +40,28 @@ cd ..
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
 '''
 
-  If no errors appear, program has been correctly installed.
-  Program syntax uses the following:
+  Program also supports generating traffic flow using a simple XML Schema.
+  Examples of the schema exists inside the apps-files/ directory.
+
+  Program also supports NS2 mobility scripts.
+  *Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
+  created. The NS2 script used for CORE will have be to altered to mirror this change.
+  A map is given every time the topology finishes being created to help identify the changes.
+  Currently this can only be done by the user.
+
+  The following is a list of the commands supported by the core to ns-3 translator:
 
   "topo" Path to intermediate topology file
     ' --topo=imn2ns3/CORE-XML-files/sample1.xml'
 
   "apps" Path to application generator file
-    ' --apps=imn2ns3/apps-files/sample1.xml'
+    ' --apps=imn2ns3/apps-files/sample1-apps.xml'
 
   "ns2" Ns2 mobility script file
     ' --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements'
 
   "duration" Duration of Simulation
-    ' --duration=27.0\" \n\n'
+    ' --duration=27.0'
 
   "pcap" Enable pcap files"
     ' --pcap=true'
@@ -59,7 +69,10 @@ cd ..
   "traceDir" Directory in which to store trace files
     ' --traceDir=core2ns3_Logs/'
 
-
+An example of this will look is as follows
+'''
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
+'''
 
 //***************************BUGS/ERRORS/TO-DO******************************//
 
