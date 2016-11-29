@@ -70,10 +70,11 @@ cd ..
     ' --traceDir=core2ns3_Logs/'
 
 An example of this will look is as follows
-'''
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
-'''
+```
+#!terminal
 
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
+```
 //***************************BUGS/ERRORS/TO-DO******************************//
 
 //**IN CORE TO NS3 SCENERIO
