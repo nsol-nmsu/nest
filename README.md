@@ -1,17 +1,17 @@
 # CORE To NS-3 Translator #
-  The CORE to NS-3 translator aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
-  It is an intermediate program that can take a CORE XML file and dynamically create an NS3 scenario.
+The CORE to NS-3 translator aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
+It is an intermediate program that can take a CORE XML file and dynamically create an NS3 scenario.
 
 ## 1) Build / Install ##
 
-  You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
+You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
 
-  The program folder must exists inside the ns-3.25 folder to properly install using only the makefile.
+The program folder must exists inside the ns-3.25 folder to properly install using only the makefile.
 
-  We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
-  [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
+We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
+[https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-  to use our program, enter the imn2ns3 folder and run the 'make configure'.
+to use our program, enter the imn2ns3 folder and run the 'make configure'.
 
 ```
 #!terminal
@@ -21,27 +21,24 @@ make configure
 ```
 
 
-  Once waf has finished, run 
+Once waf has finished, run 'make', this will place files where they need to be.
 ```
 #!terminal
 
 make
 ```
-, this will place files where they need to be.
 
-  here is a makefile short description:
+here is a makefile short description:
  
-  typing 'make configure' Copies files to their destination, configures flags and
-                          compiles/links NS3 files.
-  typing 'make'           Copies files to their destination, and runs ./waf to
-                          compile/link NS3 files.
-  typing 'make clean'     Removes <some of> the added files.
-  typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
+typing 'make configure' Copies files to their destination, configures flags and compiles/links NS3 files.
+typing 'make'           Copies files to their destination, and runs ./waf to compile/link NS3 files.
+typing 'make clean'     Removes <some of> the added files.
+typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
 
 ## 2) Execute ##
 
-  Once all files have been placed and compiled, return to ns3.25 directory and run
-  the following sample for confirmation:
+Once all files have been placed and compiled, return to ns3.25 directory and run
+the following sample for confirmation:
 
 ```
 #!terminal
@@ -51,34 +48,64 @@ cd ..
 ```
 
 
-  Program also supports generating traffic flow using a simple XML Schema.
-  Examples of the schema exists inside the apps-files/ directory.
+Program also supports generating traffic flow using a simple XML Schema.
+Examples of the schema exists inside the apps-files/ directory.
 
-  Program also supports NS2 mobility scripts.
-  *Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
-  created. The NS2 script used for CORE will have be to altered to mirror this change.
-  A map is given every time the topology finishes being created to help identify the changes.
-  Currently this can only be done by the user.
+Program also supports NS2 mobility scripts.
+*Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
+created. The NS2 script used for CORE will have be to altered to mirror this change.
+A map is given every time the topology finishes being created to help identify the changes.
+Currently this can only be done by the user.
 
-  The following is a list of the commands supported by the core to ns-3 translator:
+The following is a list of the commands supported by the core to ns-3 translator:
 
-  "topo" Path to intermediate topology file
-    ' --topo=imn2ns3/CORE-XML-files/sample1.xml'
+"topo" Path to intermediate topology file
 
-  "apps" Path to application generator file
-    ' --apps=imn2ns3/apps-files/sample1-apps.xml'
+```
+#!terminal
+
+--topo=imn2ns3/CORE-XML-files/sample1.xml
+```
+
+"apps" Path to application generator file
+
+```
+#!terminal
+
+--apps=imn2ns3/apps-files/sample1-apps.xml
+```
 
   "ns2" Ns2 mobility script file
-    ' --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements'
 
-  "duration" Duration of Simulation
-    ' --duration=27.0'
+```
+#!terminal
+
+--ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements
+```
+
+"duration" Duration of Simulation
+
+```
+#!terminal
+
+--duration=27.0
+```
 
   "pcap" Enable pcap files"
-    ' --pcap=true'
 
-  "traceDir" Directory in which to store trace files
-    ' --traceDir=core2ns3_Logs/'
+```
+#!terminal
+
+--pcap=true
+```
+
+"traceDir" Directory in which to store trace files
+
+```
+#!terminal
+
+--traceDir=core2ns3_Logs/
+```
 
 An example of this will look is as follows
 ```
@@ -86,9 +113,8 @@ An example of this will look is as follows
 
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
 ```
-//***************************BUGS/ERRORS/TO-DO******************************//
+***LIMITATIONS/TO-DOS***
 
-//**IN CORE TO NS3 SCENERIO
 - Network error when setting wireless nodes with submask of all ones
 reason: Current implemetation assumes nodes are in an ad-hoc network, trying to
         get subnet-directed broadcast address with an all-ones netmask will
