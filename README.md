@@ -92,10 +92,20 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 
   "pcap" Enable pcap files"
-`--pcap=true`
+
+```
+#!terminal
+
+--pcap=true
+```
 
 "traceDir" Directory in which to store trace files
-`--traceDir=core2ns3_Logs/`
+
+```
+#!terminal
+
+--traceDir=core2ns3_Logs/
+```
 
 
 An example of this will look is as follows
@@ -108,18 +118,18 @@ An example of this will look is as follows
 
 * Network error when setting wireless nodes with submask of all ones.
 
-  * Current implemetation assumes nodes are in an ad-hoc network, trying to
+  - Current implemetation assumes nodes are in an ad-hoc network, trying to
     get subnet-directed broadcast address with an all-ones netmask will
     cause errors.
 
 * Currently implements all hubs and switches as bridge devices.
 
-  * NS3 doesn't not have a representation for hub/switches, currently
+  - NS3 doesn't not have a representation for hub/switches, currently
     using bridges.
 
 * Currently has limited application settings enabled.
 
-  * Routing protocols available in CORE may not be available in NS3.25.
-  * GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
+  - Routing protocols available in CORE may not be available in NS3.25.
+  - GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
     nodes therefore cannot be used to link all nodes correctly.
-  * Reading script files to build a route is not supported.
+  - Reading script files to build a route is not supported.
