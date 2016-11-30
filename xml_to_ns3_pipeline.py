@@ -7,16 +7,20 @@ def find(name, path):
     if name in files:
       return os.path.join(root, name)
 
-def addOptions(topo, traceDir, ns2_file, duration):
+def addOptions(topo, traceDir, ns2_file, duration, apps):
   run_command = "scratch/core_to_ns3_scenario"
   if topo != "":
-    run_command = run_command + " --topo=imn2ns3/imn_sample_files/" + topo
+    run_command = run_command + " --topo=imn2ns3/" + topo
+  if apps != "":
+    run_command = run_command + " --apps=imn2ns3/" + apps
   if traceDir != "":
-    run_command = run_command + " --traceDir=core2ns3_Logs/"
+    run_command = run_command + " --traceDir=" + traceDir
   if ns2_file != "":
-    run_command = run_command + " --ns2=imn2ns3/imn_sample_files/" + ns2_file
+    run_command = run_command + " --ns2=imn2ns3/" + ns2_file
   if duration != "":
     run_command = run_command + " --duration=" + duration
+  if pcap != "":
+    run_command = run_command + " --pcap=true"
   run_command = '"' + run_command + '"'
   
   waf_command = './waf --run ' + run_command
@@ -39,16 +43,20 @@ def main(argv):
     sys.exit(2)
   for opt, arg in opts:
     if opt in ("-h", "--help"):
-      print "xml_to_ns3_pipeline.py --topo/-t=<file.xml> --ns2_file/-n=<file_name> --duration/-d=<time> --trace/-l"
+      print "xml_to_ns3_pipeline.py -t=<file/path/in/imn2ns3> -n=<file/path/in/imn2ns3> -d=<time.float> -l=<path/to/folder/> -a=<file/path/in/imn2ns3> -p"
       sys.exit()
     elif opt in ("-t" ,"--topo"):
       topo = arg
+    elif opt in ("-a" ,"--apps"):
+      apps = arg
     elif opt in ("-n", "--ns2_file"):
       ns2_file = arg
     elif opt in ("-d" ,"--duration"):
       duration = arg
     elif opt in ("-l", "--trace"):
-      trace = "yes"
+      trace = arg
+    elif opt in ("-p" ,"--pcap"):
+      pcap = "true"
 
   if topo == "":
     print "There was no xml file given as input, exiting program"
