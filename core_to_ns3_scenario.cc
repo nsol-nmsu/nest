@@ -272,7 +272,7 @@ void udpApp(ptree pt, double d){
   start = pt.get<float>("startTime");
   end = pt.get<float>("endTime");
 
-  cout << "Creating UDP application with sender " << sender << " and receiver " << receiver << endl;
+  cout << "Creating UDP application with destination " << receiver << " and source " << sender << endl;
 
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
@@ -342,7 +342,7 @@ void udpEchoApp(ptree pt, double d){
   start = pt.get<float>("startTime");
   end = pt.get<float>("endTime");
 
-  cout << "Creating UDPECHO application with sender " << sender << " and receiver " << receiver << endl;
+  cout << "Creating UDPECHO application with destination " << receiver << " and source " << sender << endl;
 
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
@@ -414,7 +414,7 @@ void tcpApp(ptree pt, double d){
   start = pt.get<float>("startTime");
   end = pt.get<float>("endTime");
 
-  cout << "Creating TCP application with sender " << sender << " and receiver " << receiver << endl;
+  cout << "Creating TCP application with destination " << receiver << " and source " << sender << endl;
 
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
@@ -487,7 +487,7 @@ void patchApp(ptree pt, double d){
   end = pt.get<float>("endTime");
   protocol = pt.get<string>("type");
 
-  cout << "Creating " << protocol << " application with sender " << sender << " and receiver " << receiver << endl;
+  cout << "Creating " << protocol << " application with destination " << receiver << " and source/s ";
 
   if(protocol.compare("Udp") == 0){
     protocol = "ns3::UdpSocketFactory";
@@ -541,7 +541,7 @@ void patchApp(ptree pt, double d){
       sender = nod.second.get<string>("node");
       sPort = nod.second.get<uint16_t>("port");
 
-      cout << receiver << " ";
+      cout << sender << " ";
 
       OnOffHelper onOffHelper(protocol, Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
       onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
@@ -557,6 +557,7 @@ void patchApp(ptree pt, double d){
       clientApp.Stop (Seconds (end));
     }
   }
+  cout << endl;
 }
 
 void sinkApp(ptree pt, double d){
@@ -576,7 +577,7 @@ void sinkApp(ptree pt, double d){
   start = pt.get<float>("startTime");
   end = pt.get<float>("endTime");
 
-  cout << "Creating SINK application with sender " << sender << " and receiver/s ";
+  cout << "Creating SINK application with destination " << receiver << " and source/s ";
 
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
@@ -616,7 +617,7 @@ void sinkApp(ptree pt, double d){
       //sAddress = nod.second.get<string>("ipv4Address");
       sPort = nod.second.get<uint16_t>("port");
 
-      cout << receiver << " ";
+      cout << sender << " ";
 
       Address remoteAddress (InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort));
       OnOffHelper clientHelper ("ns3::TcpSocketFactory", remoteAddress);

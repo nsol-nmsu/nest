@@ -1,6 +1,6 @@
 IMNHELPERFILES = imnHelper.cc imnHelper.h imnNode.cc imnNode.h imnLink.cc imnLink.h xmlGenerator.cc xmlGenerator.h
 LATLONGUTM = utils/LatLong-UTMconversion.cpp utils/LatLong-UTMconversion.h utils/constants.h utils/core-to-ns3-helper.cc utils/core-to-ns3-helper.h
-NSFILES = imn_to_ns3_scenario.cc xml_to_ns3_scenario.cc core_to_ns3_scenario.cc xml_tester.cc core_to_ns3_scenario_mod.cc
+NSFILES = imn_to_ns3_scenario.cc xml_to_ns3_scenario.cc core_to_ns3_scenario.cc xml_tester.cc core_to_ns3_scenario_mod.cc core_to_ns3_scenario_copy.cc
 HPATH = ../src/topology-read/imn_reader/
 LPATH = ../src/topology-read/UTM_conversion/
 SPATH = ../scratch/
@@ -11,7 +11,7 @@ update: copy
 	cd .. && ./waf
 
 configure: copy
-	cd .. && CXXFLAGS="-std=c++11" ./waf configure
+	cd .. && CXXFLAGS="-std=c++11 -g" ./waf configure
 
 copy: makeDir
 	cp $(NSFILES) $(SPATH)
