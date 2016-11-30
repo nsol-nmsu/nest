@@ -11,17 +11,17 @@ The program folder must exists inside the ns-3.25 folder to properly install usi
 We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
 [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-to use our program, enter the imn2ns3 folder and run the 'make configure'.
+to use our program, enter the imn2ns3 folder and run the `make configure`.
 
 ```
 #!terminal
 
-cd imn2ns3
+cd imn2ns3/
 make configure
 ```
 
 
-Once waf has finished, run 'make', this will place files where they need to be.
+Once waf has finished, run `make`, this will place files where they need to be.
 ```
 #!terminal
 
@@ -47,9 +47,8 @@ cd ..
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
 ```
 
-
-Program also supports generating traffic flow using a simple XML Schema.
-Examples of the schema exists inside the apps-files/ directory.
+Program supports generating traffic flow using a simple XML Schema.
+Examples of the schema exists inside the `*/ns-3.25/imn2ns3/apps-files/` directory.
 
 Program also supports NS2 mobility scripts.
 *Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
@@ -75,7 +74,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 --apps=imn2ns3/apps-files/sample1-apps.xml
 ```
 
-  "ns2" Ns2 mobility script file
+"ns2" Ns2 mobility script file
 
 ```
 #!terminal
@@ -91,7 +90,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 --duration=27.0
 ```
 
-  "pcap" Enable pcap files"
+"pcap" Enable pcap files
 
 ```
 #!terminal
@@ -114,22 +113,39 @@ An example of this will look is as follows
 
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
 ```
+
+If pcap was enabled, all pcap files will be placed in `*/ns-3.25/core2ns3Logs/` directory along with a trace file 
+or at the directory given through command line `--traceDir=path/to/directory/`.
+
+## 3) NetAnim ##
+
+Every scenario will output an XML file for NetAnim use named *NetAnim-core-to-ns3.xml* in the ns-3.25 directory.
+
+Instructions on how to use NetAnim and its correlating files can be found in 
+[https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
+
 ## ***LIMITATIONS/TO-DOS*** ##
 
-* Network error when setting wireless nodes with submask of all ones.
-
-    - Current implemetation assumes nodes are in an ad-hoc network, trying to
-      get subnet-directed broadcast address with an all-ones netmask will
+* **Network error when setting wireless nodes with sub-mask of all ones.**
+    - Current implementation assumes nodes are in an ad-hoc network, trying to
+      get subnet-directed broadcast address with an all-ones net-mask will
       cause errors.
 
-* Currently implements all hubs and switches as bridge devices.
-
+* **Implements all hubs and switches as bridge devices.**
     - NS3 doesn't not have a representation for hub/switches, currently
       using bridges.
 
-* Currently has limited application settings enabled.
-
-    - Routing protocols available in CORE may not be available in NS3.25.
+* **Has limited application settings enabled.**
+    - Routing protocols available in CORE may not be available in NS-3.25.
     - GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
-      nodes therefore cannot be used to link all nodes correctly.
+      nodes therefore cannot be used to link all nodes ideally.
     - Reading script files to build a route is not supported.
+
+* **Wireless nodes may not correctly translate from CORE to NS-3.**
+    - CORE makes no distinction between ad-hoc or infrastructure nodes where as
+      NS-3 does, making it difficult to build a wireless topology correctly.
+    - CORE uses a distance attribute that has yet to be translated into NS-3
+      attributes required to determine link to neighbors.
+
+* **Pcap files are currently all or nothing.**
+    - TO-DO
