@@ -6,12 +6,12 @@ It is an intermediate program that can take a CORE XML file and dynamically crea
 
 You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
 
-The program folder must exists inside the ns-3.25 folder to properly install using only the makefile.
+The program folder must exist inside the ns-3.25 folder to properly install using only the makefile.
 
 We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
 [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-to use our program, enter the imn2ns3 folder and run the `make configure`.
+To use our program, enter the imn2ns3 folder and run the `make configure`.
 
 ```
 #!terminal
@@ -47,10 +47,10 @@ cd ..
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
 ```
 
-Program supports generating traffic flow using a simple XML Schema.
-Examples of the schema exists inside the `*/ns-3.25/imn2ns3/apps-files/` directory.
+This program supports generating traffic flow using a simple XML Schema.
+Examples of the schema exist inside the `*/ns-3.25/imn2ns3/apps-files/` directory.
 
-Program also supports NS2 mobility scripts.
+This program also supports NS2 mobility scripts.
 *Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
 created. The NS2 script used for CORE will have be to altered to mirror this change.
 A map is given every time the topology finishes being created to help identify the changes.
