@@ -30,10 +30,10 @@ make
 
 Here is a makefile short description:
  
-* typing 'make configure' Copies files to their destination, configures flags and compiles/links NS3 files.
-* typing 'make'           Copies files to their destination, and runs ./waf to compile/link NS3 files.
-* typing 'make clean'     Removes <some of> the added files.
-* typing 'make cleanLogs' Removes all files and directories inside core2ns3_Logs folder
+* typing `make configure` Copies files to their destination, configures flags and compiles/links NS3 files.
+* typing `make`           Copies files to their destination, and runs ./waf to compile/link NS3 files.
+* typing `make clean`     Removes <some of> the added files.
+* typing `make cleanLogs` Removes all files and directories inside core2ns3_Logs folder
 
 ## 2) Execute ##
 
@@ -92,20 +92,11 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 
   "pcap" Enable pcap files"
-
-```
-#!terminal
-
---pcap=true
-```
+`--pcap=true`
 
 "traceDir" Directory in which to store trace files
+`--traceDir=core2ns3_Logs/`
 
-```
-#!terminal
-
---traceDir=core2ns3_Logs/
-```
 
 An example of this will look is as follows
 ```
@@ -113,22 +104,22 @@ An example of this will look is as follows
 
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
 ```
-***LIMITATIONS/TO-DOS***
+## ***LIMITATIONS/TO-DOS*** ##
 
 * Network error when setting wireless nodes with submask of all ones.
 
-reason: Current implemetation assumes nodes are in an ad-hoc network, trying to
-        get subnet-directed broadcast address with an all-ones netmask will
-        cause errors.
+  * Current implemetation assumes nodes are in an ad-hoc network, trying to
+    get subnet-directed broadcast address with an all-ones netmask will
+    cause errors.
 
 * Currently implements all hubs and switches as bridge devices.
 
-reason: NS3 doesn't not have a representation for hub/switches, currently
-        using bridges.
+  * NS3 doesn't not have a representation for hub/switches, currently
+    using bridges.
 
 * Currently has limited application settings enabled.
 
-reason: Routing protocols available in CORE may not be available in NS3.25.
-        GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
-        nodes therefore cannot be used to link all nodes correctly.
-        Reading script files to build a route is not supported.
+  * Routing protocols available in CORE may not be available in NS3.25.
+  * GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
+    nodes therefore cannot be used to link all nodes correctly.
+  * Reading script files to build a route is not supported.
