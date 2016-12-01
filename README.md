@@ -114,35 +114,6 @@ An example of this will look is as follows
 ./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
 ```
 
-***Warning:*** Running the example above will run slowly and generate packets to NS-3 limits. To remedy this, modify the 
-`simple1-apps.xml` file located in `*/ns-3.25/imn2ns3/apps-files/` directory by changing the following lines in the Sink 
-application:
-
-```
-#!XML
-        <startTime>4</startTime>
-        <endTime>20</endTime>
-        <special>
-            <periodic>5.0</periodic>
-            <packetSize>1024</packetSize>
-            <maxPacketCount>0</maxPacketCount>
-        </special>
-```
-to:
-
-```
-#!XML
-        <startTime>4</startTime>
-        <endTime>13</endTime>
-        <special>
-            <periodic>1.0</periodic>
-            <packetSize>1024</packetSize>
-            <maxPacketCount>10</maxPacketCount>
-        </special>
-```
-
-This will generate several packets, but within the capabilities of NS-3 trace program.
-
 When pcap is enabled, all pcap files will be placed in `*/ns-3.25/core2ns3Logs/` directory along with a trace file 
 or at the directory given through command line `--traceDir=path/to/directory/`.
 
@@ -172,9 +143,9 @@ Instructions on how to use NetAnim and its correlating files can be found in
 
 * **Wireless nodes may not correctly translate from CORE to NS-3.**
     - CORE makes no distinction between ad-hoc or infrastructure nodes where as
-      NS-3 does, making it difficult to build a wireless topology correctly.
-    - CORE uses a distance attribute that has yet to be translated into NS-3
-      attributes required to determine link to neighbors.
+      NS-3 does, making it difficult to build an infrastructure wireless topology correctly.
+    - CORE uses a distance based wireless link where as NS-3 uses physical radio attributes 
+      to determine link to neighbors.
 
 * **Pcap files are currently all or nothing.**
     - TO-DO

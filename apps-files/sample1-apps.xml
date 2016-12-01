@@ -4,42 +4,42 @@
         <type>Tcp</type>
         <name>tcp_0</name>
         <sender>
-            <node>n6</node>
-            <port>1717</port>
-            <ipv4Address>10.0.0.6</ipv4Address>
+            <node>n11</node>
+            <port>80</port>
+            <ipv4Address>10.0.1.20</ipv4Address>
         </sender>
         <receiver>
-            <node>n8</node>
-            <port>1717</port>
-            <ipv4Address>10.0.0.8</ipv4Address>
+            <node>n3</node>
+            <port>80</port>
+            <ipv4Address>10.0.1.1</ipv4Address>
         </receiver>
-        <startTime>1</startTime>
-        <endTime>10</endTime>
+        <startTime>1.0</startTime>
+        <endTime>10.0</endTime>
         <special>
-            <periodic>1.0</periodic>
+            <poisson>10.0</poisson>
             <packetSize>1024</packetSize>
-            <maxPacketCount>10</maxPacketCount>
+            <maxPacketCount>0</maxPacketCount>
         </special>
     </application>
     <application>
         <type>Udp</type>
         <name>udp_0</name>
         <sender>
-            <node>n5</node>
-            <port>80</port>
-            <ipv4Address>10.0.6.2</ipv4Address>
+            <node>n12</node>
+            <port>1717</port>
+            <ipv4Address>10.0.1.21</ipv4Address>
         </sender>
         <receiver>
-            <node>n15</node>
-            <port>80</port>
-            <ipv4Address>10.0.6.1</ipv4Address>
+            <node>n13</node>
+            <port>1717</port>
+            <ipv4Address>10.0.1.22</ipv4Address>
         </receiver>
-        <startTime>2.0</startTime>
-        <endTime>11.0</endTime>
+        <startTime>2</startTime>
+        <endTime>11</endTime>
         <special>
-            <poisson>10.0</poisson>
+            <periodic>1.0</periodic>
             <packetSize>1024</packetSize>
-            <maxPacketCount>0</maxPacketCount>
+            <maxPacketCount>10</maxPacketCount>
         </special>
     </application>
     <application>
@@ -64,34 +64,25 @@
         </special>
     </application>
     <application>
-        <type>Sink</type>
+        <type>UdpSink</type>
         <name>sink_0</name>
-        <sender>
-            <node>n11</node>
-            <port>1717</port>
-            <ipv4Address>10.0.1.20</ipv4Address>
-        </sender>
-        <sender>
-            <node>n12</node>
-            <port>1717</port>
-            <ipv4Address>10.0.1.21</ipv4Address>
-        </sender>
-        <sender>
-            <node>n13</node>
-            <port>1717</port>
-            <ipv4Address>10.0.1.22</ipv4Address>
-        </sender>
+        <receiver>
+            <node>n3</node>
+            <port>80</port>
+            <ipv4Address>10.0.1.1</ipv4Address>
+        </receiver>
+        <startTime>4</startTime>
+        <endTime>10</endTime>
+    </application>
+    <application>
+        <type>TcpSink</type>
+        <name>sink_1</name>
         <receiver>
             <node>n3</node>
             <port>1717</port>
             <ipv4Address>10.0.1.1</ipv4Address>
         </receiver>
-        <startTime>4</startTime>
-        <endTime>20</endTime>
-        <special>
-            <periodic>5.0</periodic>
-            <packetSize>1024</packetSize>
-            <maxPacketCount>0</maxPacketCount>
-        </special>
+        <startTime>10.5</startTime>
+        <endTime>14</endTime>
     </application>
 </Applications>
