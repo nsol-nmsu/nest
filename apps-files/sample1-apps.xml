@@ -16,6 +16,7 @@
         <startTime>1.0</startTime>
         <endTime>10.0</endTime>
         <special>
+            <pcap>true</pcap>
             <poisson>10.0</poisson>
             <packetSize>1024</packetSize>
             <maxPacketCount>0</maxPacketCount>
@@ -84,5 +85,7 @@
         </receiver>
         <startTime>10.5</startTime>
         <endTime>14</endTime>
+        <special>
+        </special>
     </application>
 </Applications>
