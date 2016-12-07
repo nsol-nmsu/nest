@@ -86,6 +86,7 @@
         <startTime>10.5</startTime>
         <endTime>14</endTime>
         <special>
+            <pcap>true</pcap>
         </special>
     </application>
 </Applications>
