@@ -110,12 +110,6 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
     string tempIpv4 = r_match.str();
     string tempMask = r_match.suffix().str();
 
-    // NS3 Routing has a bug with netMask 32 in wireless networks
-    // This is a temporary work around
-    //if(type.compare("wireless") == 0 && tempMask.compare("/32") == 0){
-      //tempMask = "/24";
-    //}
-
     Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
     deviceInterface = ipv4->GetInterfaceForDevice (device);
     if (deviceInterface == -1)
@@ -135,10 +129,6 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
     regex_search(ipv6_addr, r_match, addrIpv6);
     string tempIpv6 = r_match.prefix().str();
     string tempIpv6Mask = r_match.str();
-
-    //if(type.compare("wireless") == 0 && tempIpv6Mask.compare("/128") == 0){
-      //tempIpv6Mask = "/64";
-    //}
 
     Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
     deviceInterface = ipv6->GetInterfaceForDevice (device);
@@ -169,9 +159,548 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
 }
 
 //====================================================================
+// Get Routing Protocols
+//====================================================================
+void getRoutingProtocols(ptree pt, string peer, string pType){
+  OlsrHelper olsr;
+  Ipv4GlobalRoutingHelper globalRouting;
+  Ipv4StaticRoutingHelper staticRouting;
+  RipHelper ripRouting;
+  RipNgHelper ripNgRouting;
+  InternetStackHelper internetStack;
+
+  bool applyDefaultServices = true;
+
+  // get local services
+  BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+    if(pl1.first != "host" && pl1.first != "router"){
+      continue;
+    }
+
+    optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
+    if(service_exists){
+      if(pl1.second.get<string>("<xmlattr>.name") == peer){
+        Ipv4ListRoutingHelper list;
+
+        BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
+          if(pl2.first == "service"){
+            if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
+              list.Add (staticRouting, 0);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+              list.Add(olsr, 10);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
+              list.Add(ripRouting, 5);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+              list.Add(globalRouting, -10);
+            }
+            //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
+            //  list.Add(ripNgRouting, 0);
+            //}
+          }
+        }
+        internetStack.SetRoutingHelper(list);
+        internetStack.Install(peer);
+        applyDefaultServices = false;
+      }
+    }
+  }
+  // if there were no local, set default services according to type
+  BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
+    if(pl1.first == "CORE:defaultservices"){
+      if(applyDefaultServices && pl1.second.get<string>("device.<xmlattr>.type") == pType){
+        Ipv4ListRoutingHelper list;
+
+        BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
+          if(pl2.first == "service"){
+            if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
+              list.Add (staticRouting, 0);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+              list.Add(olsr, 10);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
+              list.Add(ripRouting, 5);
+            }
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+              list.Add(globalRouting, -10);
+            }
+            //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
+            //  list.Add(ripNgRouting, 0);
+            //}
+          }
+        }
+        internetStack.SetRoutingHelper(list);
+        internetStack.Install(peer);
+      }
+    }
+  }
+
+  Ptr<Node> peerNode = Names::Find<Node>(peer);
+  if(!peerNode->GetObject<Ipv4>()){
+    internetStack.Install(peer);
+  }
+
+  NS_ASSERT(peerNode->GetObject<Ipv4>());
+}
+
+//====================================================================
+// Pcap Sniff Tx Event (ns3 segment)
+//====================================================================
+static void
+PcapSniffTxEvent (
+  Ptr<PcapFileWrapper> file,
+  Ptr<const Packet>    packet,
+  uint16_t             channelFreqMhz,
+  uint16_t             channelNumber,
+  uint32_t             rate,
+  WifiPreamble         preamble,
+  WifiTxVector         txVector,
+  struct mpduInfo      aMpdu)
+{
+  uint32_t dlt = file->GetDataLinkType ();
+
+  switch (dlt)
+    {
+    case PcapHelper::DLT_IEEE802_11:
+      file->Write (Simulator::Now (), packet);
+      return;
+    case PcapHelper::DLT_PRISM_HEADER:
+      {
+        NS_FATAL_ERROR ("PcapSniffTxEvent(): DLT_PRISM_HEADER not implemented");
+        return;
+      }
+    case PcapHelper::DLT_IEEE802_11_RADIO:
+      {
+        Ptr<Packet> p = packet->Copy ();
+        RadiotapHeader header;
+        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
+        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
+
+        //Our capture includes the FCS, so we set the flag to say so.
+        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
+
+        if (preamble == WIFI_PREAMBLE_SHORT)
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
+          }
+
+        if (txVector.IsShortGuardInterval ())
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
+          }
+
+        header.SetFrameFlags (frameFlags);
+        header.SetRate (rate);
+
+        uint16_t channelFlags = 0;
+        switch (rate)
+          {
+          case 2:  //1Mbps
+          case 4:  //2Mbps
+          case 10: //5Mbps
+          case 22: //11Mbps
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
+            break;
+
+          default:
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
+            break;
+          }
+
+        if (channelFreqMhz < 2500)
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
+          }
+        else
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
+          }
+
+        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
+
+        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
+          {
+            uint8_t mcsRate = 0;
+            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
+            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
+            mcsRate = rate - 128;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
+            if (txVector.GetChannelWidth () == 40)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
+            if (preamble == WIFI_PREAMBLE_HT_GF)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
+            if (txVector.GetNess () & 0x01) //bit 1
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
+              }
+            if (txVector.GetNess () & 0x02) //bit 2
+              {
+                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
+              }
+
+            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
+          }
+
+        if (txVector.IsAggregation ())
+          {
+            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
+            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
+            AmpduSubframeHeader hdr;
+            uint32_t extractedLength;
+            p->RemoveHeader (hdr);
+            extractedLength = hdr.GetLength ();
+            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
+            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
+              {
+                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
+              }
+            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
+          }
+
+        if (preamble == WIFI_PREAMBLE_VHT)
+          {
+            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
+            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
+            uint8_t vhtBandwidth = 0;
+            uint8_t vhtMcsNss[4] = {0,0,0,0};
+            uint8_t vhtCoding = 0;
+            uint8_t vhtGroupId = 0;
+            uint16_t vhtPartialAid = 0;
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
+            //not all bandwidth values are currently supported
+            if (txVector.GetChannelWidth () == 40)
+              {
+                vhtBandwidth = 1;
+              }
+            else if (txVector.GetChannelWidth () == 80)
+              {
+                vhtBandwidth = 4;
+              }
+            else if (txVector.GetChannelWidth () == 160)
+              {
+                vhtBandwidth = 11;
+              }
+
+            //only SU PPDUs are currently supported
+            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
+            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
+
+            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
+          }
+
+        p->AddHeader (header);
+        file->Write (Simulator::Now (), p);
+        return;
+      }
+    default:
+      NS_ABORT_MSG ("PcapSniffTxEvent(): Unexpected data link type " << dlt);
+    }
+}
+
+//====================================================================
+// Pcap Sniff Rx Event (ns3 segment)
+//====================================================================
+static void
+PcapSniffRxEvent (
+  Ptr<PcapFileWrapper>  file,
+  Ptr<const Packet>     packet,
+  uint16_t              channelFreqMhz,
+  uint16_t              channelNumber,
+  uint32_t              rate,
+  WifiPreamble          preamble,
+  WifiTxVector          txVector,
+  struct mpduInfo       aMpdu,
+  struct signalNoiseDbm signalNoise)
+{
+  uint32_t dlt = file->GetDataLinkType ();
+
+  switch (dlt)
+    {
+    case PcapHelper::DLT_IEEE802_11:
+      file->Write (Simulator::Now (), packet);
+      return;
+    case PcapHelper::DLT_PRISM_HEADER:
+      {
+        NS_FATAL_ERROR ("PcapSniffRxEvent(): DLT_PRISM_HEADER not implemented");
+        return;
+      }
+    case PcapHelper::DLT_IEEE802_11_RADIO:
+      {
+        Ptr<Packet> p = packet->Copy ();
+        RadiotapHeader header;
+        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
+        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
+
+        //Our capture includes the FCS, so we set the flag to say so.
+        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
+
+        if (preamble == WIFI_PREAMBLE_SHORT)
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
+          }
+
+        if (txVector.IsShortGuardInterval ())
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
+          }
+
+        header.SetFrameFlags (frameFlags);
+        header.SetRate (rate);
+
+        uint16_t channelFlags = 0;
+        switch (rate)
+          {
+          case 2:  //1Mbps
+          case 4:  //2Mbps
+          case 10: //5Mbps
+          case 22: //11Mbps
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
+            break;
+
+          default:
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
+            break;
+          }
+
+        if (channelFreqMhz < 2500)
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
+          }
+        else
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
+          }
+
+        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
+
+        header.SetAntennaSignalPower (signalNoise.signal);
+        header.SetAntennaNoisePower (signalNoise.noise);
+
+        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
+          {
+            uint8_t mcsRate = 0;
+            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
+            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
+            mcsRate = rate - 128;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
+            if (txVector.GetChannelWidth () == 40)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
+            if (preamble == WIFI_PREAMBLE_HT_GF)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
+            if (txVector.GetNess () & 0x01) //bit 1
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
+              }
+            if (txVector.GetNess () & 0x02) //bit 2
+              {
+                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
+              }
+
+            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
+          }
+
+        if (txVector.IsAggregation ())
+          {
+            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_DELIMITER_CRC_KNOWN;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
+            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
+            AmpduSubframeHeader hdr;
+            uint32_t extractedLength;
+            p->RemoveHeader (hdr);
+            extractedLength = hdr.GetLength ();
+            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
+            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
+              {
+                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
+              }
+            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
+          }
+
+        if (preamble == WIFI_PREAMBLE_VHT)
+          {
+            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
+            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
+            uint8_t vhtBandwidth = 0;
+            uint8_t vhtMcsNss[4] = {0,0,0,0};
+            uint8_t vhtCoding = 0;
+            uint8_t vhtGroupId = 0;
+            uint16_t vhtPartialAid = 0;
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
+            //not all bandwidth values are currently supported
+            if (txVector.GetChannelWidth () == 40)
+              {
+                vhtBandwidth = 1;
+              }
+            else if (txVector.GetChannelWidth () == 80)
+              {
+                vhtBandwidth = 4;
+              }
+            else if (txVector.GetChannelWidth () == 160)
+              {
+                vhtBandwidth = 11;
+              }
+
+            //only SU PPDUs are currently supported
+            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
+            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
+
+            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
+          }
+
+        p->AddHeader (header);
+        file->Write (Simulator::Now (), p);
+        return;
+      }
+    default:
+      NS_ABORT_MSG ("PcapSniffRxEvent(): Unexpected data link type " << dlt);
+    }
+}
+
+//====================================================================
+// Enable Pcap All
+//====================================================================
+void enablePcapAll(string prefix, Ptr<NetDevice> nd){
+
+  Ptr<CsmaNetDevice> csmaDevice = nd->GetObject<CsmaNetDevice> ();
+  if (csmaDevice != 0){
+  PcapHelper pcapHelper;
+    
+  string filename;
+  filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", csmaDevice);
+
+  Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
+                                                     PcapHelper::DLT_EN10MB);
+
+  //pcapHelper.HookDefaultSink<CsmaNetDevice> (device, "PromiscSniffer", file);
+  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
+  return;
+  }
+
+  Ptr<PointToPointNetDevice> p2pDevice = nd->GetObject<PointToPointNetDevice> ();
+  if (p2pDevice != 0){    
+    PcapHelper pcapHelper;
+
+    string filename;
+    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", p2pDevice);
+
+
+    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
+                                                       PcapHelper::DLT_PPP);
+    pcapHelper.HookDefaultSink<PointToPointNetDevice> (p2pDevice, "PromiscSniffer", file);
+    return;
+  }
+
+  Ptr<WifiNetDevice> wifiDevice = nd->GetObject<WifiNetDevice> ();
+  if (wifiDevice != 0){
+    Ptr<WifiPhy> phy = wifiDevice->GetPhy ();
+    NS_ABORT_MSG_IF (phy == 0, "WifiPhyHelper::EnablePcapInternal(): Phy layer in WifiNetDevice must be set");
+
+    PcapHelper pcapHelper;
+
+    string filename;
+    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", wifiDevice);
+
+    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, PcapHelper::DLT_IEEE802_11);
+
+    phy->TraceConnectWithoutContext ("MonitorSnifferTx", MakeBoundCallback (&PcapSniffTxEvent, file));
+    phy->TraceConnectWithoutContext ("MonitorSnifferRx", MakeBoundCallback (&PcapSniffRxEvent, file));
+
+    return;
+  }
+  else{
+    //no device
+  }
+}
+
+//====================================================================
 // applications
 //====================================================================
-void udpEchoApp(ptree pt, double d){
+void udpEchoApp(ptree pt, double d, string trace_prefix){
   string receiver, sender, rAddress;
   float start, end;
   uint16_t sPort = 4000;
@@ -179,6 +708,7 @@ void udpEchoApp(ptree pt, double d){
   uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
+  bool pcap = false;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
@@ -193,6 +723,11 @@ void udpEchoApp(ptree pt, double d){
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
     packetSize = pt.get<uint32_t>("special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
   }
 
   if_exists = pt.get_child_optional("special.maxPacketCount");
@@ -239,9 +774,29 @@ void udpEchoApp(ptree pt, double d){
   uint8_t fill[] = { 0, 1, 2, 3, 4, 5, 6};
   client.SetFill (apps.Get (0), fill, sizeof(fill), 1024);
 #endif
+
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+    Ptr<Node> sNode = Names::Find<Node>(sender);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+    for(int i = 0; i < sNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
 }
 
-void patchApp(ptree pt, double d){
+//====================================================================
+// TCP/UDP Application
+//====================================================================
+void patchApp(ptree pt, double d, string trace_prefix){
   string receiver, sender, rAddress, offVar, protocol;
   ostringstream onVar;
   float start, end;
@@ -251,6 +806,7 @@ void patchApp(ptree pt, double d){
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
   double packetsPerSec = 1;
+  bool pcap = false;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
@@ -275,10 +831,10 @@ void patchApp(ptree pt, double d){
     packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-  //if_exists = pt.get_child_optional("special.dataRate");
-  //if(if_exists){
-  //  dataRate = pt.get<uint32_t>("special.dataRate");
-  //}
+  if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
+  }
 
   if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
@@ -319,12 +875,32 @@ void patchApp(ptree pt, double d){
   clientApp = onOffHelper.Install (NodeContainer(sender));
   clientApp.Start (Seconds (start));
   clientApp.Stop (Seconds (end));
-}
 
-void sinkApp(ptree pt, double d){
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+    Ptr<Node> sNode = Names::Find<Node>(sender);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+    for(int i = 0; i < sNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
+}
+//====================================================================
+// Sink Application
+//====================================================================
+void sinkApp(ptree pt, double d, string trace_prefix){
   string receiver, rAddress, protocol;
   uint16_t rPort = 4000;
   float start, end;
+  bool pcap = false;
 
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
@@ -342,6 +918,11 @@ void sinkApp(ptree pt, double d){
     protocol = "ns3::TcpSocketFactory";
   }
 
+  optional<ptree&> if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
+  }
+
   // make sure end time is not beyond simulation time
   end = (end <= d)? end : d;
 
@@ -351,6 +932,17 @@ void sinkApp(ptree pt, double d){
   sinkApp.Start (Seconds (start));
   sinkApp.Stop (Seconds (end));
 
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
 }
 
 // TODO
@@ -407,20 +999,28 @@ void bulkApp(ptree pt, double d){
   sourceApps.Stop (Seconds (end));
 }*/
 
-void createApp(ptree pt, double duration){
+//====================================================================
+// Select Application
+//====================================================================
+void createApp(ptree pt, double duration, string trace_prefix){
   //NS_LOG_INFO ("Create Applications.");
 
   BOOST_FOREACH(ptree::value_type const& app, pt.get_child("Applications")){
     if(app.first == "application"){
       string protocol = app.second.get<string>("type");
-      if(protocol.compare("UdpEcho") == 0)      { udpEchoApp(app.second, duration); }
-      else if(protocol.compare("Udp") == 0)     { patchApp(app.second, duration); }
-      else if(protocol.compare("Tcp") == 0)     { patchApp(app.second, duration); }
-      else if(protocol.compare("UdpSink") == 0) { sinkApp(app.second, duration); }
-      else if(protocol.compare("TcpSink") == 0) { sinkApp(app.second, duration); }
+      if(protocol.compare("UdpEcho") == 0)      { udpEchoApp(app.second, duration, trace_prefix); }
+      else if(protocol.compare("Udp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
+      else if(protocol.compare("Tcp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
+      else if(protocol.compare("UdpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
+      else if(protocol.compare("TcpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
       //else if(protocol.compare("Burst") == 0)   { burstApp(app.second, duration); }
       //else if(protocol.compare("Bulk") == 0)    { bulkApp(app.second, duration); }
       else { cout << protocol << " protocol type not supported\n";}
     }
   }
 }
+
+
+
+
+

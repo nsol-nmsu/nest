@@ -23,6 +23,7 @@
 #include "ns3/ipv4-static-routing-helper.h"
 #include "ns3/ipv4-list-routing-helper.h"
 #include "ns3/netanim-module.h"
+#include "ns3/trace-helper.h"
 
 #include <regex>
 #include <sys/stat.h>
@@ -65,11 +66,15 @@ void getXYPosition(const double Lat, const double Lon, double &rx, double &ry);
 void getAddresses(ptree pt, string sourceNode, string peerNode);
 void assignDeviceAddress(string type, const Ptr<NetDevice> device);
 
-void patchApp(ptree pt, double d);
-void sinkApp(ptree pt, double d);
+//void patchApp(ptree pt, double d, string trace_prefix);
+//void sinkApp(ptree pt, double dm string trace_prefix);
 //void burstApp(ptree pt, double d);
 //void bulkApp(ptree pt, double d);
-void createApp(ptree pt, double duration);
+void createApp(ptree pt, double duration, string trace_prefix);
+
+void getRoutingProtocols(ptree pt, string peer, string pType);
+//void enablePcapAll(string prefix, Ptr<NetDevice> nd);
+
 
 // globals for position conversion
 extern double refLat, refLon, refAlt, refScale, refLocx, refLocy;
