@@ -5,6 +5,7 @@ It is an intermediate program that can take a CORE XML file and dynamically crea
 ## 1) Build / Install ##
 
 You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
+Tested in ns-3.25 and CORE version 4.8.
 
 The program folder must exist inside the ns-3.25 folder to properly install using only the makefile.
 
@@ -117,6 +118,9 @@ An example of this will look is as follows
 When pcap is enabled, all pcap files will be placed in `*/ns-3.25/core2ns3Logs/` directory along with a trace file 
 or at the directory given through command line `--traceDir=path/to/directory/`.
 
+If pcap is activated through command line, pcap will be enabled for all nodes.
+If pcap is enabled through an application patch file, only named nodes will output a pcap file.
+
 ## 3) NetAnim ##
 
 Every scenario will output an XML file for NetAnim use named *NetAnim-core-to-ns3.xml* in the ns-3.25 directory.
@@ -146,6 +150,3 @@ Instructions on how to use NetAnim and its correlating files can be found in
       NS-3 does, making it difficult to build an infrastructure wireless topology correctly.
     - CORE uses a distance based wireless link where as NS-3 uses physical radio attributes 
       to determine link to neighbors.
-
-* **Pcap files are currently all or nothing.**
-    - TO-DO
