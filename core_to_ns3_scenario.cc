@@ -1412,14 +1412,90 @@ int main (int argc, char *argv[]) {
       YansWifiChannelHelper wifiChannel;
       WifiMacHelper wifiMac;
 
+      BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
+        if(p0.first == "parameter"){
+          if(p0.second.get<string>("<xmlattr>.name") == "range"){
+            dist = stod(p0.second.data());
+          }
+          else if(p0.second.get<string>("<xmlattr>.name") == "bandwidth"){
+            int bw = stoi(p0.second.data());
+
+            if(bw <= 1000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate1Mbps"),
+                                                                            "ControlMode", StringValue ("DsssRate1Mbps"));
+            }
+            else if(bw <= 2000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate2Mbps"),
+                                                                            "ControlMode", StringValue ("DsssRate2Mbps"));
+            }
+            else if(bw <= 5000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate5_5Mbps"),
+                                                                            "ControlMode", StringValue ("DsssRate5_5Mbps"));
+            }
+            else if(bw <= 6000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate6Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate6Mbps"));
+            }
+            else if(bw <= 9000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate9Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate9Mbps"));
+            }
+            else if(bw <= 11000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("DsssRate11Mbps"),
+                                                                            "ControlMode", StringValue ("DsssRate11Mbps"));
+            }
+            else if(bw <= 12000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate12Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate12Mbps"));
+            }
+            else if(bw <= 18000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate18Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate18Mbps"));
+            }
+            else if(bw <= 24000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate24Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate24Mbps"));
+            }
+            else if(bw <= 36000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate36Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate36Mbps"));
+            }
+            else if(bw <= 48000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate48Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate48Mbps"));
+            }
+            else if(bw <= 54000000){
+              wifi.SetStandard(WIFI_PHY_STANDARD_80211a);
+              wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue ("OfdmRate54Mbps"),
+                                                                            "ControlMode", StringValue ("OfdmRate54Mbps"));
+            }
+            else{
+              cout << "Incorrect wireless unicast rate detected " << p0.second.data() << endl;
+              exit(-3);
+            }
+          }
+        }
+      }
+
       // working default
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
-      wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
+      wifiChannel.AddPropagationLoss("ns3::RangePropagationLossModel", "MaxRange", DoubleValue (dist));
       wifiPhyHelper.SetChannel(wifiChannel.Create());
 
-      string phyMode("DsssRate1Mbps");
-      wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
-      wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
+      //string phyMode("DsssRate1Mbps");
+      //wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
+      //wifi.SetRemoteStationManager("ns3::ConstantRateWifiManager", "DataMode", StringValue(phyMode), "ControlMode", StringValue(phyMode));
 
 
 /*      // set emane ieee80211abg settings if any
