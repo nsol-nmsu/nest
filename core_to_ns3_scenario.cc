@@ -249,11 +249,460 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device){
   ipv4_addr = "skip";
   ipv6_addr = "skip";
 }
+//====================================================================
+// Pcap Sniff Tx Event (ns3 segment)
+//====================================================================
+static void
+PcapSniffTxEvent (
+  Ptr<PcapFileWrapper> file,
+  Ptr<const Packet>    packet,
+  uint16_t             channelFreqMhz,
+  uint16_t             channelNumber,
+  uint32_t             rate,
+  WifiPreamble         preamble,
+  WifiTxVector         txVector,
+  struct mpduInfo      aMpdu)
+{
+  uint32_t dlt = file->GetDataLinkType ();
 
+  switch (dlt)
+    {
+    case PcapHelper::DLT_IEEE802_11:
+      file->Write (Simulator::Now (), packet);
+      return;
+    case PcapHelper::DLT_PRISM_HEADER:
+      {
+        NS_FATAL_ERROR ("PcapSniffTxEvent(): DLT_PRISM_HEADER not implemented");
+        return;
+      }
+    case PcapHelper::DLT_IEEE802_11_RADIO:
+      {
+        Ptr<Packet> p = packet->Copy ();
+        RadiotapHeader header;
+        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
+        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
+
+        //Our capture includes the FCS, so we set the flag to say so.
+        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
+
+        if (preamble == WIFI_PREAMBLE_SHORT)
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
+          }
+
+        if (txVector.IsShortGuardInterval ())
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
+          }
+
+        header.SetFrameFlags (frameFlags);
+        header.SetRate (rate);
+
+        uint16_t channelFlags = 0;
+        switch (rate)
+          {
+          case 2:  //1Mbps
+          case 4:  //2Mbps
+          case 10: //5Mbps
+          case 22: //11Mbps
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
+            break;
+
+          default:
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
+            break;
+          }
+
+        if (channelFreqMhz < 2500)
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
+          }
+        else
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
+          }
+
+        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
+
+        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
+          {
+            uint8_t mcsRate = 0;
+            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
+            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
+            mcsRate = rate - 128;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
+            if (txVector.GetChannelWidth () == 40)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
+            if (preamble == WIFI_PREAMBLE_HT_GF)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
+            if (txVector.GetNess () & 0x01) //bit 1
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
+              }
+            if (txVector.GetNess () & 0x02) //bit 2
+              {
+                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
+              }
+
+            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
+          }
+
+        if (txVector.IsAggregation ())
+          {
+            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
+            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
+            AmpduSubframeHeader hdr;
+            uint32_t extractedLength;
+            p->RemoveHeader (hdr);
+            extractedLength = hdr.GetLength ();
+            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
+            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
+              {
+                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
+              }
+            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
+          }
+
+        if (preamble == WIFI_PREAMBLE_VHT)
+          {
+            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
+            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
+            uint8_t vhtBandwidth = 0;
+            uint8_t vhtMcsNss[4] = {0,0,0,0};
+            uint8_t vhtCoding = 0;
+            uint8_t vhtGroupId = 0;
+            uint16_t vhtPartialAid = 0;
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
+            //not all bandwidth values are currently supported
+            if (txVector.GetChannelWidth () == 40)
+              {
+                vhtBandwidth = 1;
+              }
+            else if (txVector.GetChannelWidth () == 80)
+              {
+                vhtBandwidth = 4;
+              }
+            else if (txVector.GetChannelWidth () == 160)
+              {
+                vhtBandwidth = 11;
+              }
+
+            //only SU PPDUs are currently supported
+            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
+            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
+
+            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
+          }
+
+        p->AddHeader (header);
+        file->Write (Simulator::Now (), p);
+        return;
+      }
+    default:
+      NS_ABORT_MSG ("PcapSniffTxEvent(): Unexpected data link type " << dlt);
+    }
+}
+
+//====================================================================
+// Pcap Sniff Rx Event (ns3 segment)
+//====================================================================
+static void
+PcapSniffRxEvent (
+  Ptr<PcapFileWrapper>  file,
+  Ptr<const Packet>     packet,
+  uint16_t              channelFreqMhz,
+  uint16_t              channelNumber,
+  uint32_t              rate,
+  WifiPreamble          preamble,
+  WifiTxVector          txVector,
+  struct mpduInfo       aMpdu,
+  struct signalNoiseDbm signalNoise)
+{
+  uint32_t dlt = file->GetDataLinkType ();
+
+  switch (dlt)
+    {
+    case PcapHelper::DLT_IEEE802_11:
+      file->Write (Simulator::Now (), packet);
+      return;
+    case PcapHelper::DLT_PRISM_HEADER:
+      {
+        NS_FATAL_ERROR ("PcapSniffRxEvent(): DLT_PRISM_HEADER not implemented");
+        return;
+      }
+    case PcapHelper::DLT_IEEE802_11_RADIO:
+      {
+        Ptr<Packet> p = packet->Copy ();
+        RadiotapHeader header;
+        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
+        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
+
+        //Our capture includes the FCS, so we set the flag to say so.
+        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
+
+        if (preamble == WIFI_PREAMBLE_SHORT)
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
+          }
+
+        if (txVector.IsShortGuardInterval ())
+          {
+            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
+          }
+
+        header.SetFrameFlags (frameFlags);
+        header.SetRate (rate);
+
+        uint16_t channelFlags = 0;
+        switch (rate)
+          {
+          case 2:  //1Mbps
+          case 4:  //2Mbps
+          case 10: //5Mbps
+          case 22: //11Mbps
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
+            break;
+
+          default:
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
+            break;
+          }
+
+        if (channelFreqMhz < 2500)
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
+          }
+        else
+          {
+            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
+          }
+
+        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
+
+        header.SetAntennaSignalPower (signalNoise.signal);
+        header.SetAntennaNoisePower (signalNoise.noise);
+
+        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
+          {
+            uint8_t mcsRate = 0;
+            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
+            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
+            mcsRate = rate - 128;
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
+            if (txVector.GetChannelWidth () == 40)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
+            if (preamble == WIFI_PREAMBLE_HT_GF)
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
+            if (txVector.GetNess () & 0x01) //bit 1
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
+              }
+            if (txVector.GetNess () & 0x02) //bit 2
+              {
+                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
+              }
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
+
+            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
+              }
+
+            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
+          }
+
+        if (txVector.IsAggregation ())
+          {
+            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_DELIMITER_CRC_KNOWN;
+            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
+            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
+            AmpduSubframeHeader hdr;
+            uint32_t extractedLength;
+            p->RemoveHeader (hdr);
+            extractedLength = hdr.GetLength ();
+            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
+            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
+              {
+                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
+              }
+            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
+          }
+
+        if (preamble == WIFI_PREAMBLE_VHT)
+          {
+            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
+            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
+            uint8_t vhtBandwidth = 0;
+            uint8_t vhtMcsNss[4] = {0,0,0,0};
+            uint8_t vhtCoding = 0;
+            uint8_t vhtGroupId = 0;
+            uint16_t vhtPartialAid = 0;
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
+            if (txVector.IsStbc ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
+            if (txVector.IsShortGuardInterval ())
+              {
+                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
+              }
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
+
+            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
+            //not all bandwidth values are currently supported
+            if (txVector.GetChannelWidth () == 40)
+              {
+                vhtBandwidth = 1;
+              }
+            else if (txVector.GetChannelWidth () == 80)
+              {
+                vhtBandwidth = 4;
+              }
+            else if (txVector.GetChannelWidth () == 160)
+              {
+                vhtBandwidth = 11;
+              }
+
+            //only SU PPDUs are currently supported
+            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
+            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
+
+            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
+          }
+
+        p->AddHeader (header);
+        file->Write (Simulator::Now (), p);
+        return;
+      }
+    default:
+      NS_ABORT_MSG ("PcapSniffRxEvent(): Unexpected data link type " << dlt);
+    }
+}
+
+//====================================================================
+// Enable Pcap All
+//====================================================================
+void enablePcapAll(string prefix, Ptr<NetDevice> nd){
+
+  Ptr<CsmaNetDevice> csmaDevice = nd->GetObject<CsmaNetDevice> ();
+  if (csmaDevice != 0){
+  PcapHelper pcapHelper;
+    
+  string filename;
+  filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", csmaDevice);
+
+  Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
+                                                     PcapHelper::DLT_EN10MB);
+
+  //pcapHelper.HookDefaultSink<CsmaNetDevice> (device, "PromiscSniffer", file);
+  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
+  return;
+  }
+
+  Ptr<PointToPointNetDevice> p2pDevice = nd->GetObject<PointToPointNetDevice> ();
+  if (p2pDevice != 0){    
+    PcapHelper pcapHelper;
+
+    string filename;
+    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", p2pDevice);
+
+
+    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
+                                                       PcapHelper::DLT_PPP);
+    pcapHelper.HookDefaultSink<PointToPointNetDevice> (p2pDevice, "PromiscSniffer", file);
+    return;
+  }
+
+  Ptr<WifiNetDevice> wifiDevice = nd->GetObject<WifiNetDevice> ();
+  if (wifiDevice != 0){
+    Ptr<WifiPhy> phy = wifiDevice->GetPhy ();
+    NS_ABORT_MSG_IF (phy == 0, "WifiPhyHelper::EnablePcapInternal(): Phy layer in WifiNetDevice must be set");
+
+    PcapHelper pcapHelper;
+
+    string filename;
+    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", wifiDevice);
+
+    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, PcapHelper::DLT_IEEE802_11);
+
+    phy->TraceConnectWithoutContext ("MonitorSnifferTx", MakeBoundCallback (&PcapSniffTxEvent, file));
+    phy->TraceConnectWithoutContext ("MonitorSnifferRx", MakeBoundCallback (&PcapSniffRxEvent, file));
+
+    return;
+  }
+  else{
+    //no device
+  }
+}
 //====================================================================
 // applications
 //====================================================================
-void udpEchoApp(ptree pt, double d){
+void udpEchoApp(ptree pt, double d, string trace_prefix){
   string receiver, sender, rAddress;
   float start, end;
   uint16_t sPort = 4000;
@@ -261,6 +710,7 @@ void udpEchoApp(ptree pt, double d){
   uint32_t packetSize = 1024;
   Time interPacketInterval = Seconds (1.0);
   uint32_t maxPacketCount = 1;
+  bool pcap = false;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
@@ -275,6 +725,11 @@ void udpEchoApp(ptree pt, double d){
   optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
   if(if_exists){
     packetSize = pt.get<uint32_t>("special.packetSize");
+  }
+
+  if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
   }
 
   if_exists = pt.get_child_optional("special.maxPacketCount");
@@ -321,9 +776,29 @@ void udpEchoApp(ptree pt, double d){
   uint8_t fill[] = { 0, 1, 2, 3, 4, 5, 6};
   client.SetFill (apps.Get (0), fill, sizeof(fill), 1024);
 #endif
+
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+    Ptr<Node> sNode = Names::Find<Node>(sender);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+    for(int i = 0; i < sNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
 }
 
-void patchApp(ptree pt, double d){
+//====================================================================
+// TCP/UDP Application
+//====================================================================
+void patchApp(ptree pt, double d, string trace_prefix){
   string receiver, sender, rAddress, offVar, protocol;
   ostringstream onVar;
   float start, end;
@@ -333,6 +808,7 @@ void patchApp(ptree pt, double d){
   uint32_t packetSize = 1024;
   uint32_t maxPacketCount = 1;
   double packetsPerSec = 1;
+  bool pcap = false;
 
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
@@ -357,10 +833,10 @@ void patchApp(ptree pt, double d){
     packetSize = pt.get<uint32_t>("special.packetSize");
   }
 
-  //if_exists = pt.get_child_optional("special.dataRate");
-  //if(if_exists){
-  //  dataRate = pt.get<uint32_t>("special.dataRate");
-  //}
+  if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
+  }
 
   if_exists = pt.get_child_optional("special.maxPacketCount");
   if(if_exists){
@@ -401,12 +877,32 @@ void patchApp(ptree pt, double d){
   clientApp = onOffHelper.Install (NodeContainer(sender));
   clientApp.Start (Seconds (start));
   clientApp.Stop (Seconds (end));
-}
 
-void sinkApp(ptree pt, double d){
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+    Ptr<Node> sNode = Names::Find<Node>(sender);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+    for(int i = 0; i < sNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
+}
+//====================================================================
+// Sink Application
+//====================================================================
+void sinkApp(ptree pt, double d, string trace_prefix){
   string receiver, rAddress, protocol;
   uint16_t rPort = 4000;
   float start, end;
+  bool pcap = false;
 
   receiver = pt.get<string>("receiver.node");
   rAddress = pt.get<string>("receiver.ipv4Address");
@@ -424,6 +920,11 @@ void sinkApp(ptree pt, double d){
     protocol = "ns3::TcpSocketFactory";
   }
 
+  optional<ptree&> if_exists = pt.get_child_optional("special.pcap");
+  if(if_exists){
+    pcap = pt.get<bool>("special.pcap");
+  }
+
   // make sure end time is not beyond simulation time
   end = (end <= d)? end : d;
 
@@ -433,6 +934,17 @@ void sinkApp(ptree pt, double d){
   sinkApp.Start (Seconds (start));
   sinkApp.Stop (Seconds (end));
 
+  if(pcap){
+    NodeContainer pcapNodes;
+    PcapHelperForDevice *helper;
+
+    Ptr<Node> rNode = Names::Find<Node>(receiver);
+
+    for(int i = 0; i < rNode->GetNDevices(); i++){
+      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
+      enablePcapAll(trace_prefix, ptrNetDevice);
+    }
+  }
 }
 
 // TODO
@@ -489,17 +1001,20 @@ void bulkApp(ptree pt, double d){
   sourceApps.Stop (Seconds (end));
 }*/
 
-void createApp(ptree pt, double duration){
-  NS_LOG_INFO ("Create Applications.");
+//====================================================================
+// Select Application
+//====================================================================
+void createApp(ptree pt, double duration, string trace_prefix){
+  //NS_LOG_INFO ("Create Applications.");
 
   BOOST_FOREACH(ptree::value_type const& app, pt.get_child("Applications")){
     if(app.first == "application"){
       string protocol = app.second.get<string>("type");
-      if(protocol.compare("UdpEcho") == 0)      { udpEchoApp(app.second, duration); }
-      else if(protocol.compare("Udp") == 0)     { patchApp(app.second, duration); }
-      else if(protocol.compare("Tcp") == 0)     { patchApp(app.second, duration); }
-      else if(protocol.compare("UdpSink") == 0) { sinkApp(app.second, duration); }
-      else if(protocol.compare("TcpSink") == 0) { sinkApp(app.second, duration); }
+      if(protocol.compare("UdpEcho") == 0)      { udpEchoApp(app.second, duration, trace_prefix); }
+      else if(protocol.compare("Udp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
+      else if(protocol.compare("Tcp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
+      else if(protocol.compare("UdpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
+      else if(protocol.compare("TcpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
       //else if(protocol.compare("Burst") == 0)   { burstApp(app.second, duration); }
       //else if(protocol.compare("Bulk") == 0)    { bulkApp(app.second, duration); }
       else { cout << protocol << " protocol type not supported\n";}
@@ -510,17 +1025,12 @@ void createApp(ptree pt, double duration){
 // Parse CORE XML and create an ns3 scenario file from it
 //###################################################################
 int main (int argc, char *argv[]) {
-  //Config::SetDefault ("ns3::OnOffApplication::PacketSize", UintegerValue (1024));
-
-  // The below value configures the default behavior of global routing.
-  // By default, it is disabled.  To respond to interface events, set to true
-  //Config::SetDefault ("ns3::Ipv4GlobalRouting::RespondToInterfaceEvents", BooleanValue (true));
   bool global_is_safe = true;
 
   // config locals
   bool   pcap = false;
   double duration = 10.0;
-  regex  cartesian("[0-9]+");
+
   string peer, peer2, type;
   string topo_name = "",
          apps_file = "",
@@ -574,7 +1084,7 @@ int main (int argc, char *argv[]) {
   }
 
   AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (trace_prefix + "core-to-ns3-scenario.tr");
+  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (trace_prefix + "core-to-ns3.tr");
 
   //holds entire list of nodes and list links containers  
   ptree pt;
@@ -641,12 +1151,9 @@ int main (int argc, char *argv[]) {
       NodeContainer p2pNodes;
       NetDeviceContainer p2pDevices;
       PointToPointHelper p2p;
-      //string ipv4_addr, ipv6_addr, mac_addr;
-      //string ipv4_addr2, ipv6_addr2, mac_addr2;
+
       string name_holder, name_holder2, pType, p2Type;
       bool fst = true;
-      int band = 0;
-      int dela = 0;
 
       // grap the node names from net
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
@@ -869,17 +1376,6 @@ int main (int argc, char *argv[]) {
       NS_ASSERT(peerNode->GetObject<Ipv4>());
       NS_ASSERT(peer2Node->GetObject<Ipv4>());
 
-/*      if(!pflag && !p2flag){
-        internetP2P_1.Install(peer);
-        internetP2P_2.Install(peer2);
-      }
-      else if(pflag && !p2flag){
-        internetP2P_2.Install(peer2);
-      }
-      else if(!pflag && p2flag){
-        internetP2P_1.Install(peer);
-      }
-*/
       // Get then set addresses
       getAddresses(pt, peer, name_holder);
       Ptr<NetDevice> device = p2pDevices.Get (0);
@@ -892,7 +1388,7 @@ int main (int argc, char *argv[]) {
       p2p.EnableAsciiAll (stream);
       //internetP2P.EnableAsciiIpv4All (stream);
       if(pcap){
-        p2p.EnablePcapAll (trace_prefix + "core-to-ns3-scenario");
+        p2p.EnablePcapAll (trace_prefix + "core-to-ns3");
       }
 
       cout << "\nCreating point-to-point connection with " << peer << " and " << peer2 << endl;
@@ -905,7 +1401,7 @@ int main (int argc, char *argv[]) {
       global_is_safe = false;
       int j = 0;
       double dist = 0.0;
-      //string ipv4_addr, ipv6_addr, mac_addr;
+
       peer = nod.second.get<string>("<xmlattr>.name");
       NodeContainer wifiNodes;
       NetDeviceContainer wifiDevices;
@@ -1187,7 +1683,8 @@ int main (int argc, char *argv[]) {
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
           assignDeviceAddress(type, device);
-
+/*
+          // attempt to define gateway TODO
           if(p2flag){
             // Obtain olsr::RoutingProtocol instance of gateway node
             Ptr<Ipv4> stack = Names::Find<Node>(peer2)->GetObject<Ipv4> ();
@@ -1208,12 +1705,12 @@ int main (int argc, char *argv[]) {
             // Specify the required associations directly.
             //olsrrp_Gw->AddHostNetworkAssociation (Ipv4Address::GetAny (), Ipv4Mask ("255.255.0.0"));
           }
+*/
         }
       }
       wifiPhyHelper.EnableAsciiAll(stream);
-      //wifiInternet.EnableAsciiIpv4All (stream);
       if(pcap){
-        wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+        wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3");
       }
     }
 //===================================================================
@@ -1221,19 +1718,14 @@ int main (int argc, char *argv[]) {
 //-------------------------------------------------------------------
     else if(type.compare("hub") == 0 || type.compare("lanswitch") == 0){
       NS_LOG_INFO ("Create CSMA channel.");
-      int j = 0;
-      int k = 0; //index latest added extra hub/switch
-      int hub_count = 0;
-      int switch_count = 0;
+
       int nNodes = nodes.GetN();
       int bNodes = bridges.GetN();
       int hNodes = hubs.GetN();
 
       string tempName = "";
-      string tempType = "";
       string ethId = "";
       string p2Type;
-      //string ipv4_addr, ipv6_addr, mac_addr;
 
       peer = nod.second.get<string>("<xmlattr>.name");
 
@@ -1343,7 +1835,6 @@ int main (int argc, char *argv[]) {
               // get member id to help identify link order
               regex_search(name_holder, r_match, interId);
               memInterId = r_match.str();
-//cout << ethId << " " << tempPeer2 << " " << memInterId << " :" << name_holder << ": " << linkName << endl;
 
 //=========================================================================
 // Assume direct link to a switch or hub
@@ -1351,17 +1842,12 @@ int main (int argc, char *argv[]) {
 //-------------------------------------------------------------------------
 // direct link found, if out of order, indirect link is possible
                 if(ethId.compare(memInterId) == 0){
-                  if(state == 0){
-                    state = 1;
-                  }
-                  else if(state == 3){ // direct router identified
-                    state = 6;
-                  }
-                  else if(state == 4){// direct hub/switch TODO
-                    state = 5;
-                  }
-                  else{
-                    // do nothing or error on state == 1
+                  if(state == 0)     { state = 1; }
+                  else if(state == 3){ state = 6; } // direct router identified
+                  else if(state == 4){ state = 5; } // direct hub/switch TODO
+                  else if(state == 1){              // error on state == 1
+                    cerr << "Error: Topology for" << type << " " << peer << "could not be built: " << name_holder << endl;
+                    return -1;
                   }
                 }
 //-------------------------------------------------------------------------
@@ -1380,12 +1866,10 @@ int main (int argc, char *argv[]) {
                     linkName = memInterId.substr(peer.length() + 1);
                     state = 7;
                   }
-                  else if(state == 8){//indirect hub/switch to hub/switch
-                    // should already have built it
-                    // do nothing
-                  }
                   else{
                     // error
+                    cerr << "Error: Topology for" << type << " " << peer << "could not be built: " << name_holder << endl;
+                    return -1;
                   }
                 }
               }
@@ -1658,7 +2142,7 @@ int main (int argc, char *argv[]) {
             assignDeviceAddress(type, device);
             csma.EnableAsciiAll(stream);
             if(pcap){
-              csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+              csma.EnablePcapAll(trace_prefix + "core-to-ns3");
             }
 
             cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
@@ -1800,23 +2284,19 @@ int main (int argc, char *argv[]) {
 
             csma.EnableAsciiAll(stream);
             if(pcap){
-              csma.EnablePcapAll(trace_prefix + "core-to-ns3-scenario");
+              csma.EnablePcapAll(trace_prefix + "core-to-ns3");
             }
 
             cout << "Adding node " << peer2 << " to a csma(" << type << ") " << linkName << endl;
           }// end indirect end divice
-        }
-      //internetCsma.EnableAsciiIpv4All(stream);
-      }
+        }// end if channel
+      }// end of boost for loop
       BridgeHelper bridgeHelper;
       bridgeHelper.Install(peer, bridgeDevices);
-    }
-  }
-  cout << "\nCORE topology imported..." << endl; 
-//====================================================
-// END OF TOPOLOGY BUILDER
-//====================================================
+    }// end of if switch/hub
+  }// end of topology builder
 
+  cout << "\nCORE topology imported..." << endl; 
 
 //====================================================
 //create applications if given
@@ -1826,7 +2306,7 @@ int main (int argc, char *argv[]) {
 
     try{
       read_xml(apps_file, a_pt);
-      createApp(a_pt, duration);
+      createApp(a_pt, duration, trace_prefix);
     } catch(const boost::property_tree::xml_parser::xml_parser_error& ex){
       cerr << "error in file " << ex.filename() << " line " << ex.line() << endl;
       exit(-5);

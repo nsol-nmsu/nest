@@ -475,7 +475,6 @@ int main (int argc, char *argv[]) {
         }
       }
 
-
       if(pcap){
         wifiPhyHelper.EnableAsciiAll(stream);
         wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3");
