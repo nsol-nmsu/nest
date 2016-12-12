@@ -659,8 +659,8 @@ void enablePcapAll(string prefix, Ptr<NetDevice> nd){
   Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
                                                      PcapHelper::DLT_EN10MB);
 
-  //pcapHelper.HookDefaultSink<CsmaNetDevice> (device, "PromiscSniffer", file);
-  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
+  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "PromiscSniffer", file);
+  //pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
   return;
   }
 
@@ -799,7 +799,7 @@ void udpEchoApp(ptree pt, double d, string trace_prefix){
 // TCP/UDP Application
 //====================================================================
 void patchApp(ptree pt, double d, string trace_prefix){
-  string receiver, sender, rAddress, offVar, protocol;
+  string receiver, sender, rAddress, sAddress, offVar, protocol;
   ostringstream onVar;
   float start, end;
   uint16_t sPort = 4000;
@@ -810,6 +810,7 @@ void patchApp(ptree pt, double d, string trace_prefix){
   double packetsPerSec = 1;
   bool pcap = false;
 
+  sAddress = pt.get<string>("sender.ipv4Address");
   sender = pt.get<string>("sender.node");
   sPort = pt.get<uint16_t>("sender.port");
   receiver = pt.get<string>("receiver.node");
@@ -821,16 +822,18 @@ void patchApp(ptree pt, double d, string trace_prefix){
 
   cout << "Creating " << protocol << " clients with destination " << receiver << " and source/s " << sender << endl;
 
+
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
+  }
+
   if(protocol.compare("Udp") == 0){
     protocol = "ns3::UdpSocketFactory";
   }
   else if(protocol.compare("Tcp") == 0){
     protocol = "ns3::TcpSocketFactory";
-  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
-  if(if_exists){
-    packetSize = pt.get<uint32_t>("special.packetSize");
+    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (packetSize));
   }
 
   if_exists = pt.get_child_optional("special.pcap");
@@ -1658,10 +1661,9 @@ int main (int argc, char *argv[]) {
               nodes.Add(peer2);
             }
 
-          OlsrHelper olsr;
           Ipv4GlobalRoutingHelper globalRouting;
-          //AodvHelper aodv;
           Ipv4StaticRoutingHelper staticRouting;
+          OlsrHelper olsr;
           RipHelper ripRouting;
           RipNgHelper ripNgRouting;
           Ipv4ListRoutingHelper list;
@@ -1686,15 +1688,14 @@ int main (int argc, char *argv[]) {
                     }
                     else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
                       list.Add(olsr, 10);
-                      olsrRoutingSet = true;
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
                       list.Add(ripRouting, 5);
                     }
                     else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                      list.Add(olsr, 10);
-                      olsrRoutingSet = true;
                       list.Add(globalRouting, -10);
+                      cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
+                           << " NS-3 recommends using OLSR if routing is of on consequence." << endl; 
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);

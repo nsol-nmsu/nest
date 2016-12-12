@@ -656,8 +656,8 @@ void enablePcapAll(string prefix, Ptr<NetDevice> nd){
   Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
                                                      PcapHelper::DLT_EN10MB);
 
-  //pcapHelper.HookDefaultSink<CsmaNetDevice> (device, "PromiscSniffer", file);
-  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
+  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "PromiscSniffer", file);
+  //pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
   return;
   }
 
@@ -819,16 +819,17 @@ void patchApp(ptree pt, double d, string trace_prefix){
 
   cout << "Creating " << protocol << " clients with destination " << receiver << " and source/s " << sender << endl;
 
+  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
+  if(if_exists){
+    packetSize = pt.get<uint32_t>("special.packetSize");
+  }
+
   if(protocol.compare("Udp") == 0){
     protocol = "ns3::UdpSocketFactory";
   }
   else if(protocol.compare("Tcp") == 0){
     protocol = "ns3::TcpSocketFactory";
-  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
-  if(if_exists){
-    packetSize = pt.get<uint32_t>("special.packetSize");
+    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (packetSize));
   }
 
   if_exists = pt.get_child_optional("special.pcap");

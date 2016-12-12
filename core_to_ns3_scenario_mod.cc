@@ -511,6 +511,8 @@ int main (int argc, char *argv[]) {
           // add internet stack if not yet created, add routing if found
           if(!p2flag){
             getRoutingProtocols(pt, peer2, p2Type);
+            cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
+                 << " NS-3 recommends using OLSR if routing is of on consequence." << endl; 
           }
 
           wifiMac.SetType("ns3::AdhocWifiMac");
