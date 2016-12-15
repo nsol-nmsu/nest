@@ -694,6 +694,7 @@ void enablePcapAll(string prefix, Ptr<NetDevice> nd){
   }
   else{
     //no device
+    return;
   }
 }
 
@@ -754,7 +755,7 @@ void udpEchoApp(ptree pt, double d, string trace_prefix){
 //
 // Create one UdpClient application to send UDP datagrams from source to destination.
 //
-  UdpEchoClientHelper client (Ipv4Address(rAddress.c_str()), sPort);
+  UdpEchoClientHelper client (Ipv4Address(rAddress.c_str()), rPort);
   client.SetAttribute ("MaxPackets", UintegerValue (packetSize * maxPacketCount));
   client.SetAttribute ("Interval", TimeValue (interPacketInterval));
   client.SetAttribute ("PacketSize", UintegerValue (packetSize));
@@ -829,7 +830,12 @@ void patchApp(ptree pt, double d, string trace_prefix){
   }
   else if(protocol.compare("Tcp") == 0){
     protocol = "ns3::TcpSocketFactory";
-    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (packetSize));
+
+    // ns3 segment size default of 536 where we need it to adapt
+    // to requested MGEN data size but not exceed a logical value,
+    // suggested to be 1448.
+    uint32_t segment_size = (packetSize <= 1448)? packetSize : 1448;
+    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (segment_size));
   }
 
   if_exists = pt.get_child_optional("special.pcap");
@@ -864,11 +870,11 @@ void patchApp(ptree pt, double d, string trace_prefix){
   sinkApp.Start(Seconds(start));
   sinkApp.Stop(Seconds(end));
 
-  OnOffHelper onOffHelper(protocol, Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), sPort)));
+  OnOffHelper onOffHelper(protocol, Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), rPort)));
   onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
   onOffHelper.SetAttribute("OffTime", StringValue(offVar));
 
-  onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize* 8 * packetsPerSec));
+  onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize * 8 * packetsPerSec));
   onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
   onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
 

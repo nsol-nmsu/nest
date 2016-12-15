@@ -36,6 +36,7 @@
 #include <boost/foreach.hpp>
 #include <exception>
 #include <iostream>
+#include <climits>
 #include <set>
 
 //things from namespace std
@@ -60,6 +61,8 @@ regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
 regex addrIpv6("[/]{1}[0-9]+");
 regex name("[a-zA-Z0-9]+");
 regex interId("[a-zA-Z0-9]+[/]{1}[a-zA-Z0-9]+");
+regex category("[:]{1}[0-9]+");
+regex rateUnit("[0-9]+[.]{0,1}[0-9]*");
 smatch r_match;
 
 void getXYPosition(const double Lat, const double Lon, double &rx, double &ry);
