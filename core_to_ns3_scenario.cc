@@ -1020,7 +1020,9 @@ int main (int argc, char *argv[]) {
   string topo_name = "",
          apps_file = "",
          ns2_mobility = "/dev/null",
-         trace_prefix = "core2ns3_Logs/";
+         trace_prefix = "core2ns3_Logs/",
+         infrastructure = "",
+         access_point = "";
 
   struct stat st;
   smatch r_match;
@@ -1038,6 +1040,8 @@ int main (int argc, char *argv[]) {
   cmd.AddValue("duration","Duration of Simulation",duration);
   cmd.AddValue("pcap","Enable pcap files",pcap);
   cmd.AddValue("rt","Enable real time simulation",real_time);
+  cmd.AddValue("infra","Declare WLAN as infrastructure",infrastructure);
+  cmd.AddValue("ap","Declare node as an access point/gateway",access_point);
   cmd.AddValue ("traceDir", "Directory in which to store trace files", trace_prefix);
   cmd.Parse (argc, argv);
 
@@ -1045,14 +1049,16 @@ int main (int argc, char *argv[]) {
   if (topo_name.empty ()){
     std::cout << "Usage of " << argv[0] << " :\n\n"
     "./waf --run \"scratch/core_to_ns3_scenario"
-    " --topo=imn2ns3/CORE-XML-files/sample1.xml"
-    " --apps=imn2ns3/apps-files/sample1.xml"
-    " --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements"
+    " --topo=path/to/CORE/files.xml"
+    " --apps=path/to/app/files.xml"
+    " --ns2=path/to/NS2-mobility/files"
     " --traceDir=core2ns3_Logs/"
-    " --pcap=true"
-    " --rt=false"
+    " --pcap=[true/false]"
+    " --rt=[true/false]"
+    " --infra=wlan1::wlan2::..."
+    " --ap=n1::n2::..."
     //" --logFile=ns2-mob.log"
-    " --duration=27.0\" \n\n";
+    " --duration=[float]\" \n\n";
 
     return 0;
   }
@@ -1670,7 +1676,7 @@ int main (int argc, char *argv[]) {
         }
       }
 
-      // set propagation if not yet set
+      // set propagation
       if(dist > 0.0){
         if(twoRay_set){
           wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel",
@@ -1820,7 +1826,24 @@ int main (int argc, char *argv[]) {
 
           NS_ASSERT(peer2Node->GetObject<Ipv4>());
 
-          wifiMac.SetType("ns3::AdhocWifiMac");
+          if(!infrastructure.empty()){
+            if(access_point.find(peer2) != string::npos){
+              // setup sta.
+              wifiMac.SetType ("ns3::StaWifiMac",
+                               "Ssid", SsidValue (peer),
+                               "ActiveProbing", BooleanValue (false));
+            }
+            else{
+              // setup ap.
+              wifiMac.SetType ("ns3::ApWifiMac",
+                               "Ssid", SsidValue (peer));
+            }
+          }
+          else{
+            // setup adhoc.
+            wifiMac.SetType("ns3::AdhocWifiMac");
+          }
+
           wifiDevices.Add(wifi.Install(wifiPhyHelper, wifiMac, peer2));
           cout << "Adding node " << peer2 << " to WLAN " << peer << endl;
 
