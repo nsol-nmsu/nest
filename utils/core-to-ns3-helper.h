@@ -67,7 +67,7 @@ smatch r_match;
 
 void getXYPosition(const double Lat, const double Lon, double &rx, double &ry);
 void getAddresses(ptree pt, string sourceNode, string peerNode);
-void assignDeviceAddress(string type, const Ptr<NetDevice> device);
+void assignDeviceAddress(const Ptr<NetDevice> device);
 
 //void patchApp(ptree pt, double d, string trace_prefix);
 //void sinkApp(ptree pt, double dm string trace_prefix);
@@ -76,7 +76,7 @@ void assignDeviceAddress(string type, const Ptr<NetDevice> device);
 void createApp(ptree pt, double duration, string trace_prefix);
 
 void getRoutingProtocols(ptree pt, string peer, string pType);
-//void enablePcapAll(string prefix, Ptr<NetDevice> nd);
+void enablePcapAll(string prefix, Ptr<NetDevice> nd);
 
 
 // globals for position conversion

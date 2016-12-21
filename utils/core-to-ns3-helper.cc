@@ -96,7 +96,7 @@ void getAddresses(ptree pt, string sourceNode, string peerNode){
 //====================================================================
 // set mac/ipv4/ipv6 addresses if available
 //====================================================================
-void assignDeviceAddress(string type, const Ptr<NetDevice> device){
+void assignDeviceAddress(const Ptr<NetDevice> device){
   smatch r_match;
   //NS_LOG_INFO ("Assign IP Addresses.");
   Ptr<Node> node = device->GetNode ();

@@ -30,6 +30,8 @@ int main (int argc, char *argv[]) {
   NodeContainer bridges;
   NodeContainer hubs;
 
+  NetDeviceContainer nd;
+
   // read command-line parameters
   CommandLine cmd;
   cmd.AddValue("topo", "Path to intermediate topology file", topo_name);
@@ -159,7 +161,7 @@ int main (int argc, char *argv[]) {
       string name_holder, name_holder2, pType, p2Type;
       bool fst = true;
 
-      // grap the node names from net
+      // grab the node names from net
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "member" && p0.second.get<string>("<xmlattr>.type") == "interface"){
           if(fst){
@@ -221,6 +223,8 @@ int main (int argc, char *argv[]) {
         p2pNodes.Add(peer2);
       }
 
+      p2p.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
+
       // set channel parameters
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "parameter"){
@@ -250,15 +254,16 @@ int main (int argc, char *argv[]) {
       // Get then set addresses
       getAddresses(pt, peer, name_holder);
       Ptr<NetDevice> device = p2pDevices.Get (0);
-      assignDeviceAddress(type, device);
+      assignDeviceAddress(device);
 
       getAddresses(pt, peer2, name_holder2);
       device = p2pDevices.Get (1);
-      assignDeviceAddress(type, device);
+      assignDeviceAddress(device);
 
       if(pcap){
-        p2p.EnableAsciiAll (stream);
-        p2p.EnablePcapAll (trace_prefix + "core-to-ns3");
+        nd.Add(p2pDevices);
+        //p2p.EnableAsciiAll (stream);
+        //p2p.EnablePcapAll (trace_prefix + "core-to-ns3");
       }
 
       cout << "\nCreating point-to-point connection with " << peer << " and " << peer2 << endl;
@@ -284,6 +289,8 @@ int main (int argc, char *argv[]) {
       WifiMacHelper wifiMac;
 
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
+
+      Config::Set("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (1000)); 
 
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "type" && p0.second.data() == "basic_range"){
@@ -634,7 +641,7 @@ int main (int argc, char *argv[]) {
           // Get then set address
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
-          assignDeviceAddress(type, device);
+          assignDeviceAddress(device);
 
 /*
           // attempt to define gateway TODO
@@ -663,8 +670,9 @@ int main (int argc, char *argv[]) {
       }
 
       if(pcap){
-        wifiPhyHelper.EnableAsciiAll(stream);
-        wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3");
+        nd.Add(wifiDevices);
+        //wifiPhyHelper.EnableAsciiAll(stream);
+        //wifiPhyHelper.EnablePcapAll(trace_prefix + "core-to-ns3");
       }
     }
 //===================================================================
@@ -908,6 +916,8 @@ int main (int argc, char *argv[]) {
 // Connect a bridge with a direct edge to controlling bridge (a.k.a "peer")
 //-------------------------------------------------------------------------
           if(state == 5){
+            csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
+
             BOOST_FOREACH(ptree::value_type const& p1, p0.second){
               if(p1.first == "parameter"){
                 if(p1.second.get<string>("<xmlattr>.name") == "bw"){
@@ -934,6 +944,8 @@ int main (int argc, char *argv[]) {
 // Connect two bridges unrelated to controlling bridge (a.k.a "peer")
 //-------------------------------------------------------------------------
           else if(state == 8){
+            csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
+
             BOOST_FOREACH(ptree::value_type const& p1, p0.second){
               if(p1.first == "parameter"){
                 if(p1.second.get<string>("<xmlattr>.name") == "bw"){
@@ -989,6 +1001,7 @@ int main (int argc, char *argv[]) {
               getRoutingProtocols(pt, peer2, p2Type);
             }
 
+            csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
 
             BOOST_FOREACH(ptree::value_type const& p1, p0.second){
               if(p1.first == "parameter"){
@@ -1015,11 +1028,12 @@ int main (int argc, char *argv[]) {
             // Get then set address
             getAddresses(pt, peer2, endInterId);
             Ptr<NetDevice> device = link.Get(0);//csmaDevices.Get (j++);
-            assignDeviceAddress(type, device);
+            assignDeviceAddress(device);
 
             if(pcap){
-              csma.EnableAsciiAll(stream);
-              csma.EnablePcapAll(trace_prefix + "core-to-ns3");
+              nd.Add(csmaDevices);
+              //csma.EnableAsciiAll(stream);
+              //csma.EnablePcapAll(trace_prefix + "core-to-ns3");
             }
 
             cout << "Adding node " << peer2 << " to a csma(" << type << ") " << peer << endl;
@@ -1057,6 +1071,8 @@ int main (int argc, char *argv[]) {
               getRoutingProtocols(pt, peer2, p2Type);
             }
 
+            csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
+
             BOOST_FOREACH(ptree::value_type const& p1, p0.second){
               if(p1.first == "parameter"){
                 if(p1.second.get<string>("<xmlattr>.name") == "bw"){
@@ -1082,11 +1098,12 @@ int main (int argc, char *argv[]) {
             // Get then set address
             getAddresses(pt, peer2, endInterId);
             Ptr<NetDevice> device = link.Get(0);//csmaDevices.Get (j++);
-            assignDeviceAddress(type, device);
+            assignDeviceAddress(device);
 
             if(pcap){
-              csma.EnableAsciiAll(stream);
-              csma.EnablePcapAll(trace_prefix + "core-to-ns3");
+              nd.Add(csmaDevices);
+              //csma.EnableAsciiAll(stream);
+              //csma.EnablePcapAll(trace_prefix + "core-to-ns3");
             }
 
             cout << "Adding node " << peer2 << " to a csma(" << type << ") " << linkName << endl;
@@ -1180,11 +1197,18 @@ int main (int argc, char *argv[]) {
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   }
 
+  // enable pcap
+  if(pcap){
+    for(int i = 0; i < nd.GetN(); i++){
+      enablePcapAll(trace_prefix, nd.Get(i));
+    }
+  }
+/*
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
   Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (trace_prefix + "core2ns3-globalRoutingTables.routes", std::ios::out);
   g.PrintRoutingTableAllAt (Seconds (duration), routingStream);
-
+*/
   // Flow monitor
   FlowMonitorHelper flowHelper;
   flowHelper.InstallAll ();
