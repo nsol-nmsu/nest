@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Applications>
+    <application>
+        <type>Tcp</type>
+        <name>tcp_0</name>
+        <sender>
+            <node>n1</node>
+            <port>80</port>
+            <ipv4Address>10.0.0.1</ipv4Address>
+        </sender>
+        <receiver>
+            <node>n2</node>
+            <port>80</port>
+            <ipv4Address>10.0.0.2</ipv4Address>
+        </receiver>
+        <startTime>1</startTime>
+        <endTime>11</endTime>
+        <special>
+            <periodic>5.0</periodic>
+            <packetSize>1024</packetSize>
+            <maxPacketCount>0</maxPacketCount>
+        </special>
+    </application>
+
+   <application>
+        <type>Tcp</type>
+        <name>tcp_0</name>
+        <sender>
+            <node>n3</node>
+            <port>80</port>
+            <ipv4Address>10.0.1.1</ipv4Address>
+        </sender>
+        <receiver>
+            <node>n4</node>
+            <port>80</port>
+            <ipv4Address>10.0.1.2</ipv4Address>
+        </receiver>
+        <startTime>2</startTime>
+        <endTime>12</endTime>
+        <special>
+            <periodic>5.0</periodic>
+            <packetSize>1024</packetSize>
+            <maxPacketCount>0</maxPacketCount>
+        </special>
+    </application>
+</Applications>

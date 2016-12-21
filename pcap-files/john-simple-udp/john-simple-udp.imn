@@ -1,0 +1,270 @@
+node n4 {
+    type router
+    model router
+    network-config {
+	hostname n1
+	!
+	interface eth0
+	 ip address 10.0.0.1/24
+	 ipv6 address 2001:0::1/128
+	!
+    }
+    canvas c1
+    iconcoords {350.0 182.0}
+    labelcoords {350.0 214.0}
+    interface-peer {eth0 n16}
+    custom-config {
+	custom-config-id service:pcap
+	custom-command pcap
+	config {
+	files=('pcap.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:pcap:pcap.sh
+	custom-command pcap.sh
+	config {
+	
+	#!/bin/sh
+	# set tcpdump options here (see 'man tcpdump' for help)
+	# (-s snap length, -C limit pcap file length, -n disable name resolution)
+	DUMPOPTS="-s 12288 -C 10 -n"
+	
+	if [ "x$1" = "xstart" ]; then
+	
+	tcpdump ${DUMPOPTS} -w n1.eth0.pcap -i eth0 < /dev/null &
+	
+	pid=$!
+	sleep 10.0s
+	kill $pid
+	
+	elif [ "x$1" = "xstop" ]; then
+	    mkdir -p /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	    mv *.pcap /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	fi;
+	
+	}
+    }
+    services {zebra OSPFv2 OSPFv3 vtysh IPForward pcap}
+}
+
+node n5 {
+    type router
+    model router
+    network-config {
+	hostname n2
+	!
+	interface eth0
+	 ip address 10.0.0.2/24
+	 ipv6 address 2001:0::2/128
+	!
+    }
+    canvas c1
+    iconcoords {505.0 182.0}
+    labelcoords {505.0 214.0}
+    interface-peer {eth0 n16}
+    custom-config {
+	custom-config-id service:pcap
+	custom-command pcap
+	config {
+	files=('pcap.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:pcap:pcap.sh
+	custom-command pcap.sh
+	config {
+	
+	#!/bin/sh
+	# set tcpdump options here (see 'man tcpdump' for help)
+	# (-s snap length, -C limit pcap file length, -n disable name resolution)
+	DUMPOPTS="-s 12288 -C 10 -n"
+	
+	if [ "x$1" = "xstart" ]; then
+	
+	tcpdump ${DUMPOPTS} -w n2.eth0.pcap -i eth0 < /dev/null &
+	
+	pid=$!
+	sleep 10.0s
+	kill $pid
+	
+	elif [ "x$1" = "xstop" ]; then
+	    mkdir -p /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	    mv *.pcap /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	fi;
+	
+	
+	}
+    }
+    services {zebra OSPFv2 OSPFv3 vtysh IPForward pcap}
+}
+
+node n16 {
+    type wlan
+    network-config {
+	hostname wlan16
+	!
+	interface wireless
+	 ipv6 address 2001:0::0/128
+	 ip address 10.0.0.0/24
+	!
+	mobmodel
+	coreapi
+	basic_range
+	!
+    }
+    custom-config {
+	custom-config-id basic_range
+	custom-command {3 3 9 9 9}
+	config {
+	range=275
+	bandwidth=54000000
+	jitter=0
+	delay=20000
+	error=0
+	}
+    }
+    canvas c1
+    iconcoords {429.0 45.0}
+    labelcoords {429.0 77.0}
+    interface-peer {e3 n4}
+    interface-peer {e4 n5}
+}
+
+node n1 {
+    type router
+    model router
+    network-config {
+	hostname n3
+	!
+	interface eth0
+	 ip address 10.0.1.1/24
+	 ipv6 address 2001:1::1/64
+	!
+    }
+    canvas c1
+    iconcoords {288.0 455.0}
+    labelcoords {288.0 487.0}
+    interface-peer {eth0 n2}
+    custom-config {
+	custom-config-id service:pcap
+	custom-command pcap
+	config {
+	files=('pcap.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:pcap:pcap.sh
+	custom-command pcap.sh
+	config {
+	
+	#!/bin/sh
+	# set tcpdump options here (see 'man tcpdump' for help)
+	# (-s snap length, -C limit pcap file length, -n disable name resolution)
+	DUMPOPTS="-s 12288 -C 10 -n"
+	
+	if [ "x$1" = "xstart" ]; then
+	
+	tcpdump ${DUMPOPTS} -w n3.eth0.pcap -i eth0 < /dev/null &
+	
+	pid=$!
+	sleep 10.0s
+	kill $pid
+	
+	elif [ "x$1" = "xstop" ]; then
+	    mkdir -p /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	    mv *.pcap /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	fi;
+	}
+    }
+    services {zebra OSPFv2 OSPFv3 vtysh IPForward pcap}
+}
+
+node n2 {
+    type router
+    model router
+    network-config {
+	hostname n4
+	!
+	interface eth0
+	 ip address 10.0.1.2/24
+	 ipv6 address 2001:1::2/64
+	!
+    }
+    canvas c1
+    iconcoords {510.0 454.0}
+    labelcoords {510.0 486.0}
+    interface-peer {eth0 n1}
+    custom-config {
+	custom-config-id service:pcap
+	custom-command pcap
+	config {
+	files=('pcap.sh', )
+	}
+    }
+    custom-config {
+	custom-config-id service:pcap:pcap.sh
+	custom-command pcap.sh
+	config {
+	
+	#!/bin/sh
+	# set tcpdump options here (see 'man tcpdump' for help)
+	# (-s snap length, -C limit pcap file length, -n disable name resolution)
+	DUMPOPTS="-s 12288 -C 10 -n"
+	
+	if [ "x$1" = "xstart" ]; then
+	
+	tcpdump ${DUMPOPTS} -w n4.eth0.pcap -i eth0 < /dev/null &
+	
+	pid=$!
+	sleep 10.0s
+	kill $pid
+	
+	elif [ "x$1" = "xstop" ]; then
+	    mkdir -p /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	    mv *.pcap /home/john/ns-3.25/ns-3.25/imn2ns3/pcap-files/john-simple-udp/core/
+	fi;
+	
+	}
+    }
+    services {zebra OSPFv2 OSPFv3 vtysh IPForward pcap}
+}
+
+link l4 {
+    nodes {n16 n4}
+}
+
+link l5 {
+    nodes {n16 n5}
+}
+
+link l1 {
+    nodes {n1 n2}
+    bandwidth 0
+}
+
+canvas c1 {
+    name {Canvas1}
+}
+
+traffic {
+    {n1 to n2 tcp} 1 1 11 n4 n5 10.0.0.1 80 {} 10.0.0.2 80 {} UDP {} {PERIODIC [5.0 1024]} {}
+    {n3 to n4 tcp} 2 2 12 n1 n2 10.0.1.1 80 {} 10.0.1.2 80 /var/log/mgen2.log UDP {} {PERIODIC [5.0 1024]} {}
+}
+
+option global {
+    interface_names no
+    ip_addresses yes
+    ipv6_addresses yes
+    node_labels yes
+    link_labels yes
+    show_api no
+    background_images no
+    annotations yes
+    grid yes
+    traffic_start 1
+}
+
+option session {
+}
+
