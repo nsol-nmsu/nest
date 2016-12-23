@@ -1235,7 +1235,9 @@ int main (int argc, char *argv[]) {
             p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p0.second.data()))));
           }
           else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
-            Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p0.second.data())));
+            double percent = stod(p0.second.data());
+            Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                                                                                 "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
             p2p.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
           }
         }
@@ -2145,7 +2147,9 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  double percent = stod(p1.second.data());
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                                                                                       "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
               }
@@ -2173,7 +2177,9 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  double percent = stod(p1.second.data());
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                                                                                       "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
               }
@@ -2308,7 +2314,9 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  double percent = stod(p1.second.data());
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                                                                                       "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
               }
@@ -2453,7 +2461,9 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(stod(p1.second.data())));
+                  double percent = stod(p1.second.data());
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                                                                                       "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
               }
