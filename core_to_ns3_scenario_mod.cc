@@ -292,7 +292,7 @@ int main (int argc, char *argv[]) {
 
       wifiChannel.SetPropagationDelay("ns3::ConstantSpeedPropagationDelayModel");
 
-      Config::Set("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (1000)); 
+      Config::SetDefault("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (1000)); 
 
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "type" && p0.second.data() == "basic_range"){
@@ -510,7 +510,7 @@ int main (int argc, char *argv[]) {
                 regex_search(tempQ, r_match, rateUnit);
                 Q = r_match.str();
 
-                Config::Set("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (atoi(Q.c_str()+1))); 
+                Config::SetDefault("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (atoi(Q.c_str()+1))); 
               }
               else if(p0.second.get<string>("<xmlattr>.name") == "cwmin"){
                 string tempCw, Cw;
@@ -518,8 +518,8 @@ int main (int argc, char *argv[]) {
                 regex_search(tempCw, r_match, rateUnit);
                 Cw = r_match.str();
 
-                Config::Set("ns3::Dcf::MinCw", UintegerValue (atoi(Cw.c_str()+1))); 
-                Config::Set("ns3::EdcaTxopN::MinCw", UintegerValue (atoi(Cw.c_str()+1)));
+                Config::SetDefault("ns3::Dcf::MinCw", UintegerValue (atoi(Cw.c_str()+1))); 
+                Config::SetDefault("ns3::EdcaTxopN::MinCw", UintegerValue (atoi(Cw.c_str()+1)));
               }
               else if(p0.second.get<string>("<xmlattr>.name") == "cwmax"){
                 string tempCw, Cw;
@@ -527,8 +527,8 @@ int main (int argc, char *argv[]) {
                 regex_search(tempCw, r_match, rateUnit);
                 Cw = r_match.str();
 
-                Config::Set("ns3::Dcf::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
-                Config::Set("ns3::EdcaTxopN::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
+                Config::SetDefault("ns3::Dcf::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
+                Config::SetDefault("ns3::EdcaTxopN::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
               }
               else if(p0.second.get<string>("<xmlattr>.name") == "aifs"){
                 string tempAifs, Aifs;
@@ -536,8 +536,8 @@ int main (int argc, char *argv[]) {
                 regex_search(tempAifs, r_match, rateUnit);
                 Aifs = r_match.str();
 
-                Config::Set("ns3::Dcf::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
-                Config::Set("ns3::EdcaTxopN::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
+                Config::SetDefault("ns3::Dcf::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
+                Config::SetDefault("ns3::EdcaTxopN::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
               }
           //else if(p0.second.get<string>("<xmlattr>.name") == "flowcontroltokens"){
             //Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (stoi(p0.second.data())));
