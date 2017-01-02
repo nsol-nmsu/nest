@@ -64,7 +64,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---topo=imn2ns3/CORE-XML-files/sample1.xml
+--topo=<path/to/topology-file.xml>
 ```
 
 "apps" Path to application generator file
@@ -72,7 +72,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---apps=imn2ns3/apps-files/sample1-apps.xml
+--apps=<path/to/file-apps.xml>
 ```
 
 "ns2" Ns2 mobility script file
@@ -80,7 +80,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements
+--ns2=<path/to/file.ns_movements>
 ```
 
 "duration" Duration of Simulation
@@ -88,7 +88,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---duration=27.0
+--duration=[float]
 ```
 
 "pcap" Enable pcap files
@@ -96,7 +96,7 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---pcap=true
+--pcap=[true|false]
 ```
 
 "traceDir" Directory in which to store trace files
@@ -104,7 +104,19 @@ The following is a list of the commands supported by the core to ns-3 translator
 ```
 #!terminal
 
---traceDir=core2ns3_Logs/
+--traceDir=<output/dir/>
+```
+
+```
+#!terminal
+
+--infra=<wlan1:wlan2:...>
+```
+
+```
+#!terminal
+
+--ap=<accessPoint1:accessPoint2:...>
 ```
 
 
@@ -148,5 +160,8 @@ Instructions on how to use NetAnim and its correlating files can be found in
 * **Wireless nodes may not correctly translate from CORE to NS-3.**
     - CORE makes no distinction between ad-hoc or infrastructure nodes where as
       NS-3 does, making it difficult to build an infrastructure wireless topology correctly.
-    - CORE uses a distance based wireless link where as NS-3 uses physical radio attributes 
-      to determine link to neighbors.
+      User will need to declare the WLAN and access points for an infrastructure wireless 
+      network through command line.
+    - Some EMANE and CORE attributes for wireless links do not translate well to NS-3
+      attributes. These may include multiple attributes for queue, contention window,
+      arbitration inter frame, txop, and retry limits among others.
