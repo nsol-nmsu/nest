@@ -99,20 +99,24 @@ The following is a list of the commands supported by the core to ns-3 translator
 --pcap=[true|false]
 ```
 
-"traceDir" Directory in which to store trace files
+"traceDir" Directory in which to store trace files. Note: always end with '/'
 
 ```
 #!terminal
 
---traceDir=<output/dir/>
+--traceDir=<path/to/directory/>
 ```
 
+"infra" Required only when a wireless networks is in infrastructure mode.
+        Declare the name of the WLAN in this mode.
 ```
 #!terminal
 
 --infra=<wlan1:wlan2:...>
 ```
 
+"ap" Required only when a wireless networks is in infrastructure mode.
+     Declare the name of the node acting as the access point / gateway.
 ```
 #!terminal
 
@@ -143,19 +147,20 @@ Instructions on how to use NetAnim and its correlating files can be found in
 ## ***LIMITATIONS/TO-DOS*** ##
 
 * **Network error when setting wireless nodes with sub-mask of all ones.**
-    - Current implementation assumes nodes are in an ad-hoc network, trying to
-      get subnet-directed broadcast address with an all-ones net-mask will
+    - Current implementation assumes nodes are in an ad-hoc network.
+    - Trying to get subnet-directed broadcast address with an all-ones net-mask will
       cause errors.
 
 * **Implements all hubs and switches as bridge devices.**
     - NS3 doesn't not have a representation for hub/switches, currently
-      using bridges.
+      all hubs and switches are declared as bridges.
 
 * **Has limited application settings enabled.**
     - Routing protocols available in CORE may not be available in NS-3.25.
-    - GlobalRoutingProtocol commonly used in NS3 is not suitable for wireless
-      nodes therefore cannot be used to link all nodes ideally.
-    - Reading script files to build a route is not supported.
+    - GlobalRoutingProtocol which behaves as OSPF in NS3 is not suitable for wireless
+      nodes. If there is a wireless network in your topology, it is suggested to use OLSR
+      versus OSPF.
+    - Reading script files to build a route is not supported in this version.
 
 * **Wireless nodes may not correctly translate from CORE to NS-3.**
     - CORE makes no distinction between ad-hoc or infrastructure nodes where as
@@ -164,4 +169,5 @@ Instructions on how to use NetAnim and its correlating files can be found in
       network through command line.
     - Some EMANE and CORE attributes for wireless links do not translate well to NS-3
       attributes. These may include multiple attributes for queue, contention window,
-      arbitration inter frame, txop, and retry limits among others.
+      arbitration inter frame, txop, and retry limits among others. Currently, only the 
+      first attribute will be taken from each.
