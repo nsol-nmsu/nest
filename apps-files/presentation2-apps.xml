@@ -37,6 +37,7 @@
         <startTime>2</startTime>
         <endTime>10</endTime>
         <special>
+            <pcap>true</pcap>
             <packetSize>1024</packetSize>
             <maxPacketCount>10</maxPacketCount>
             <packetIntervalTime>1.0</packetIntervalTime>
@@ -58,6 +59,7 @@
         <startTime>2.5</startTime>
         <endTime>10</endTime>
         <special>
+            <pcap>true</pcap>
             <periodic>10.0</periodic>
             <packetSize>1024</packetSize>
             <maxPacketCount>0</maxPacketCount>

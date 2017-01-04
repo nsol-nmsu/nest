@@ -187,7 +187,8 @@ void getRoutingProtocols(ptree pt, string peer, string pType){
             if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
               list.Add (staticRouting, 0);
             }
-            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR" ||
+                    pl2.second.get<string>("<xmlattr>.name") == "OLSRORG"){
               list.Add(olsr, 10);
             }
             else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
@@ -218,7 +219,8 @@ void getRoutingProtocols(ptree pt, string peer, string pType){
             if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
               list.Add (staticRouting, 0);
             }
-            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
+            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR" ||
+                    pl2.second.get<string>("<xmlattr>.name") == "OLSRORG"){
               list.Add(olsr, 10);
             }
             else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){

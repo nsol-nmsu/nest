@@ -1,1010 +1,8 @@
 
-#include "ns3/core-module.h"
-#include "ns3/network-module.h"
-#include "ns3/mobility-module.h"
-#include "ns3/wifi-module.h"
-#include "ns3/point-to-point-module.h"
-#include "ns3/csma-module.h"
-#include "ns3/internet-module.h"
-#include "ns3/internet-apps-module.h"
-#include "ns3/applications-module.h"
-#include "ns3/bridge-module.h"
-#include "ns3/traffic-control-helper.h"
-#include "ns3/traffic-control-layer.h"
-#include "ns3/ns2-mobility-helper.h"
-#include "ns3/flow-monitor-helper.h"
-#include "ns3/olsr-routing-protocol.h"
-#include "ns3/olsr-helper.h"
-#include "ns3/aodv-helper.h"
-#include "ns3/ipv4-static-routing-helper.h"
-#include "ns3/ipv4-list-routing-helper.h"
-#include "ns3/netanim-module.h"
-
-#include <regex>
-#include <sys/stat.h>
-
-#include "ns3/LatLong-UTMconversion.h"
-
-#include <boost/optional/optional.hpp>
-#include <boost/property_tree/xml_parser.hpp>
-#include <boost/property_tree/ptree.hpp>
-#include <boost/foreach.hpp>
-#include <exception>
-#include <iostream>
-#include <climits>
-#include <set>
-
-//--------------------------------------------------------------------
-//things from namespace std
-//--------------------------------------------------------------------
-using std::cout;
-using std::endl;
-using std::cerr;
-using std::string;
-using std::vector;
-using std::ostream;
-using std::ostringstream;
-using std::regex;
-using std::smatch;
-
-using boost::property_tree::ptree;
-using boost::optional;
-
-using namespace ns3;
+#include "ns3/core-to-ns3-helper.h"
 
 NS_LOG_COMPONENT_DEFINE ("CORE_to_NS3_scenario");
 
-//--------------------------------------------------------------------
-// globals for position conversion
-//--------------------------------------------------------------------
-static double refLat, refLon, refAlt, refScale, refLocx, refLocy;
-static double x = 0.0;
-static double y = 0.0;
-static double refX = 0.0; // in orginal calculations but uneeded
-static double refY = 0.0; // in orginal calculations but uneeded
-static int refZoneNum;
-static char refUTMZone;
-
-//--------------------------------------------------------------------
-// globals for splitting strings
-//--------------------------------------------------------------------
-static regex addr("[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+[.]{0,1}[0-9]+");
-static regex addrIpv6("[/]{1}[0-9]+");
-static regex name("[a-zA-Z0-9]+");
-static regex interId("[a-zA-Z0-9]+[/]{1}[a-zA-Z0-9]+");
-static regex category("[:]{1}[0-9]+");
-static regex rateUnit("[0-9]+[.]{0,1}[0-9]*");
-//smatch r_match;
-
-//--------------------------------------------------------------------
-// globals for get/set addresses, routing protocols and packet control
-//--------------------------------------------------------------------
-static string mac_addr  = "skip";// some may not exists, skip them
-static string ipv4_addr = "skip";
-static string ipv6_addr = "skip";
-
-//====================================================================
-// convert latitude/longitude location data to y/x Cartasian coordinates
-//====================================================================
-void getXYPosition(const double Lat, const double Lon, double &rx, double &ry){
-  char UTMZone;
-  int zoneNum;
-  double Locx, meterX;
-  double Locy, meterY;
-  // convert latitude/longitude location data to UTM meter coordinates
-  LLtoUTM(23, Lat, Lon, Locy, Locx, UTMZone, zoneNum);
-
-  if(refZoneNum != zoneNum){
-    double tempX,tempY, xShift, yShift;
-    double lon2 = refLon + 6 * (zoneNum - refZoneNum);
-    double lat2 = refLat + (double)(UTMZone - refUTMZone);
-    char tempC;
-    int tempI;
-
-    // get easting shift to get position x in meters
-    LLtoUTM(23, refLat, lon2, tempY, tempX, tempC, tempI);
-    xShift = haversine(refLon, refLat, lon2, refLat) - tempX;
-    meterX = Locx + xShift;
-
-    // get northing shift to get position y in meters
-    LLtoUTM(23, lat2, refLon, tempY, tempX, tempC, tempI);
-    yShift = -(haversine(refLon, refLat, refLon, lat2) + tempY);
-    meterY = Locy + yShift;
-
-    // convert meters to pixels to match CORE canvas coordinates
-    rx = (100.0 * (meterX / refScale)) + refX;
-    ry = -((100.0 * (meterY / refScale)) + refY);
-  }
-  else{
-    meterX = Locx - refLocx;
-    meterY = Locy - refLocy;
-
-    // convert meters to pixels to match CORE canvas coordinates
-    rx = (100.0 * (meterX / refScale)) + refX;
-    ry = -((100.0 * (meterY / refScale)) + refY);
-  }
-}
-
-//====================================================================
-// extract address from XML
-//====================================================================
-void getAddresses(ptree pt, string sourceNode, string peerNode){
-  BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-    if(pl1.first != "host" && pl1.first != "router"){
-      continue;
-    }
-    if(pl1.second.get<string>("<xmlattr>.name") == sourceNode){
-      getXYPosition(pl1.second.get<double>("point.<xmlattr>.lat"), 
-                    pl1.second.get<double>("point.<xmlattr>.lon"), x, y);
-      // set node coordinates while we're here
-      AnimationInterface::SetConstantPosition(Names::Find<Node>(sourceNode), x, y);
-
-      BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
-        if(pl2.first == "interface" && pl2.second.get<string>("<xmlattr>.id") == peerNode){
-          BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
-            if(pl3.first == "address"){
-              if(pl3.second.get<string>("<xmlattr>.type") == "IPv4"){
-                ipv4_addr = pl3.second.data();
-              }
-              else if(pl3.second.get<string>("<xmlattr>.type") == "IPv6"){
-                ipv6_addr = pl3.second.data();
-              }
-              else if(pl3.second.get<string>("<xmlattr>.type") == "mac"){
-                mac_addr = pl3.second.data();
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
-
-//====================================================================
-// set mac/ipv4/ipv6 addresses if available
-//====================================================================
-void assignDeviceAddress(const Ptr<NetDevice> device){
-  smatch r_match;
-  NS_LOG_INFO ("Assign IP Addresses.");
-  Ptr<Node> node = device->GetNode ();
-  int32_t deviceInterface = -1;
-  if(mac_addr.compare("skip") != 0){
-    device->SetAddress(Mac48Address(mac_addr.c_str()));
-  }
-
-  if(ipv4_addr.compare("skip") != 0){
-    regex_search(ipv4_addr, r_match, addr);
-    string tempIpv4 = r_match.str();
-    string tempMask = r_match.suffix().str();
-
-    Ptr<Ipv4> ipv4 = node->GetObject<Ipv4>();
-    deviceInterface = ipv4->GetInterfaceForDevice (device);
-    if (deviceInterface == -1)
-      {
-      deviceInterface = ipv4->AddInterface (device);
-      }
-    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv4AddressHelper::Assign(): "
-                   "Interface index not found");
-
-    Ipv4InterfaceAddress ipv4Addr = Ipv4InterfaceAddress (tempIpv4.c_str(), tempMask.c_str());
-    ipv4->AddAddress (deviceInterface, ipv4Addr);
-    ipv4->SetMetric (deviceInterface, 1);
-    ipv4->SetUp (deviceInterface);
-  }
-
-  if(ipv6_addr.compare("skip") != 0){
-    regex_search(ipv6_addr, r_match, addrIpv6);
-    string tempIpv6 = r_match.prefix().str();
-    string tempIpv6Mask = r_match.str();
-
-    Ptr<Ipv6> ipv6 = node->GetObject<Ipv6>();
-    deviceInterface = ipv6->GetInterfaceForDevice (device);
-    if (deviceInterface == -1)
-      {
-      deviceInterface = ipv6->AddInterface (device);
-      }
-    NS_ASSERT_MSG (deviceInterface >= 0, "Ipv6AddressHelper::Allocate (): "
-                   "Interface index not found");
-    
-    Ipv6InterfaceAddress ipv6Addr = Ipv6InterfaceAddress (tempIpv6.c_str(), atoi(tempIpv6Mask.c_str()+1));
-    ipv6->SetMetric (deviceInterface, 1);
-    ipv6->AddAddress (deviceInterface, ipv6Addr);
-    ipv6->SetUp (deviceInterface);
-  }
-
-  Ptr<TrafficControlLayer> tc = node->GetObject<TrafficControlLayer> ();
-  if (tc && DynamicCast<LoopbackNetDevice> (device) == 0 && tc->GetRootQueueDiscOnDevice (device) == 0)
-     {
-     //NS_LOG_LOGIC ("Installing default traffic control configuration");
-     TrafficControlHelper tcHelper = TrafficControlHelper::Default ();
-     tcHelper.Install (device);
-     }
-
-  mac_addr  = "skip";
-  ipv4_addr = "skip";
-  ipv6_addr = "skip";
-}
-//====================================================================
-// Pcap Sniff Tx Event (ns3 segment)
-//====================================================================
-static void
-PcapSniffTxEvent (
-  Ptr<PcapFileWrapper> file,
-  Ptr<const Packet>    packet,
-  uint16_t             channelFreqMhz,
-  uint16_t             channelNumber,
-  uint32_t             rate,
-  WifiPreamble         preamble,
-  WifiTxVector         txVector,
-  struct mpduInfo      aMpdu)
-{
-  uint32_t dlt = file->GetDataLinkType ();
-
-  switch (dlt)
-    {
-    case PcapHelper::DLT_IEEE802_11:
-      file->Write (Simulator::Now (), packet);
-      return;
-    case PcapHelper::DLT_PRISM_HEADER:
-      {
-        NS_FATAL_ERROR ("PcapSniffTxEvent(): DLT_PRISM_HEADER not implemented");
-        return;
-      }
-    case PcapHelper::DLT_IEEE802_11_RADIO:
-      {
-        Ptr<Packet> p = packet->Copy ();
-        RadiotapHeader header;
-        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
-        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
-
-        //Our capture includes the FCS, so we set the flag to say so.
-        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
-
-        if (preamble == WIFI_PREAMBLE_SHORT)
-          {
-            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
-          }
-
-        if (txVector.IsShortGuardInterval ())
-          {
-            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
-          }
-
-        header.SetFrameFlags (frameFlags);
-        header.SetRate (rate);
-
-        uint16_t channelFlags = 0;
-        switch (rate)
-          {
-          case 2:  //1Mbps
-          case 4:  //2Mbps
-          case 10: //5Mbps
-          case 22: //11Mbps
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
-            break;
-
-          default:
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
-            break;
-          }
-
-        if (channelFreqMhz < 2500)
-          {
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
-          }
-        else
-          {
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
-          }
-
-        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
-
-        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
-          {
-            uint8_t mcsRate = 0;
-            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
-            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
-            mcsRate = rate - 128;
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
-            if (txVector.GetChannelWidth () == 40)
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
-            if (txVector.IsShortGuardInterval ())
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
-            if (preamble == WIFI_PREAMBLE_HT_GF)
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
-            if (txVector.GetNess () & 0x01) //bit 1
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
-              }
-            if (txVector.GetNess () & 0x02) //bit 2
-              {
-                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
-            if (txVector.IsStbc ())
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
-              }
-
-            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
-          }
-
-        if (txVector.IsAggregation ())
-          {
-            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
-            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
-            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
-            AmpduSubframeHeader hdr;
-            uint32_t extractedLength;
-            p->RemoveHeader (hdr);
-            extractedLength = hdr.GetLength ();
-            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
-            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
-              {
-                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
-              }
-            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
-          }
-
-        if (preamble == WIFI_PREAMBLE_VHT)
-          {
-            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
-            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
-            uint8_t vhtBandwidth = 0;
-            uint8_t vhtMcsNss[4] = {0,0,0,0};
-            uint8_t vhtCoding = 0;
-            uint8_t vhtGroupId = 0;
-            uint16_t vhtPartialAid = 0;
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
-            if (txVector.IsStbc ())
-              {
-                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
-              }
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
-            if (txVector.IsShortGuardInterval ())
-              {
-                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
-              }
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
-            //not all bandwidth values are currently supported
-            if (txVector.GetChannelWidth () == 40)
-              {
-                vhtBandwidth = 1;
-              }
-            else if (txVector.GetChannelWidth () == 80)
-              {
-                vhtBandwidth = 4;
-              }
-            else if (txVector.GetChannelWidth () == 160)
-              {
-                vhtBandwidth = 11;
-              }
-
-            //only SU PPDUs are currently supported
-            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
-            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
-
-            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
-          }
-
-        p->AddHeader (header);
-        file->Write (Simulator::Now (), p);
-        return;
-      }
-    default:
-      NS_ABORT_MSG ("PcapSniffTxEvent(): Unexpected data link type " << dlt);
-    }
-}
-
-//====================================================================
-// Pcap Sniff Rx Event (ns3 segment)
-//====================================================================
-static void
-PcapSniffRxEvent (
-  Ptr<PcapFileWrapper>  file,
-  Ptr<const Packet>     packet,
-  uint16_t              channelFreqMhz,
-  uint16_t              channelNumber,
-  uint32_t              rate,
-  WifiPreamble          preamble,
-  WifiTxVector          txVector,
-  struct mpduInfo       aMpdu,
-  struct signalNoiseDbm signalNoise)
-{
-  uint32_t dlt = file->GetDataLinkType ();
-
-  switch (dlt)
-    {
-    case PcapHelper::DLT_IEEE802_11:
-      file->Write (Simulator::Now (), packet);
-      return;
-    case PcapHelper::DLT_PRISM_HEADER:
-      {
-        NS_FATAL_ERROR ("PcapSniffRxEvent(): DLT_PRISM_HEADER not implemented");
-        return;
-      }
-    case PcapHelper::DLT_IEEE802_11_RADIO:
-      {
-        Ptr<Packet> p = packet->Copy ();
-        RadiotapHeader header;
-        uint8_t frameFlags = RadiotapHeader::FRAME_FLAG_NONE;
-        header.SetTsft (Simulator::Now ().GetMicroSeconds ());
-
-        //Our capture includes the FCS, so we set the flag to say so.
-        frameFlags |= RadiotapHeader::FRAME_FLAG_FCS_INCLUDED;
-
-        if (preamble == WIFI_PREAMBLE_SHORT)
-          {
-            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_PREAMBLE;
-          }
-
-        if (txVector.IsShortGuardInterval ())
-          {
-            frameFlags |= RadiotapHeader::FRAME_FLAG_SHORT_GUARD;
-          }
-
-        header.SetFrameFlags (frameFlags);
-        header.SetRate (rate);
-
-        uint16_t channelFlags = 0;
-        switch (rate)
-          {
-          case 2:  //1Mbps
-          case 4:  //2Mbps
-          case 10: //5Mbps
-          case 22: //11Mbps
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_CCK;
-            break;
-
-          default:
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_OFDM;
-            break;
-          }
-
-        if (channelFreqMhz < 2500)
-          {
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_2GHZ;
-          }
-        else
-          {
-            channelFlags |= RadiotapHeader::CHANNEL_FLAG_SPECTRUM_5GHZ;
-          }
-
-        header.SetChannelFrequencyAndFlags (channelFreqMhz, channelFlags);
-
-        header.SetAntennaSignalPower (signalNoise.signal);
-        header.SetAntennaNoisePower (signalNoise.noise);
-
-        if (preamble == WIFI_PREAMBLE_HT_MF || preamble == WIFI_PREAMBLE_HT_GF || preamble == WIFI_PREAMBLE_NONE)
-          {
-            uint8_t mcsRate = 0;
-            uint8_t mcsKnown = RadiotapHeader::MCS_KNOWN_NONE;
-            uint8_t mcsFlags = RadiotapHeader::MCS_FLAGS_NONE;
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_INDEX;
-            mcsRate = rate - 128;
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_BANDWIDTH;
-            if (txVector.GetChannelWidth () == 40)
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_BANDWIDTH_40;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_GUARD_INTERVAL;
-            if (txVector.IsShortGuardInterval ())
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_GUARD_INTERVAL;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_HT_FORMAT;
-            if (preamble == WIFI_PREAMBLE_HT_GF)
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_HT_GREENFIELD;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS;
-            if (txVector.GetNess () & 0x01) //bit 1
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_NESS_BIT_0;
-              }
-            if (txVector.GetNess () & 0x02) //bit 2
-              {
-                mcsKnown |= RadiotapHeader::MCS_KNOWN_NESS_BIT_1;
-              }
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_FEC_TYPE; //only BCC is currently supported
-
-            mcsKnown |= RadiotapHeader::MCS_KNOWN_STBC;
-            if (txVector.IsStbc ())
-              {
-                mcsFlags |= RadiotapHeader::MCS_FLAGS_STBC_STREAMS;
-              }
-
-            header.SetMcsFields (mcsKnown, mcsFlags, mcsRate);
-          }
-
-        if (txVector.IsAggregation ())
-          {
-            uint16_t ampduStatusFlags = RadiotapHeader::A_MPDU_STATUS_NONE;
-            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_DELIMITER_CRC_KNOWN;
-            ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST_KNOWN;
-            /* For PCAP file, MPDU Delimiter and Padding should be removed by the MAC Driver */
-            AmpduSubframeHeader hdr;
-            uint32_t extractedLength;
-            p->RemoveHeader (hdr);
-            extractedLength = hdr.GetLength ();
-            p = p->CreateFragment (0, static_cast<uint32_t> (extractedLength));
-            if (aMpdu.type == LAST_MPDU_IN_AGGREGATE || (hdr.GetEof () == true && hdr.GetLength () > 0))
-              {
-                ampduStatusFlags |= RadiotapHeader::A_MPDU_STATUS_LAST;
-              }
-            header.SetAmpduStatus (aMpdu.mpduRefNumber, ampduStatusFlags, hdr.GetCrc ());
-          }
-
-        if (preamble == WIFI_PREAMBLE_VHT)
-          {
-            uint16_t vhtKnown = RadiotapHeader::VHT_KNOWN_NONE;
-            uint8_t vhtFlags = RadiotapHeader::VHT_FLAGS_NONE;
-            uint8_t vhtBandwidth = 0;
-            uint8_t vhtMcsNss[4] = {0,0,0,0};
-            uint8_t vhtCoding = 0;
-            uint8_t vhtGroupId = 0;
-            uint16_t vhtPartialAid = 0;
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_STBC;
-            if (txVector.IsStbc ())
-              {
-                vhtFlags |= RadiotapHeader::VHT_FLAGS_STBC;
-              }
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_GUARD_INTERVAL;
-            if (txVector.IsShortGuardInterval ())
-              {
-                vhtFlags |= RadiotapHeader::VHT_FLAGS_GUARD_INTERVAL;
-              }
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_BEAMFORMED; //Beamforming is currently not supported
-
-            vhtKnown |= RadiotapHeader::VHT_KNOWN_BANDWIDTH;
-            //not all bandwidth values are currently supported
-            if (txVector.GetChannelWidth () == 40)
-              {
-                vhtBandwidth = 1;
-              }
-            else if (txVector.GetChannelWidth () == 80)
-              {
-                vhtBandwidth = 4;
-              }
-            else if (txVector.GetChannelWidth () == 160)
-              {
-                vhtBandwidth = 11;
-              }
-
-            //only SU PPDUs are currently supported
-            vhtMcsNss[0] |= (txVector.GetNss () & 0x0f);
-            vhtMcsNss[0] |= (((rate - 128) << 4) & 0xf0);
-
-            header.SetVhtFields (vhtKnown, vhtFlags, vhtBandwidth, vhtMcsNss, vhtCoding, vhtGroupId, vhtPartialAid);
-          }
-
-        p->AddHeader (header);
-        file->Write (Simulator::Now (), p);
-        return;
-      }
-    default:
-      NS_ABORT_MSG ("PcapSniffRxEvent(): Unexpected data link type " << dlt);
-    }
-}
-
-//====================================================================
-// Enable Pcap All
-//====================================================================
-void enablePcapAll(string prefix, Ptr<NetDevice> nd){
-
-  Ptr<CsmaNetDevice> csmaDevice = nd->GetObject<CsmaNetDevice> ();
-  if (csmaDevice != 0){
-  PcapHelper pcapHelper;
-    
-  string filename;
-  filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", csmaDevice);
-
-  Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
-                                                     PcapHelper::DLT_EN10MB);
-
-  pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "PromiscSniffer", file);
-  //pcapHelper.HookDefaultSink<CsmaNetDevice> (csmaDevice, "Sniffer", file);
-  return;
-  }
-
-  Ptr<PointToPointNetDevice> p2pDevice = nd->GetObject<PointToPointNetDevice> ();
-  if (p2pDevice != 0){    
-    PcapHelper pcapHelper;
-
-    string filename;
-    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", p2pDevice);
-
-
-    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, 
-                                                       PcapHelper::DLT_PPP);
-    pcapHelper.HookDefaultSink<PointToPointNetDevice> (p2pDevice, "PromiscSniffer", file);
-    return;
-  }
-
-  Ptr<WifiNetDevice> wifiDevice = nd->GetObject<WifiNetDevice> ();
-  if (wifiDevice != 0){
-    Ptr<WifiPhy> phy = wifiDevice->GetPhy ();
-    NS_ABORT_MSG_IF (phy == 0, "WifiPhyHelper::EnablePcapInternal(): Phy layer in WifiNetDevice must be set");
-
-    PcapHelper pcapHelper;
-
-    string filename;
-    filename = pcapHelper.GetFilenameFromDevice (prefix + "core2ns3", wifiDevice);
-
-    Ptr<PcapFileWrapper> file = pcapHelper.CreateFile (filename, std::ios::out, PcapHelper::DLT_IEEE802_11);
-
-    phy->TraceConnectWithoutContext ("MonitorSnifferTx", MakeBoundCallback (&PcapSniffTxEvent, file));
-    phy->TraceConnectWithoutContext ("MonitorSnifferRx", MakeBoundCallback (&PcapSniffRxEvent, file));
-
-    return;
-  }
-  else{
-    //no device
-    return;
-  }
-}
-//====================================================================
-// applications
-//====================================================================
-void udpEchoApp(ptree pt, double d, string trace_prefix){
-  string receiver, sender, rAddress;
-  float start, end;
-  uint16_t sPort = 4000;
-  uint16_t rPort = 4000;
-  uint32_t packetSize = 1024;
-  Time interPacketInterval = Seconds (1.0);
-  uint32_t maxPacketCount = 1;
-  bool pcap = false;
-
-  sender = pt.get<string>("sender.node");
-  sPort = pt.get<uint16_t>("sender.port");
-  receiver = pt.get<string>("receiver.node");
-  rAddress = pt.get<string>("receiver.ipv4Address");
-  rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<float>("startTime");
-  end = pt.get<float>("endTime");
-
-  cout << "Creating UDPECHO clients with destination " << receiver << " and source " << sender << endl;
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
-  if(if_exists){
-    packetSize = pt.get<uint32_t>("special.packetSize");
-  }
-
-  if_exists = pt.get_child_optional("special.pcap");
-  if(if_exists){
-    pcap = pt.get<bool>("special.pcap");
-  }
-
-  if_exists = pt.get_child_optional("special.maxPacketCount");
-  if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("special.packetIntervalTime");
-  if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
-  }
-
-  // make sure end time is not beyond simulation time
-  end = (end <= d)? end : d;
-
-//
-// Create one udpServer applications on destination.
-//
-  UdpEchoServerHelper server (rPort);
-  ApplicationContainer apps = server.Install (NodeContainer(receiver));
-  apps.Start (Seconds (start));
-  apps.Stop (Seconds (end));
-
-//
-// Create one UdpClient application to send UDP datagrams from source to destination.
-//
-  UdpEchoClientHelper client (Ipv4Address(rAddress.c_str()), rPort);
-  client.SetAttribute ("MaxPackets", UintegerValue (packetSize * maxPacketCount));
-  client.SetAttribute ("Interval", TimeValue (interPacketInterval));
-  client.SetAttribute ("PacketSize", UintegerValue (packetSize));
-  apps = client.Install (NodeContainer(sender));
-  apps.Start (Seconds (start));
-  apps.Stop (Seconds (end));
-
-#if 0
-//
-// Users may find it convenient to initialize echo packets with actual data;
-// the below lines suggest how to do this
-//
-  client.SetFill (apps.Get (0), "Hello World");
-
-  client.SetFill (apps.Get (0), 0xa5, 1024);
-
-  uint8_t fill[] = { 0, 1, 2, 3, 4, 5, 6};
-  client.SetFill (apps.Get (0), fill, sizeof(fill), 1024);
-#endif
-
-  if(pcap){
-    NodeContainer pcapNodes;
-    PcapHelperForDevice *helper;
-
-    Ptr<Node> rNode = Names::Find<Node>(receiver);
-    Ptr<Node> sNode = Names::Find<Node>(sender);
-
-    for(int i = 0; i < rNode->GetNDevices(); i++){
-      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
-      enablePcapAll(trace_prefix, ptrNetDevice);
-    }
-    for(int i = 0; i < sNode->GetNDevices(); i++){
-      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
-      enablePcapAll(trace_prefix, ptrNetDevice);
-    }
-  }
-}
-
-//====================================================================
-// TCP/UDP Application
-//====================================================================
-void patchApp(ptree pt, double d, string trace_prefix){
-  string receiver, sender, rAddress, sAddress, offVar, protocol;
-  ostringstream onVar;
-  float start, end;
-  uint16_t sPort = 4000;
-  uint16_t rPort = 4000;
-  //uint32_t dataRate = 1024;
-  uint32_t packetSize = 1024;
-  uint32_t maxPacketCount = 1;
-  double packetsPerSec = 1;
-  bool pcap = false;
-
-  sAddress = pt.get<string>("sender.ipv4Address");
-  sender = pt.get<string>("sender.node");
-  sPort = pt.get<uint16_t>("sender.port");
-  receiver = pt.get<string>("receiver.node");
-  rAddress = pt.get<string>("receiver.ipv4Address");
-  rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<float>("startTime");
-  end = pt.get<float>("endTime");
-  protocol = pt.get<string>("type");
-
-  cout << "Creating " << protocol << " clients with destination " << receiver << " and source/s " << sender << endl;
-
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
-  if(if_exists){
-    packetSize = pt.get<uint32_t>("special.packetSize");
-  }
-
-  if(protocol.compare("Udp") == 0){
-    protocol = "ns3::UdpSocketFactory";
-  }
-  else if(protocol.compare("Tcp") == 0){
-    protocol = "ns3::TcpSocketFactory";
-
-    // ns3 segment size default of 536 where we need it to adapt
-    // to requested MGEN data size but not exceed a logical value,
-    // suggested to be 1448.
-    uint32_t segment_size = (packetSize <= 1448)? packetSize : 1448;
-    Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (segment_size));
-  }
-
-  if_exists = pt.get_child_optional("special.pcap");
-  if(if_exists){
-    pcap = pt.get<bool>("special.pcap");
-  }
-
-  if_exists = pt.get_child_optional("special.maxPacketCount");
-  if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("special.periodic");
-  if(if_exists){
-    packetsPerSec = pt.get<double>("special.periodic");
-    onVar << "ns3::ConstantRandomVariable[Constant=" << packetsPerSec << "]";
-    offVar = "ns3::ConstantRandomVariable[Constant=0]";
-  }
-
-  if_exists = pt.get_child_optional("special.poisson");
-  if(if_exists){
-    packetsPerSec = pt.get<double>("special.poisson");
-    onVar << "ns3::ExponentialRandomVariable[Mean=" << packetsPerSec << "]";
-    offVar = "ns3::ExponentialRandomVariable[Mean=0]";
-  }
-
-  // make sure end time is not beyond simulation time
-  end = (end <= d)? end : d;
-
-  PacketSinkHelper sink (protocol, Address(InetSocketAddress(Ipv4Address::GetAny(), rPort)));
-  ApplicationContainer sinkApp = sink.Install (NodeContainer(receiver));
-  sinkApp.Start(Seconds(start));
-  sinkApp.Stop(Seconds(end));
-
-  OnOffHelper onOffHelper(protocol, Address(InetSocketAddress (Ipv4Address (rAddress.c_str()), rPort)));
-  onOffHelper.SetAttribute("OnTime", StringValue(onVar.str()));
-  onOffHelper.SetAttribute("OffTime", StringValue(offVar));
-
-  onOffHelper.SetAttribute("DataRate",DataRateValue(packetSize * 8 * packetsPerSec));
-  onOffHelper.SetAttribute("PacketSize",UintegerValue(packetSize));
-  onOffHelper.SetAttribute("MaxBytes",UintegerValue(packetSize * maxPacketCount));
-
-  ApplicationContainer clientApp;
-  clientApp = onOffHelper.Install (NodeContainer(sender));
-  clientApp.Start (Seconds (start));
-  clientApp.Stop (Seconds (end));
-
-  if(pcap){
-    NodeContainer pcapNodes;
-    PcapHelperForDevice *helper;
-
-    Ptr<Node> rNode = Names::Find<Node>(receiver);
-    Ptr<Node> sNode = Names::Find<Node>(sender);
-
-    for(int i = 0; i < rNode->GetNDevices(); i++){
-      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
-      enablePcapAll(trace_prefix, ptrNetDevice);
-    }
-    for(int i = 0; i < sNode->GetNDevices(); i++){
-      Ptr<NetDevice> ptrNetDevice = sNode->GetDevice(i);
-      enablePcapAll(trace_prefix, ptrNetDevice);
-    }
-  }
-}
-//====================================================================
-// Sink Application
-//====================================================================
-void sinkApp(ptree pt, double d, string trace_prefix){
-  string receiver, rAddress, protocol;
-  uint16_t rPort = 4000;
-  float start, end;
-  bool pcap = false;
-
-  receiver = pt.get<string>("receiver.node");
-  rAddress = pt.get<string>("receiver.ipv4Address");
-  rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<float>("startTime");
-  end = pt.get<float>("endTime");
-  protocol = pt.get<string>("type");
-
-  cout << "Creating " << protocol << " node named " << receiver << endl;
-
-  if(protocol.compare("UdpSink") == 0){
-    protocol = "ns3::UdpSocketFactory";
-  }
-  else if(protocol.compare("TcpSink") == 0){
-    protocol = "ns3::TcpSocketFactory";
-  }
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.pcap");
-  if(if_exists){
-    pcap = pt.get<bool>("special.pcap");
-  }
-
-  // make sure end time is not beyond simulation time
-  end = (end <= d)? end : d;
-
-  Address sinkLocalAddress (InetSocketAddress (Ipv4Address::GetAny (), rPort));
-  PacketSinkHelper sinkHelper (protocol, sinkLocalAddress);
-  ApplicationContainer sinkApp = sinkHelper.Install (NodeContainer(receiver));
-  sinkApp.Start (Seconds (start));
-  sinkApp.Stop (Seconds (end));
-
-  if(pcap){
-    NodeContainer pcapNodes;
-    PcapHelperForDevice *helper;
-
-    Ptr<Node> rNode = Names::Find<Node>(receiver);
-
-    for(int i = 0; i < rNode->GetNDevices(); i++){
-      Ptr<NetDevice> ptrNetDevice = rNode->GetDevice(i);
-      enablePcapAll(trace_prefix, ptrNetDevice);
-    }
-  }
-}
-
-// TODO
-/*void burstApp(ptree pt, double d){
-
-}
-
-void bulkApp(ptree pt, double d){
-  string receiver, sender, rAddress, sAddress;
-  float start, end;
-  uint16_t sPort = 4000;
-  uint16_t rPort = 4000;
-  uint32_t packetSize = 1024;
-  Time interPacketInterval = Seconds (1.0);
-  uint32_t maxPacketCount = 1;
-
-  sender = pt.get<string>("sender.node");
-  sPort = pt.get<uint16_t>("sender.port");
-  receiver = pt.get<string>("receiver.node");
-  rAddress = pt.get<string>("receiver.ipv4Address");
-  rPort = pt.get<uint16_t>("receiver.port");
-  start = pt.get<float>("startTime");
-  end = pt.get<float>("endTime");
-
-  cout << "Creating SINK application with sender " << sender << " and receiver/s ";
-
-  optional<ptree&> if_exists = pt.get_child_optional("special.packetSize");
-  if(if_exists){
-    packetSize = pt.get<uint32_t>("special.packetSize");
-  }
-
-  if_exists = pt.get_child_optional("special.maxPacketCount");
-  if(if_exists){
-    maxPacketCount = pt.get<uint32_t>("special.maxPacketCount");
-  }
-
-  if_exists = pt.get_child_optional("special.packetIntervalTime");
-  if(if_exists){
-    interPacketInterval = Seconds(pt.get<double>("special.packetIntervalTime"));
-  }
-
-  // make sure end time is not beyond simulation time
-  end = (end <= d)? end : d;
-
-  PacketSinkHelper sink ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address::GetAny (), rPort));
-  ApplicationContainer sinkApps = sink.Install (Names::Find<Node>(receiver));
-  sinkApps.Start (Seconds (start));
-  sinkApps.Stop (Seconds (end));
-
-  BulkSendHelper source ("ns3::TcpSocketFactory", InetSocketAddress (Ipv4Address (sAddress.c_str()), sPort));
-  source.SetAttribute ("MaxBytes", UintegerValue (packetSize));
-  ApplicationContainer sourceApps = source.Install (Names::Find<Node>(sender));
-  sourceApps.Start (Seconds (start));
-  sourceApps.Stop (Seconds (end));
-}*/
-
-//====================================================================
-// Select Application
-//====================================================================
-void createApp(ptree pt, double duration, string trace_prefix){
-  //NS_LOG_INFO ("Create Applications.");
-
-  BOOST_FOREACH(ptree::value_type const& app, pt.get_child("Applications")){
-    if(app.first == "application"){
-      string protocol = app.second.get<string>("type");
-      if(protocol.compare("UdpEcho") == 0)      { udpEchoApp(app.second, duration, trace_prefix); }
-      else if(protocol.compare("Udp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
-      else if(protocol.compare("Tcp") == 0)     { patchApp  (app.second, duration, trace_prefix); }
-      else if(protocol.compare("UdpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
-      else if(protocol.compare("TcpSink") == 0) { sinkApp   (app.second, duration, trace_prefix); }
-      //else if(protocol.compare("Burst") == 0)   { burstApp(app.second, duration); }
-      //else if(protocol.compare("Bulk") == 0)    { bulkApp(app.second, duration); }
-      else { cout << protocol << " protocol type not supported\n";}
-    }
-  }
-}
 //###################################################################
 // Parse CORE XML and create an ns3 scenario file from it
 //###################################################################
@@ -1107,6 +105,8 @@ int main (int argc, char *argv[]) {
   refLon = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.lon");
   refAlt = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.alt");
   refScale = pt.get<double>("scenario.CORE:sessionconfig.origin.<xmlattr>.scale100");
+  refZoneNum;
+  refUTMZone;
 
   LLtoUTM(23,refLat,refLon,refLocy,refLocx,refUTMZone,refZoneNum);
 
@@ -1235,159 +235,23 @@ int main (int argc, char *argv[]) {
             p2p.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p0.second.data()))));
           }
           else if(p0.second.get<string>("<xmlattr>.name") == "loss"){
-            double percent = stod(p0.second.data());
-            Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+            double percent = (stod(p0.second.data()) / 100.0);
+            Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent),
                                                                                  "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
             p2p.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
           }
         }
       }
 
-      // add internet stack if not yet created, add routing if found
       p2pDevices.Add(p2p.Install(peer, peer2));
 
-      OlsrHelper olsr;
-      Ipv4GlobalRoutingHelper globalRouting;
-      Ipv4StaticRoutingHelper staticRouting;
-      RipHelper ripRouting;
-      RipNgHelper ripNgRouting;
-      InternetStackHelper internetP2P_1;
-      InternetStackHelper internetP2P_2;
-
-      bool applyDefaultServices1 = true;
-      bool applyDefaultServices2 = true;
-
-      // get local services
-      BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-        if(pl1.first != "host" && pl1.first != "router"){
-          continue;
-        }
-
-        optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
-        if(service_exists){
-          if(!pflag && pl1.second.get<string>("<xmlattr>.name") == peer){
-            Ipv4ListRoutingHelper list;
-
-            BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-              if(pl2.first == "service"){
-                if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                  list.Add (staticRouting, 0);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                  list.Add(olsr, 10);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 5);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                  list.Add(globalRouting, -10);
-                }
-                //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                //  list.Add(ripNgRouting, 0);
-                //}
-              }
-            }
-            internetP2P_1.SetRoutingHelper(list);
-            internetP2P_1.Install(peer);
-            applyDefaultServices1 = false;
-          }
-          if(!p2flag && pl1.second.get<string>("<xmlattr>.name") == peer2){
-            Ipv4ListRoutingHelper list;
-
-            BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-              if(pl2.first == "service"){
-                if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                  list.Add (staticRouting, 0);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                  list.Add(olsr, 10);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 5);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                  list.Add(globalRouting, -10);
-                }
-                //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                //  list.Add(ripNgRouting, 0);
-                //}
-              }
-            }
-            internetP2P_2.SetRoutingHelper(list); // has effect on the next Install ()
-            internetP2P_2.Install(peer2);
-            applyDefaultServices2 = false;
-          }
-        }
+      // add internet stack if not yet created, add routing if found
+      if(!pflag){
+        getRoutingProtocols(pt, peer, pType);
       }
-
-      // if there were no local, set default services according to type
-      BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-        if(pl1.first == "CORE:defaultservices"){
-          if(!pflag && applyDefaultServices1 && pl1.second.get<string>("device.<xmlattr>.type") == pType){
-            Ipv4ListRoutingHelper list;
-
-            BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-              if(pl2.first == "service"){
-                if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                  list.Add (staticRouting, 0);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                  list.Add(olsr, 10);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 5);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                  list.Add(globalRouting, -10);
-                }
-                //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                //  list.Add(ripNgRouting, 0);
-                //}
-              }
-            }
-            internetP2P_1.SetRoutingHelper(list);
-            internetP2P_1.Install(peer);
-          }
-          if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
-            Ipv4ListRoutingHelper list;
-
-            BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-              if(pl2.first == "service"){
-                if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                  list.Add (staticRouting, 0);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                  list.Add(olsr, 10);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                  list.Add(ripRouting, 5);
-                }
-                else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                  list.Add(globalRouting, -10);
-                }
-                //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                //  list.Add(ripNgRouting, 0);
-                //}
-              }
-            }
-            internetP2P_2.SetRoutingHelper(list);
-            internetP2P_2.Install(peer2);
-          }
-        }
+      if(!p2flag){
+        getRoutingProtocols(pt, peer2, p2Type);
       }
-
-      // Assert internet stack was installed correctly
-      Ptr<Node> peerNode = Names::Find<Node>(peer);
-      Ptr<Node> peer2Node = Names::Find<Node>(peer2);
-      if(!peerNode->GetObject<Ipv4>()){
-        internetP2P_1.Install(peer);
-      }
-      if(!peer2Node->GetObject<Ipv4>()){
-        internetP2P_2.Install(peer2);
-      }
-
-      NS_ASSERT(peerNode->GetObject<Ipv4>());
-      NS_ASSERT(peer2Node->GetObject<Ipv4>());
 
       // Get then set addresses
       getAddresses(pt, peer, name_holder);
@@ -1411,7 +275,7 @@ int main (int argc, char *argv[]) {
 //-------------------------------------------------------------------
     if(type.compare("wireless") == 0){
       NS_LOG_INFO ("Create Wireless channel.");
-      global_is_safe = false;
+      //global_is_safe = false;
       int j = 0;
       double dist = 0.0;
       bool twoRay_set = false;
@@ -1707,7 +571,6 @@ int main (int argc, char *argv[]) {
         }
       }
 
-      wifiPhyHelper.SetChannel(wifiChannel.Create());
       cout << "\nCreating new wlan network named " << peer << endl;
       // Go through peer list and add them to the network
       BOOST_FOREACH(ptree::value_type const& p, child.get_child("channel")){
@@ -1746,94 +609,13 @@ int main (int argc, char *argv[]) {
             nodes.Add(peer2);
           }
 
-          Ipv4GlobalRoutingHelper globalRouting;
-          Ipv4StaticRoutingHelper staticRouting;
-          OlsrHelper olsr;
-          RipHelper ripRouting;
-          RipNgHelper ripNgRouting;
-          Ipv4ListRoutingHelper list;
-          InternetStackHelper wifiInternet;
-          bool applyDefaultServices2 = true;
-
-          // get local services
-          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-            if(pl1.first != "host" && pl1.first != "router"){
-              continue;
-            }
-
-            optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
-            if(service_exists){
-              if(!p2flag && pl1.second.get<string>("<xmlattr>.name") == peer2){
-                bool olsrRoutingSet = false;
-
-                BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-                  if(pl2.first == "service"){
-                    if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                      list.Add (staticRouting, 0);
-                    }
-                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                      list.Add(olsr, 10);
-                    }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                      list.Add(ripRouting, 5);
-                    }
-                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                      list.Add(globalRouting, -10);
-                      cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
-                           << " NS-3 recommends using OLSR if routing is of no consequence." << endl; 
-                    }
-                    //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                    //  list.Add(ripNgRouting, 0);
-                    //}
-                  }
-                }
-                wifiInternet.SetRoutingHelper(list); // has effect on the next Install ()
-                wifiInternet.Install(peer2);
-                applyDefaultServices2 = false;
-              }
-            }
+          // add internet stack if not yet created, add routing if found
+          if(!p2flag){
+            getRoutingProtocols(pt, peer2, p2Type);
+            cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
+                 << " NS-3 recommends using OLSR if routing is of on consequence." << endl; 
           }
-          // if there were no local, set default services according to type
-          BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-            if(pl1.first == "CORE:defaultservices"){
-              if(!p2flag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
-                bool olsrRoutingSet = false;
-
-                BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-                  if(pl2.first == "service"){
-                    if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                      list.Add (staticRouting, 0);
-                    }
-                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                      list.Add(olsr, 10);
-                      olsrRoutingSet = true;
-                    }
-                    else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                      list.Add(ripRouting, 5);
-                    }
-                    else if(!olsrRoutingSet && pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                      list.Add(olsr, 10);
-                      olsrRoutingSet = true;
-                      list.Add(globalRouting, -10);
-                    }
-                    //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                    //  list.Add(ripNgRouting, 0);
-                    //}
-                  }
-                }
-                wifiInternet.SetRoutingHelper(list);
-                wifiInternet.Install(peer2);
-              }
-            }
-          }
-
-          Ptr<Node> peer2Node = Names::Find<Node>(peer2);
-          if(!peer2Node->GetObject<Ipv4>()){
-            wifiInternet.Install(peer2);
-          }
-
-          NS_ASSERT(peer2Node->GetObject<Ipv4>());
-
+          bool gateway = false;
           if(!infrastructure.empty()){
             if(access_point.find(peer2) != string::npos){
               // setup sta.
@@ -1844,7 +626,10 @@ int main (int argc, char *argv[]) {
             else{
               // setup ap.
               wifiMac.SetType ("ns3::ApWifiMac",
-                               "Ssid", SsidValue (peer));
+                               "Ssid", SsidValue (peer),
+                               "BeaconGeneration", BooleanValue (true),
+                               "BeaconInterval", TimeValue(Seconds(2.5)));
+              gateway = true;
             }
           }
           else{
@@ -1862,9 +647,10 @@ int main (int argc, char *argv[]) {
           getAddresses(pt, peer2, name_holder);
           Ptr<NetDevice> device = wifiDevices.Get (j++);
           assignDeviceAddress(device);
-/*
+
+
           // attempt to define gateway TODO
-          if(p2flag){
+          if(gateway){
             // Obtain olsr::RoutingProtocol instance of gateway node
             Ptr<Ipv4> stack = Names::Find<Node>(peer2)->GetObject<Ipv4> ();
             Ptr<Ipv4RoutingProtocol> rp_Gw = (stack->GetRoutingProtocol ());
@@ -1882,9 +668,9 @@ int main (int argc, char *argv[]) {
               }
             }
             // Specify the required associations directly.
-            //olsrrp_Gw->AddHostNetworkAssociation (Ipv4Address::GetAny (), Ipv4Mask ("255.255.0.0"));
+            olsrrp_Gw->AddHostNetworkAssociation (Ipv4Address::GetAny (), Ipv4Mask ("0.0.0.0"));
           }
-*/
+
         }
       }
 
@@ -2001,12 +787,12 @@ int main (int argc, char *argv[]) {
           //        3 = some router detected,
           //        4 = some hub/switch detected,
           //        5 = direct hub/switch found,
-          //        6 = direct router/end device found,
-          //        7 = indirect router/end device found,
+          //        6 = direct router/end-device found,
+          //        7 = indirect router/end-device found,
           //        8 = indirect hub/switch found
 
-          // if hub/switch to hub/switch, build through calling function
-          // else if end divices, build through state 6 or 7
+          // if hub/switch to hub/switch, build through state 6 or 8
+          // else if end-divices, build through state 6 or 7
           BOOST_FOREACH(ptree::value_type const& tp0, p0.second){
             if(tp0.first == "member"){
               name_holder = tp0.second.data();
@@ -2035,7 +821,7 @@ int main (int argc, char *argv[]) {
 // possible indirect link or router found, if out of order, 
 // direct link is possible
                 else{
-                  if(state == 0){ // some hub/switch found
+                  if(state == 0){      // some hub/switch found
                     linkName = memInterId.substr(peer.length() + 1);
                     state = 4;
                   }
@@ -2043,7 +829,7 @@ int main (int argc, char *argv[]) {
                     linkName = memInterId.substr(peer.length() + 1);
                     state = 5;
                   }
-                  else if(state == 3){// indirect router identified
+                  else if(state == 3){ // indirect router identified
                     linkName = memInterId.substr(peer.length() + 1);
                     state = 7;
                   }
@@ -2053,7 +839,7 @@ int main (int argc, char *argv[]) {
                     return -1;
                   }
                 }
-              }
+              }// end assumed direct
 //=========================================================================
 // Assume indirect link to a switch or hub, possible direct router
 // if out of order
@@ -2124,16 +910,15 @@ int main (int argc, char *argv[]) {
                   }
                 }
                 else{
-                  // error
                   cerr << "Error: Topology for" << type << " " << peer << "could not be built: " << name_holder << endl;
                   return -1;
                 }
-              }
-            }
-          }
+              }// end assumed indirect
+            }// end if member
+          }// end boost for loop
 
 //=========================================================================
-// Connect a bridge with a direct edge to controlling switch (a.k.a "peer")
+// Connect a bridge with a direct edge to controlling bridge (a.k.a "peer")
 //-------------------------------------------------------------------------
           if(state == 5){
             csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
@@ -2147,8 +932,8 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  double percent = stod(p1.second.data());
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                  double percent = (stod(p1.second.data()) / 100.0);
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent),
                                                                                        "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
@@ -2163,7 +948,7 @@ int main (int argc, char *argv[]) {
             bridgeHelper.Install(peer, link.Get(1));
           }
 //=========================================================================
-// Connect two bridges unrelated to controlling switch (a.k.a "peer")
+// Connect two bridges unrelated to controlling bridge (a.k.a "peer")
 //-------------------------------------------------------------------------
           else if(state == 8){
             csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
@@ -2177,8 +962,8 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  double percent = stod(p1.second.data());
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                  double percent = (stod(p1.second.data()) / 100.0);
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent),
                                                                                        "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
@@ -2214,94 +999,16 @@ int main (int argc, char *argv[]) {
               }
             }
 
-            InternetStackHelper internetCsma;
             if(!p2Nflag){
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
-              //internetCsma.Install(peer2);
             }
 
-            OlsrHelper olsr;
-            Ipv4GlobalRoutingHelper globalRouting;
-            Ipv4StaticRoutingHelper staticRouting;
-            RipHelper ripRouting;
-            RipNgHelper ripNgRouting;
-            Ipv4ListRoutingHelper list;
-            bool applyDefaultServices2 = true;
-
-            // get local services
-            BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-              if(pl1.first != "host" && pl1.first != "router"){
-                continue;
-              }
-
-              optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
-              if(service_exists){
-                if(!p2Nflag && pl1.second.get<string>("<xmlattr>.name") == peer2){
-                  BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-                    if(pl2.first == "service"){
-                      Ipv4ListRoutingHelper list;
-
-                      if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                        list.Add (staticRouting, 0);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                        list.Add(olsr, 10);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 5);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                        list.Add(globalRouting, -10);
-                      }
-                      //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                      //  list.Add(ripNgRouting, 0);
-                      //}
-                    }
-                  }
-                  internetCsma.SetRoutingHelper(list); // has effect on the next Install ()
-                  internetCsma.Install(peer2);
-                  applyDefaultServices2 = false;
-                }
-              }
+            // add internet stack if not yet created, add routing if found
+            if(!p2Nflag){
+              getRoutingProtocols(pt, peer2, p2Type);
             }
-
-            // if there were no local, set default services according to type
-            BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-              if(pl1.first == "CORE:defaultservices"){
-                if(!p2Nflag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
-                  BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-                    if(pl2.first == "service"){
-                      if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                        list.Add (staticRouting, 0);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                        list.Add(olsr, 10);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 5);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                        list.Add(globalRouting, -10);
-                      }
-                      //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                      //  list.Add(ripNgRouting, 0);
-                      //}
-                    }
-                  }
-                  internetCsma.SetRoutingHelper(list);
-                  internetCsma.Install(peer2);
-                }
-              }
-            }
-
-            Ptr<Node> peer2Node = Names::Find<Node>(peer2);
-            if(!peer2Node->GetObject<Ipv4>()){
-              internetCsma.Install(peer2);
-            }
-
-            NS_ASSERT(peer2Node->GetObject<Ipv4>());
 
             csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
 
@@ -2314,8 +1021,8 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  double percent = stod(p1.second.data());
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                  double percent = (stod(p1.second.data()) / 100.0);
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent),
                                                                                        "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
@@ -2364,91 +1071,16 @@ int main (int argc, char *argv[]) {
               }
             }
 
-            InternetStackHelper internetCsma;
             if(!p2Nflag){
               csmaNodes.Create(1);
               Names::Add(peer2, csmaNodes.Get(csmaNodes.GetN() - 1));
               nodes.Add(peer2);
-              //internetCsma.Install(peer2);
             }
 
-            OlsrHelper olsr;
-            Ipv4GlobalRoutingHelper globalRouting;
-            Ipv4StaticRoutingHelper staticRouting;
-            RipHelper ripRouting;
-            RipNgHelper ripNgRouting;
-            Ipv4ListRoutingHelper list;
-            bool applyDefaultServices2 = true;
-
-            // get local services
-            BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-              if(pl1.first != "host" && pl1.first != "router"){
-                continue;
-              }
-
-              optional<const ptree&> service_exists = pl1.second.get_child_optional("CORE:services");
-              if(service_exists){
-                if(!p2Nflag && pl1.second.get<string>("<xmlattr>.name") == peer2){
-                  BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("CORE:services")){
-                    if(pl2.first == "service"){
-                      if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                        list.Add (staticRouting, 0);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                        list.Add(olsr, 10);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 5);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                        list.Add(globalRouting, -10);
-                      }
-                      //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                      //  list.Add(ripNgRouting, 0);
-                      //}
-                    }
-                  }
-                  internetCsma.SetRoutingHelper(list); // has effect on the next Install ()
-                  internetCsma.Install(peer2);
-                  applyDefaultServices2 = false;
-                }
-              }
+            // add internet stack if not yet created, add routing if found
+            if(!p2Nflag){
+              getRoutingProtocols(pt, peer2, p2Type);
             }
-            // if there were no local, set default services according to type
-            BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-              if(pl1.first == "CORE:defaultservices"){
-                if(!p2Nflag && applyDefaultServices2 && pl1.second.get<string>("device.<xmlattr>.type") == p2Type){
-                  BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-                    if(pl2.first == "service"){
-                      if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-                        list.Add (staticRouting, 0);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR"){
-                        list.Add(olsr, 10);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-                        list.Add(ripRouting, 5);
-                      }
-                      else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-                        list.Add(globalRouting, -10);
-                      }
-                      //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-                      //  list.Add(ripNgRouting, 0);
-                      //}
-                    }
-                  }
-                  internetCsma.SetRoutingHelper(list);
-                  internetCsma.Install(peer2);
-                }
-              }
-            }
-
-            Ptr<Node> peer2Node = Names::Find<Node>(peer2);
-            if(!peer2Node->GetObject<Ipv4>()){
-              internetCsma.Install(peer2);
-            }
-
-            NS_ASSERT(peer2Node->GetObject<Ipv4>());
 
             csma.SetQueue("ns3::DropTailQueue", "MaxPackets", UintegerValue(1000));
 
@@ -2461,8 +1093,8 @@ int main (int argc, char *argv[]) {
                   csma.SetChannelAttribute("Delay",TimeValue(MicroSeconds(stoi(p1.second.data()))));
                 }
                 else if(p1.second.get<string>("<xmlattr>.name") == "loss"){
-                  double percent = stod(p1.second.data());
-                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent / 100.0),
+                  double percent = (stod(p1.second.data()) / 100.0);
+                  Ptr<RateErrorModel> rem = CreateObjectWithAttributes<RateErrorModel>("ErrorRate", DoubleValue(percent),
                                                                                        "ErrorUnit", StringValue ("ERROR_UNIT_PACKET"));
                   csma.SetDeviceAttribute("ReceiveErrorModel",PointerValue(rem));
                 }
@@ -2496,7 +1128,7 @@ int main (int argc, char *argv[]) {
     }// end of if switch/hub
   }// end of topology builder
 
-  cout << "\nCORE topology imported..." << endl; 
+  cout << "\nCORE topology imported..." << endl;
 
 //====================================================
 //create applications if given
@@ -2573,7 +1205,7 @@ int main (int argc, char *argv[]) {
   // install ns2 mobility script
   ns2.Install();
 
-  // Turn on global static routing if no wifi network was defined
+  // Turn on global static routing if no wifi network was defined.
   if(global_is_safe){
     Ipv4GlobalRoutingHelper::PopulateRoutingTables();
   }
@@ -2587,7 +1219,7 @@ int main (int argc, char *argv[]) {
 /*
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
-  Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (trace_prefix + "core2ns3-global-routing.routes", std::ios::out);
+  Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper> (trace_prefix + "core2ns3-globalRoutingTables.routes", std::ios::out);
   g.PrintRoutingTableAllAt (Seconds (duration), routingStream);
 */
   // Flow monitor
@@ -2606,8 +1238,6 @@ int main (int argc, char *argv[]) {
 
   return 0;
 }
-
-
 
 
 

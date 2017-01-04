@@ -1,4 +1,4 @@
-LATLONGUTM = utils/LatLong-UTMconversion.cpp utils/LatLong-UTMconversion.h utils/constants.h utils/core-to-ns3-helper.cc utils/core-to-ns3-helper.h
+UTILS = utils/LatLong-UTMconversion.cpp utils/LatLong-UTMconversion.h utils/constants.h utils/core-to-ns3-helper.cc utils/core-to-ns3-helper.h
 NSFILES = core_to_ns3_scenario.cc
 LPATH = ../src/topology-read/UTM_conversion/
 SPATH = ../scratch/
@@ -13,7 +13,7 @@ configure: copy
 
 copy: makeDir
 	cp $(NSFILES) $(SPATH)
-	cp $(LATLONGUTM) $(LPATH)
+	cp $(UTILS) $(LPATH)
 	mv -vn ../src/topology-read/wscript ../src/topology-read/wscript.old
 	cp utils/wscript ../src/topology-read/
 

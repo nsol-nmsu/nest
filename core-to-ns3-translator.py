@@ -41,7 +41,7 @@ def main(argv):
   pcap = "false"
 
   try:
-    opts, args = getopt.getopt(argv, 'h:t:n:d:l:a:p', ["help", "topo=", "ns2=", "duration=", "trace=", "apps=", "pcap"])
+    opts, args = getopt.getopt(argv, 'ht:n:d:l:a:p', ["help", "topo=", "ns2=", "duration=", "trace=", "apps=", "pcap"])
   except getopt.GetoptError:
     print "core-to-ns3-translator.py -t <file/path/in/imn2ns3> -n <file/path/in/imn2ns3> -d <time.float> -l <path/to/folder/> -a <file/path/in/imn2ns3> -p"
     sys.exit(2)
