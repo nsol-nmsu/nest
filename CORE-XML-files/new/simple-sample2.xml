@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario compiled="true" name="simple-sample1.1.xml" version="1.0" xmlns="nmfPlan" xmlns:CORE="coreSpecific">
+  <network id="net0" name="net0">
+    <type>ethernet</type>
+    <alias domain="COREID">44416</alias>
+    <member type="interface">n1/eth0</member>
+    <member type="interface">wiredLaptop/eth0</member>
+    <member type="channel">net0/chan0</member>
+    <channel id="net0/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">10000000</parameter>
+      <parameter name="delay">160</parameter>
+      <member index="0" type="interface">n1/eth0</member>
+      <member index="1" type="interface">wiredLaptop/eth0</member>
+    </channel>
+  </network>
+  <network id="wlan7" name="wlan7">
+    <point lat="47.5772797642" lon="-122.126169801" type="gps"/>
+    <type>wireless</type>
+    <alias domain="COREID">7</alias>
+    <member type="interface">n1/eth2</member>
+    <member type="interface">wirelessLaptop/eth0</member>
+    <member type="interface">tablet/eth0</member>
+    <member type="interface">cellphone/eth0</member>
+    <member type="channel">wlan7/wireless</member>
+    <channel id="wlan7/wireless" name="wireless">
+      <type domain="CORE">basic_range</type>
+      <parameter name="range">275</parameter>
+      <parameter name="bandwidth">54000000</parameter>
+      <parameter name="jitter">0.0</parameter>
+      <parameter name="delay">20000</parameter>
+      <parameter name="error">0.0</parameter>
+      <member index="0" type="interface">n1/eth2</member>
+      <member index="1" type="interface">wirelessLaptop/eth0</member>
+      <member index="2" type="interface">tablet/eth0</member>
+      <member index="3" type="interface">cellphone/eth0</member>
+    </channel>
+  </network>
+  <network id="net1" name="net1">
+    <type>ethernet</type>
+    <alias domain="COREID">56706</alias>
+    <member type="interface">n3/eth1</member>
+    <member type="interface">isp/eth0</member>
+    <member type="channel">net1/chan0</member>
+    <channel id="net1/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">1000000000</parameter>
+      <parameter name="delay">50</parameter>
+      <member index="0" type="interface">n3/eth1</member>
+      <member index="1" type="interface">isp/eth0</member>
+    </channel>
+  </network>
+  <network id="net2" name="net2">
+    <type>ethernet</type>
+    <alias domain="COREID">26697</alias>
+    <member type="interface">n2/eth1</member>
+    <member type="interface">n3/eth0</member>
+    <member type="channel">net2/chan0</member>
+    <channel id="net2/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">10000000</parameter>
+      <parameter name="delay">160</parameter>
+      <member index="0" type="interface">n2/eth1</member>
+      <member index="1" type="interface">n3/eth0</member>
+    </channel>
+  </network>
+  <network id="net3" name="net3">
+    <type>ethernet</type>
+    <alias domain="COREID">9157</alias>
+    <member type="interface">n1/eth1</member>
+    <member type="interface">n2/eth0</member>
+    <member type="channel">net3/chan0</member>
+    <channel id="net3/chan0" name="chan0">
+      <type>ethernet</type>
+      <parameter name="bw">10000000</parameter>
+      <parameter name="delay">200</parameter>
+      <parameter name="loss">3.0</parameter>
+      <member index="0" type="interface">n1/eth1</member>
+      <member index="1" type="interface">n2/eth0</member>
+    </channel>
+  </network>
+  <router id="n1" name="n1">
+    <type domain="CORE">router</type>
+    <interface id="n1/eth0" name="eth0">
+      <member index="0" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:00:0d</address>
+      <address type="IPv4">10.0.0.1/24</address>
+      <address type="IPv6">2001::1/64</address>
+    </interface>
+    <interface id="n1/eth1" name="eth1">
+      <member index="0" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:00:0e</address>
+      <address type="IPv4">10.0.1.1/24</address>
+      <address type="IPv6">2001:1::1/64</address>
+    </interface>
+    <interface id="n1/eth2" name="eth2">
+      <member index="0" type="channel">wlan7/wireless</member>
+      <member type="network">wlan7</member>
+      <address type="mac">00:00:00:aa:00:14</address>
+      <address type="IPv4">10.0.4.1/24</address>
+      <address type="IPv6">2001:4::1/92</address>
+    </interface>
+    <alias domain="COREID">1</alias>
+    <point lat="47.5761613166" lon="-122.126407815" type="gps"/>
+    <CORE:services name="n1">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n2" name="n2">
+    <type domain="CORE">router</type>
+    <interface id="n2/eth0" name="eth0">
+      <member index="1" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:00:0f</address>
+      <address type="IPv4">10.0.1.2/24</address>
+      <address type="IPv6">2001:1::2/64</address>
+    </interface>
+    <interface id="n2/eth1" name="eth1">
+      <member index="0" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:10</address>
+      <address type="IPv4">10.0.2.1/24</address>
+      <address type="IPv6">2001:2::1/64</address>
+    </interface>
+    <alias domain="COREID">2</alias>
+    <point lat="47.5762333347" lon="-122.121699392" type="gps"/>
+    <CORE:services name="n2">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n3" name="n3">
+    <type domain="CORE">router</type>
+    <interface id="n3/eth0" name="eth0">
+      <member index="1" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:00:11</address>
+      <address type="IPv4">10.0.2.2/24</address>
+      <address type="IPv6">2001:2::2/64</address>
+    </interface>
+    <interface id="n3/eth1" name="eth1">
+      <member index="0" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:12</address>
+      <address type="IPv4">10.0.3.1/24</address>
+      <address type="IPv6">2001:3::1/64</address>
+    </interface>
+    <alias domain="COREID">3</alias>
+    <point lat="47.5775448977" lon="-122.118486039" type="gps"/>
+    <CORE:services name="n3">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <host id="wiredLaptop" name="wiredLaptop">
+    <type domain="CORE">PC</type>
+    <interface id="wiredLaptop/eth0" name="eth0">
+      <member index="1" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:00:0c</address>
+      <address type="IPv4">10.0.0.20/24</address>
+      <address type="IPv6">2001::20/64</address>
+    </interface>
+    <alias domain="COREID">4</alias>
+    <point lat="47.5770317" lon="-122.129046177" type="gps"/>
+    <CORE:services name="wiredLaptop">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="DefaultRoute" startup_idx="80"/>
+      <service custom="True" name="pcap" startup_idx="1">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w wired-laptop.eth0.pcap -i eth0 &lt; /dev/null &amp;
+
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p /home/seraph/Desktop/tshark_output/pcap
+    mv *.pcap /home/seraph/Desktop/tshark_output/pcap
+fi;</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="pc.gif"/>
+  </host>
+  <host id="wirelessLaptop" name="wirelessLaptop">
+    <type domain="CORE">PC</type>
+    <interface id="wirelessLaptop/eth0" name="eth0">
+      <member index="1" type="channel">wlan7/wireless</member>
+      <member type="network">wlan7</member>
+      <address type="mac">00:00:00:aa:00:15</address>
+      <address type="IPv4">10.0.4.20/24</address>
+      <address type="IPv6">2001:4::20/92</address>
+    </interface>
+    <alias domain="COREID">5</alias>
+    <point lat="47.5751435528" lon="-122.129237052" type="gps"/>
+    <CORE:services name="wirelessLaptop">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="DefaultRoute" startup_idx="80"/>
+      <service custom="True" name="pcap" startup_idx="1">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w wireless-laptop.eth0.pcap -i eth0 &lt; /dev/null &amp;
+
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p /home/seraph/Desktop/tshark_output/pcap
+    mv *.pcap /home/seraph/Desktop/tshark_output/pcap
+fi;</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="pc.gif"/>
+  </host>
+  <host id="isp" name="isp">
+    <type domain="CORE">host</type>
+    <interface id="isp/eth0" name="eth0">
+      <member index="1" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:00:13</address>
+      <address type="IPv4">10.0.3.10/24</address>
+      <address type="IPv6">2001:3::10/64</address>
+    </interface>
+    <alias domain="COREID">6</alias>
+    <point lat="47.577978863" lon="-122.115247416" type="gps"/>
+    <CORE:services name="isp">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="DefaultRoute" startup_idx="80"/>
+      <service name="SSH" startup_idx="80"/>
+      <service custom="True" name="pcap" startup_idx="1">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w isp.eth0.pcap -i eth0 &lt; /dev/null &amp;
+
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p /home/seraph/Desktop/tshark_output/pcap
+    mv *.pcap /home/seraph/Desktop/tshark_output/pcap
+fi;</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="host.gif"/>
+  </host>
+  <router id="tablet" name="tablet">
+    <type domain="CORE">router</type>
+    <interface id="tablet/eth0" name="eth0">
+      <member index="2" type="channel">wlan7/wireless</member>
+      <member type="network">wlan7</member>
+      <address type="mac">00:00:00:aa:00:17</address>
+      <address type="IPv4">10.0.4.3/24</address>
+      <address type="IPv6">2001:4::3/92</address>
+    </interface>
+    <alias domain="COREID">8</alias>
+    <point lat="47.5743920507" lon="-122.126257737" type="gps"/>
+    <CORE:services name="tablet">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="cellphone" name="cellphone">
+    <type domain="CORE">router</type>
+    <interface id="cellphone/eth0" name="eth0">
+      <member index="3" type="channel">wlan7/wireless</member>
+      <member type="network">wlan7</member>
+      <address type="mac">00:00:00:aa:00:16</address>
+      <address type="IPv4">10.0.4.2/24</address>
+      <address type="IPv6">2001:4::2/92</address>
+    </interface>
+    <alias domain="COREID">9</alias>
+    <point lat="47.5737324546" lon="-122.128263201" type="gps"/>
+    <CORE:services name="cellphone">
+      <service name="OLSRORG" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <CORE:defaultservices>
+    <device type="router">
+      <service name="zebra"/>
+      <service name="OSPFv2"/>
+      <service name="OSPFv3"/>
+      <service name="vtysh"/>
+      <service name="IPForward"/>
+    </device>
+    <device type="host">
+      <service name="DefaultRoute"/>
+      <service name="SSH"/>
+    </device>
+    <device type="PC">
+      <service name="DefaultRoute"/>
+    </device>
+  </CORE:defaultservices>
+  <CORE:sessionconfig>
+    <origin alt="2.0" lat="47.5791667" lon="-122.132322" scale100="150.0"/>
+    <metadata>
+      <parameter name="global_options">interface_names=no ip_addresses=no ipv6_addresses=no node_labels=yes link_labels=yes show_api=no background_images=no annotations=yes grid=yes traffic_start=1</parameter>
+      <parameter name="canvas c1">{name {Canvas1}}</parameter>
+    </metadata>
+  </CORE:sessionconfig>
+</scenario>

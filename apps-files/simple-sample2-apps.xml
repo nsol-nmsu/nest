@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Applications>
+    <application>
+        <type>Tcp</type>
+        <name>tcp_1</name>
+        <sender>
+            <node>isp</node>
+            <port>5001</port>
+            <ipv4Address>10.0.3.10</ipv4Address>
+        </sender>
+        <receiver>
+            <node>wirelessLaptop</node>
+            <port>5001</port>
+            <ipv4Address>10.0.4.20</ipv4Address>
+        </receiver>
+        <startTime>30</startTime>
+        <endTime>70</endTime>
+        <special>
+            <pcap>true</pcap>
+            <periodic>50.0</periodic>
+            <packetSize>1280</packetSize>
+            <maxPacketCount>0</maxPacketCount>
+        </special>
+    </application>
+    <application>
+        <type>Tcp</type>
+        <name>tcp_0</name>
+        <sender>
+            <node>isp</node>
+            <port>5000</port>
+            <ipv4Address>10.0.3.10</ipv4Address>
+        </sender>
+        <receiver>
+            <node>wiredLaptop</node>
+            <port>5000</port>
+            <ipv4Address>10.0.0.20</ipv4Address>
+        </receiver>
+        <startTime>20</startTime>
+        <endTime>60</endTime>
+        <special>
+            <pcap>true</pcap>
+            <periodic>50.0</periodic>
+            <packetSize>1280</packetSize>
+            <maxPacketCount>0</maxPacketCount>
+        </special>
+    </application>
+</Applications>

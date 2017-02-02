@@ -1,0 +1,1491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scenario compiled="true" name="simple-sample1.xml" version="1.0" xmlns="nmfPlan" xmlns:CORE="coreSpecific">
+  <network id="net0" name="net0">
+    <type>ethernet</type>
+    <alias domain="COREID">34563</alias>
+    <member type="interface">n24/eth2</member>
+    <member type="interface">n25/eth0</member>
+    <member type="channel">net0/chan0</member>
+    <channel id="net0/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n24/eth2</member>
+      <member index="1" type="interface">n25/eth0</member>
+    </channel>
+  </network>
+  <network id="net1" name="net1">
+    <type>ethernet</type>
+    <alias domain="COREID">64027</alias>
+    <member type="interface">n18/eth2</member>
+    <member type="interface">n19/eth0</member>
+    <member type="channel">net1/chan0</member>
+    <channel id="net1/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n18/eth2</member>
+      <member index="1" type="interface">n19/eth0</member>
+    </channel>
+  </network>
+  <network id="net2" name="net2">
+    <type>ethernet</type>
+    <alias domain="COREID">8992</alias>
+    <member type="interface">n7/eth3</member>
+    <member type="interface">n12/eth1</member>
+    <member type="channel">net2/chan0</member>
+    <channel id="net2/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n7/eth3</member>
+      <member index="1" type="interface">n12/eth1</member>
+    </channel>
+  </network>
+  <network id="net3" name="net3">
+    <type>ethernet</type>
+    <alias domain="COREID">12584</alias>
+    <member type="interface">n16/eth1</member>
+    <member type="interface">n17/eth0</member>
+    <member type="channel">net3/chan0</member>
+    <channel id="net3/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n16/eth1</member>
+      <member index="1" type="interface">n17/eth0</member>
+    </channel>
+  </network>
+  <network id="net4" name="net4">
+    <type>ethernet</type>
+    <alias domain="COREID">38962</alias>
+    <member type="interface">n8/eth3</member>
+    <member type="interface">n13/eth1</member>
+    <member type="channel">net4/chan0</member>
+    <channel id="net4/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n8/eth3</member>
+      <member index="1" type="interface">n13/eth1</member>
+    </channel>
+  </network>
+  <network id="net5" name="net5">
+    <type>ethernet</type>
+    <alias domain="COREID">61501</alias>
+    <member type="interface">n23/eth2</member>
+    <member type="interface">n24/eth0</member>
+    <member type="channel">net5/chan0</member>
+    <channel id="net5/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n23/eth2</member>
+      <member index="1" type="interface">n24/eth0</member>
+    </channel>
+  </network>
+  <network id="net6" name="net6">
+    <type>ethernet</type>
+    <alias domain="COREID">39172</alias>
+    <member type="interface">n14/eth3</member>
+    <member type="interface">n19/eth1</member>
+    <member type="channel">net6/chan0</member>
+    <channel id="net6/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n14/eth3</member>
+      <member index="1" type="interface">n19/eth1</member>
+    </channel>
+  </network>
+  <network id="net7" name="net7">
+    <type>ethernet</type>
+    <alias domain="COREID">12045</alias>
+    <member type="interface">n5/eth1</member>
+    <member type="interface">n10/eth1</member>
+    <member type="channel">net7/chan0</member>
+    <channel id="net7/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n5/eth1</member>
+      <member index="1" type="interface">n10/eth1</member>
+    </channel>
+  </network>
+  <network id="net8" name="net8">
+    <type>ethernet</type>
+    <alias domain="COREID">47698</alias>
+    <member type="interface">n6/eth2</member>
+    <member type="interface">n11/eth0</member>
+    <member type="channel">net8/chan0</member>
+    <channel id="net8/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n6/eth2</member>
+      <member index="1" type="interface">n11/eth0</member>
+    </channel>
+  </network>
+  <network id="net9" name="net9">
+    <type>ethernet</type>
+    <alias domain="COREID">6146</alias>
+    <member type="interface">n10/eth2</member>
+    <member type="interface">n15/eth1</member>
+    <member type="channel">net9/chan0</member>
+    <channel id="net9/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n10/eth2</member>
+      <member index="1" type="interface">n15/eth1</member>
+    </channel>
+  </network>
+  <network id="net10" name="net10">
+    <type>ethernet</type>
+    <alias domain="COREID">27223</alias>
+    <member type="interface">n2/eth1</member>
+    <member type="interface">n3/eth0</member>
+    <member type="channel">net10/chan0</member>
+    <channel id="net10/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n2/eth1</member>
+      <member index="1" type="interface">n3/eth0</member>
+    </channel>
+  </network>
+  <network id="net11" name="net11">
+    <type>ethernet</type>
+    <alias domain="COREID">35676</alias>
+    <member type="interface">n18/eth3</member>
+    <member type="interface">n23/eth1</member>
+    <member type="channel">net11/chan0</member>
+    <channel id="net11/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n18/eth3</member>
+      <member index="1" type="interface">n23/eth1</member>
+    </channel>
+  </network>
+  <network id="net12" name="net12">
+    <type>ethernet</type>
+    <alias domain="COREID">61823</alias>
+    <member type="interface">n7/eth2</member>
+    <member type="interface">n8/eth0</member>
+    <member type="channel">net12/chan0</member>
+    <channel id="net12/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n7/eth2</member>
+      <member index="1" type="interface">n8/eth0</member>
+    </channel>
+  </network>
+  <network id="net13" name="net13">
+    <type>ethernet</type>
+    <alias domain="COREID">42371</alias>
+    <member type="interface">n16/eth2</member>
+    <member type="interface">n21/eth0</member>
+    <member type="channel">net13/chan0</member>
+    <channel id="net13/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n16/eth2</member>
+      <member index="1" type="interface">n21/eth0</member>
+    </channel>
+  </network>
+  <network id="net14" name="net14">
+    <type>ethernet</type>
+    <alias domain="COREID">19332</alias>
+    <member type="interface">n17/eth2</member>
+    <member type="interface">n18/eth0</member>
+    <member type="channel">net14/chan0</member>
+    <channel id="net14/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n17/eth2</member>
+      <member index="1" type="interface">n18/eth0</member>
+    </channel>
+  </network>
+  <network id="net15" name="net15">
+    <type>ethernet</type>
+    <alias domain="COREID">6026</alias>
+    <member type="interface">n2/eth2</member>
+    <member type="interface">n7/eth1</member>
+    <member type="channel">net15/chan0</member>
+    <channel id="net15/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n2/eth2</member>
+      <member index="1" type="interface">n7/eth1</member>
+    </channel>
+  </network>
+  <network id="net16" name="net16">
+    <type>ethernet</type>
+    <alias domain="COREID">42638</alias>
+    <member type="interface">n17/eth3</member>
+    <member type="interface">n22/eth1</member>
+    <member type="channel">net16/chan0</member>
+    <channel id="net16/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n17/eth3</member>
+      <member index="1" type="interface">n22/eth1</member>
+    </channel>
+  </network>
+  <network id="net17" name="net17">
+    <type>ethernet</type>
+    <alias domain="COREID">29077</alias>
+    <member type="interface">n13/eth3</member>
+    <member type="interface">n18/eth1</member>
+    <member type="channel">net17/chan0</member>
+    <channel id="net17/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n13/eth3</member>
+      <member index="1" type="interface">n18/eth1</member>
+    </channel>
+  </network>
+  <network id="net18" name="net18">
+    <type>ethernet</type>
+    <alias domain="COREID">27542</alias>
+    <member type="interface">n1/eth0</member>
+    <member type="interface">n2/eth0</member>
+    <member type="channel">net18/chan0</member>
+    <channel id="net18/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n1/eth0</member>
+      <member index="1" type="interface">n2/eth0</member>
+    </channel>
+  </network>
+  <network id="net19" name="net19">
+    <type>ethernet</type>
+    <alias domain="COREID">13464</alias>
+    <member type="interface">n1/eth1</member>
+    <member type="interface">n6/eth0</member>
+    <member type="channel">net19/chan0</member>
+    <channel id="net19/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n1/eth1</member>
+      <member index="1" type="interface">n6/eth0</member>
+    </channel>
+  </network>
+  <network id="net20" name="net20">
+    <type>ethernet</type>
+    <alias domain="COREID">35483</alias>
+    <member type="interface">n4/eth2</member>
+    <member type="interface">n9/eth1</member>
+    <member type="channel">net20/chan0</member>
+    <channel id="net20/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n4/eth2</member>
+      <member index="1" type="interface">n9/eth1</member>
+    </channel>
+  </network>
+  <network id="net21" name="net21">
+    <type>ethernet</type>
+    <alias domain="COREID">47261</alias>
+    <member type="interface">n11/eth2</member>
+    <member type="interface">n16/eth0</member>
+    <member type="channel">net21/chan0</member>
+    <channel id="net21/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n11/eth2</member>
+      <member index="1" type="interface">n16/eth0</member>
+    </channel>
+  </network>
+  <network id="net22" name="net22">
+    <type>ethernet</type>
+    <alias domain="COREID">18078</alias>
+    <member type="interface">n3/eth1</member>
+    <member type="interface">n4/eth0</member>
+    <member type="channel">net22/chan0</member>
+    <channel id="net22/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n3/eth1</member>
+      <member index="1" type="interface">n4/eth0</member>
+    </channel>
+  </network>
+  <network id="net23" name="net23">
+    <type>ethernet</type>
+    <alias domain="COREID">41632</alias>
+    <member type="interface">n20/eth2</member>
+    <member type="interface">n25/eth1</member>
+    <member type="channel">net23/chan0</member>
+    <channel id="net23/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n20/eth2</member>
+      <member index="1" type="interface">n25/eth1</member>
+    </channel>
+  </network>
+  <network id="net24" name="net24">
+    <type>ethernet</type>
+    <alias domain="COREID">10915</alias>
+    <member type="interface">n14/eth2</member>
+    <member type="interface">n15/eth0</member>
+    <member type="channel">net24/chan0</member>
+    <channel id="net24/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n14/eth2</member>
+      <member index="1" type="interface">n15/eth0</member>
+    </channel>
+  </network>
+  <network id="net25" name="net25">
+    <type>ethernet</type>
+    <alias domain="COREID">7085</alias>
+    <member type="interface">n6/eth1</member>
+    <member type="interface">n7/eth0</member>
+    <member type="channel">net25/chan0</member>
+    <channel id="net25/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n6/eth1</member>
+      <member index="1" type="interface">n7/eth0</member>
+    </channel>
+  </network>
+  <network id="net26" name="net26">
+    <type>ethernet</type>
+    <alias domain="COREID">30896</alias>
+    <member type="interface">n9/eth2</member>
+    <member type="interface">n10/eth0</member>
+    <member type="channel">net26/chan0</member>
+    <channel id="net26/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n9/eth2</member>
+      <member index="1" type="interface">n10/eth0</member>
+    </channel>
+  </network>
+  <network id="net27" name="net27">
+    <type>ethernet</type>
+    <alias domain="COREID">4609</alias>
+    <member type="interface">n12/eth2</member>
+    <member type="interface">n13/eth0</member>
+    <member type="channel">net27/chan0</member>
+    <channel id="net27/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n12/eth2</member>
+      <member index="1" type="interface">n13/eth0</member>
+    </channel>
+  </network>
+  <network id="net28" name="net28">
+    <type>ethernet</type>
+    <alias domain="COREID">50616</alias>
+    <member type="interface">n11/eth1</member>
+    <member type="interface">n12/eth0</member>
+    <member type="channel">net28/chan0</member>
+    <channel id="net28/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n11/eth1</member>
+      <member index="1" type="interface">n12/eth0</member>
+    </channel>
+  </network>
+  <network id="net29" name="net29">
+    <type>ethernet</type>
+    <alias domain="COREID">25021</alias>
+    <member type="interface">n3/eth2</member>
+    <member type="interface">n8/eth1</member>
+    <member type="channel">net29/chan0</member>
+    <channel id="net29/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n3/eth2</member>
+      <member index="1" type="interface">n8/eth1</member>
+    </channel>
+  </network>
+  <network id="net30" name="net30">
+    <type>ethernet</type>
+    <alias domain="COREID">22978</alias>
+    <member type="interface">n15/eth2</member>
+    <member type="interface">n20/eth1</member>
+    <member type="channel">net30/chan0</member>
+    <channel id="net30/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n15/eth2</member>
+      <member index="1" type="interface">n20/eth1</member>
+    </channel>
+  </network>
+  <network id="net31" name="net31">
+    <type>ethernet</type>
+    <alias domain="COREID">64459</alias>
+    <member type="interface">n19/eth3</member>
+    <member type="interface">n24/eth1</member>
+    <member type="channel">net31/chan0</member>
+    <channel id="net31/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n19/eth3</member>
+      <member index="1" type="interface">n24/eth1</member>
+    </channel>
+  </network>
+  <network id="net32" name="net32">
+    <type>ethernet</type>
+    <alias domain="COREID">24012</alias>
+    <member type="interface">n21/eth1</member>
+    <member type="interface">n22/eth0</member>
+    <member type="channel">net32/chan0</member>
+    <channel id="net32/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n21/eth1</member>
+      <member index="1" type="interface">n22/eth0</member>
+    </channel>
+  </network>
+  <network id="net33" name="net33">
+    <type>ethernet</type>
+    <alias domain="COREID">13270</alias>
+    <member type="interface">n13/eth2</member>
+    <member type="interface">n14/eth0</member>
+    <member type="channel">net33/chan0</member>
+    <channel id="net33/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n13/eth2</member>
+      <member index="1" type="interface">n14/eth0</member>
+    </channel>
+  </network>
+  <network id="net34" name="net34">
+    <type>ethernet</type>
+    <alias domain="COREID">5079</alias>
+    <member type="interface">n8/eth2</member>
+    <member type="interface">n9/eth0</member>
+    <member type="channel">net34/chan0</member>
+    <channel id="net34/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n8/eth2</member>
+      <member index="1" type="interface">n9/eth0</member>
+    </channel>
+  </network>
+  <network id="net35" name="net35">
+    <type>ethernet</type>
+    <alias domain="COREID">52442</alias>
+    <member type="interface">n12/eth3</member>
+    <member type="interface">n17/eth1</member>
+    <member type="channel">net35/chan0</member>
+    <channel id="net35/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n12/eth3</member>
+      <member index="1" type="interface">n17/eth1</member>
+    </channel>
+  </network>
+  <network id="net36" name="net36">
+    <type>ethernet</type>
+    <alias domain="COREID">28547</alias>
+    <member type="interface">n22/eth2</member>
+    <member type="interface">n23/eth0</member>
+    <member type="channel">net36/chan0</member>
+    <channel id="net36/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n22/eth2</member>
+      <member index="1" type="interface">n23/eth0</member>
+    </channel>
+  </network>
+  <network id="net37" name="net37">
+    <type>ethernet</type>
+    <alias domain="COREID">45800</alias>
+    <member type="interface">n4/eth1</member>
+    <member type="interface">n5/eth0</member>
+    <member type="channel">net37/chan0</member>
+    <channel id="net37/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n4/eth1</member>
+      <member index="1" type="interface">n5/eth0</member>
+    </channel>
+  </network>
+  <network id="net38" name="net38">
+    <type>ethernet</type>
+    <alias domain="COREID">34035</alias>
+    <member type="interface">n19/eth2</member>
+    <member type="interface">n20/eth0</member>
+    <member type="channel">net38/chan0</member>
+    <channel id="net38/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n19/eth2</member>
+      <member index="1" type="interface">n20/eth0</member>
+    </channel>
+  </network>
+  <network id="net39" name="net39">
+    <type>ethernet</type>
+    <alias domain="COREID">34548</alias>
+    <member type="interface">n9/eth3</member>
+    <member type="interface">n14/eth1</member>
+    <member type="channel">net39/chan0</member>
+    <channel id="net39/chan0" name="chan0">
+      <type>ethernet</type>
+      <member index="0" type="interface">n9/eth3</member>
+      <member index="1" type="interface">n14/eth1</member>
+    </channel>
+  </network>
+  <router id="n1" name="n1">
+    <type domain="CORE">router</type>
+    <interface id="n1/eth0" name="eth0">
+      <member index="0" type="channel">net18/chan0</member>
+      <member type="network">net18</member>
+      <address type="mac">00:00:00:aa:03:73</address>
+      <address type="IPv4">10.0.0.1/24</address>
+      <address type="IPv6">2001::1/64</address>
+    </interface>
+    <interface id="n1/eth1" name="eth1">
+      <member index="0" type="channel">net19/chan0</member>
+      <member type="network">net19</member>
+      <address type="mac">00:00:00:aa:03:7b</address>
+      <address type="IPv4">10.0.4.1/24</address>
+      <address type="IPv6">2001:4::1/64</address>
+    </interface>
+    <alias domain="COREID">1</alias>
+    <point lat="47.5778649083" lon="-122.130348826" type="gps"/>
+    <CORE:services name="n1">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n1.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n1.eth1.pcap -i eth1 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n2" name="n2">
+    <type domain="CORE">router</type>
+    <interface id="n2/eth0" name="eth0">
+      <member index="1" type="channel">net18/chan0</member>
+      <member type="network">net18</member>
+      <address type="mac">00:00:00:aa:03:74</address>
+      <address type="IPv4">10.0.0.2/24</address>
+      <address type="IPv6">2001::2/64</address>
+    </interface>
+    <interface id="n2/eth1" name="eth1">
+      <member index="0" type="channel">net10/chan0</member>
+      <member type="network">net10</member>
+      <address type="mac">00:00:00:aa:03:75</address>
+      <address type="IPv4">10.0.1.1/24</address>
+      <address type="IPv6">2001:1::1/64</address>
+    </interface>
+    <interface id="n2/eth2" name="eth2">
+      <member index="0" type="channel">net15/chan0</member>
+      <member type="network">net15</member>
+      <address type="mac">00:00:00:aa:03:7f</address>
+      <address type="IPv4">10.0.6.1/24</address>
+      <address type="IPv6">2001:6::1/64</address>
+    </interface>
+    <alias domain="COREID">2</alias>
+    <point lat="47.5778632644" lon="-122.128354205" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n3" name="n3">
+    <type domain="CORE">router</type>
+    <interface id="n3/eth0" name="eth0">
+      <member index="1" type="channel">net10/chan0</member>
+      <member type="network">net10</member>
+      <address type="mac">00:00:00:aa:03:76</address>
+      <address type="IPv4">10.0.1.2/24</address>
+      <address type="IPv6">2001:1::2/64</address>
+    </interface>
+    <interface id="n3/eth1" name="eth1">
+      <member index="0" type="channel">net22/chan0</member>
+      <member type="network">net22</member>
+      <address type="mac">00:00:00:aa:03:77</address>
+      <address type="IPv4">10.0.2.1/24</address>
+      <address type="IPv6">2001:2::1/64</address>
+    </interface>
+    <interface id="n3/eth2" name="eth2">
+      <member index="0" type="channel">net29/chan0</member>
+      <member type="network">net29</member>
+      <address type="mac">00:00:00:aa:03:83</address>
+      <address type="IPv4">10.0.8.1/24</address>
+      <address type="IPv6">2001:8::1/64</address>
+    </interface>
+    <alias domain="COREID">3</alias>
+    <point lat="47.5778480905" lon="-122.126359809" type="gps"/>
+    <CORE:services name="n3">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n3.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n3.eth1.pcap -i eth1 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n3.eth2.pcap -i eth2 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n4" name="n4">
+    <type domain="CORE">router</type>
+    <interface id="n4/eth0" name="eth0">
+      <member index="1" type="channel">net22/chan0</member>
+      <member type="network">net22</member>
+      <address type="mac">00:00:00:aa:03:78</address>
+      <address type="IPv4">10.0.2.2/24</address>
+      <address type="IPv6">2001:2::2/64</address>
+    </interface>
+    <interface id="n4/eth1" name="eth1">
+      <member index="0" type="channel">net37/chan0</member>
+      <member type="network">net37</member>
+      <address type="mac">00:00:00:aa:03:79</address>
+      <address type="IPv4">10.0.3.1/24</address>
+      <address type="IPv6">2001:3::1/64</address>
+    </interface>
+    <interface id="n4/eth2" name="eth2">
+      <member index="0" type="channel">net20/chan0</member>
+      <member type="network">net20</member>
+      <address type="mac">00:00:00:aa:03:87</address>
+      <address type="IPv4">10.0.10.1/24</address>
+      <address type="IPv6">2001:10::1/64</address>
+    </interface>
+    <alias domain="COREID">4</alias>
+    <point lat="47.5778328819" lon="-122.124365415" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n5" name="n5">
+    <type domain="CORE">router</type>
+    <interface id="n5/eth0" name="eth0">
+      <member index="1" type="channel">net37/chan0</member>
+      <member type="network">net37</member>
+      <address type="mac">00:00:00:aa:03:7a</address>
+      <address type="IPv4">10.0.3.2/24</address>
+      <address type="IPv6">2001:3::2/64</address>
+    </interface>
+    <interface id="n5/eth1" name="eth1">
+      <member index="0" type="channel">net7/chan0</member>
+      <member type="network">net7</member>
+      <address type="mac">00:00:00:aa:03:8b</address>
+      <address type="IPv4">10.0.12.1/24</address>
+      <address type="IPv6">2001:12::1/64</address>
+    </interface>
+    <alias domain="COREID">5</alias>
+    <point lat="47.5778176386" lon="-122.122371022" type="gps"/>
+    <CORE:services name="n5">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n5.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n5.eth1.pcap -i eth1 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+elif [ `uname` = &quot;FreeBSD&quot; ]; then
+  SCRIPTDIR=/tmp/e0_$HN
+  LOGDIR=$SCRIPTDIR
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n6" name="n6">
+    <type domain="CORE">router</type>
+    <interface id="n6/eth0" name="eth0">
+      <member index="1" type="channel">net19/chan0</member>
+      <member type="network">net19</member>
+      <address type="mac">00:00:00:aa:03:7c</address>
+      <address type="IPv4">10.0.4.2/24</address>
+      <address type="IPv6">2001:4::2/64</address>
+    </interface>
+    <interface id="n6/eth1" name="eth1">
+      <member index="0" type="channel">net25/chan0</member>
+      <member type="network">net25</member>
+      <address type="mac">00:00:00:aa:03:7d</address>
+      <address type="IPv4">10.0.5.1/24</address>
+      <address type="IPv6">2001:5::1/64</address>
+    </interface>
+    <interface id="n6/eth2" name="eth2">
+      <member index="0" type="channel">net8/chan0</member>
+      <member type="network">net8</member>
+      <address type="mac">00:00:00:aa:03:8d</address>
+      <address type="IPv4">10.0.13.1/24</address>
+      <address type="IPv6">2001:13::1/64</address>
+    </interface>
+    <alias domain="COREID">6</alias>
+    <point lat="47.5765288617" lon="-122.13037095" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n7" name="n7">
+    <type domain="CORE">router</type>
+    <interface id="n7/eth0" name="eth0">
+      <member index="1" type="channel">net25/chan0</member>
+      <member type="network">net25</member>
+      <address type="mac">00:00:00:aa:03:7e</address>
+      <address type="IPv4">10.0.5.2/24</address>
+      <address type="IPv6">2001:5::2/64</address>
+    </interface>
+    <interface id="n7/eth1" name="eth1">
+      <member index="1" type="channel">net15/chan0</member>
+      <member type="network">net15</member>
+      <address type="mac">00:00:00:aa:03:80</address>
+      <address type="IPv4">10.0.6.2/24</address>
+      <address type="IPv6">2001:6::2/64</address>
+    </interface>
+    <interface id="n7/eth2" name="eth2">
+      <member index="0" type="channel">net12/chan0</member>
+      <member type="network">net12</member>
+      <address type="mac">00:00:00:aa:03:81</address>
+      <address type="IPv4">10.0.7.1/24</address>
+      <address type="IPv6">2001:7::1/64</address>
+    </interface>
+    <interface id="n7/eth3" name="eth3">
+      <member index="0" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:03:91</address>
+      <address type="IPv4">10.0.15.1/24</address>
+      <address type="IPv6">2001:15::1/64</address>
+    </interface>
+    <alias domain="COREID">7</alias>
+    <point lat="47.5765137231" lon="-122.128376604" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n8" name="n8">
+    <type domain="CORE">router</type>
+    <interface id="n8/eth0" name="eth0">
+      <member index="1" type="channel">net12/chan0</member>
+      <member type="network">net12</member>
+      <address type="mac">00:00:00:aa:03:82</address>
+      <address type="IPv4">10.0.7.2/24</address>
+      <address type="IPv6">2001:7::2/64</address>
+    </interface>
+    <interface id="n8/eth1" name="eth1">
+      <member index="1" type="channel">net29/chan0</member>
+      <member type="network">net29</member>
+      <address type="mac">00:00:00:aa:03:84</address>
+      <address type="IPv4">10.0.8.2/24</address>
+      <address type="IPv6">2001:8::2/64</address>
+    </interface>
+    <interface id="n8/eth2" name="eth2">
+      <member index="0" type="channel">net34/chan0</member>
+      <member type="network">net34</member>
+      <address type="mac">00:00:00:aa:03:85</address>
+      <address type="IPv4">10.0.9.1/24</address>
+      <address type="IPv6">2001:9::1/64</address>
+    </interface>
+    <interface id="n8/eth3" name="eth3">
+      <member index="0" type="channel">net4/chan0</member>
+      <member type="network">net4</member>
+      <address type="mac">00:00:00:aa:03:95</address>
+      <address type="IPv4">10.0.17.1/24</address>
+      <address type="IPv6">2001:17::1/64</address>
+    </interface>
+    <alias domain="COREID">8</alias>
+    <point lat="47.5764985499" lon="-122.126382259" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n9" name="n9">
+    <type domain="CORE">router</type>
+    <interface id="n9/eth0" name="eth0">
+      <member index="1" type="channel">net34/chan0</member>
+      <member type="network">net34</member>
+      <address type="mac">00:00:00:aa:03:86</address>
+      <address type="IPv4">10.0.9.2/24</address>
+      <address type="IPv6">2001:9::2/64</address>
+    </interface>
+    <interface id="n9/eth1" name="eth1">
+      <member index="1" type="channel">net20/chan0</member>
+      <member type="network">net20</member>
+      <address type="mac">00:00:00:aa:03:88</address>
+      <address type="IPv4">10.0.10.2/24</address>
+      <address type="IPv6">2001:10::2/64</address>
+    </interface>
+    <interface id="n9/eth2" name="eth2">
+      <member index="0" type="channel">net26/chan0</member>
+      <member type="network">net26</member>
+      <address type="mac">00:00:00:aa:03:89</address>
+      <address type="IPv4">10.0.11.1/24</address>
+      <address type="IPv6">2001:11::1/64</address>
+    </interface>
+    <interface id="n9/eth3" name="eth3">
+      <member index="0" type="channel">net39/chan0</member>
+      <member type="network">net39</member>
+      <address type="mac">00:00:00:aa:03:99</address>
+      <address type="IPv4">10.0.19.1/24</address>
+      <address type="IPv6">2001:19::1/64</address>
+    </interface>
+    <alias domain="COREID">9</alias>
+    <point lat="47.576483342" lon="-122.124387916" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n10" name="n10">
+    <type domain="CORE">router</type>
+    <interface id="n10/eth0" name="eth0">
+      <member index="1" type="channel">net26/chan0</member>
+      <member type="network">net26</member>
+      <address type="mac">00:00:00:aa:03:8a</address>
+      <address type="IPv4">10.0.11.2/24</address>
+      <address type="IPv6">2001:11::2/64</address>
+    </interface>
+    <interface id="n10/eth1" name="eth1">
+      <member index="1" type="channel">net7/chan0</member>
+      <member type="network">net7</member>
+      <address type="mac">00:00:00:aa:03:8c</address>
+      <address type="IPv4">10.0.12.2/24</address>
+      <address type="IPv6">2001:12::2/64</address>
+    </interface>
+    <interface id="n10/eth2" name="eth2">
+      <member index="0" type="channel">net9/chan0</member>
+      <member type="network">net9</member>
+      <address type="mac">00:00:00:aa:03:9d</address>
+      <address type="IPv4">10.0.21.1/24</address>
+      <address type="IPv6">2001:21::1/64</address>
+    </interface>
+    <alias domain="COREID">10</alias>
+    <point lat="47.5764680994" lon="-122.122393575" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n11" name="n11">
+    <type domain="CORE">router</type>
+    <interface id="n11/eth0" name="eth0">
+      <member index="1" type="channel">net8/chan0</member>
+      <member type="network">net8</member>
+      <address type="mac">00:00:00:aa:03:8e</address>
+      <address type="IPv4">10.0.13.2/24</address>
+      <address type="IPv6">2001:13::2/64</address>
+    </interface>
+    <interface id="n11/eth1" name="eth1">
+      <member index="0" type="channel">net28/chan0</member>
+      <member type="network">net28</member>
+      <address type="mac">00:00:00:aa:03:8f</address>
+      <address type="IPv4">10.0.14.1/24</address>
+      <address type="IPv6">2001:14::1/64</address>
+    </interface>
+    <interface id="n11/eth2" name="eth2">
+      <member index="0" type="channel">net21/chan0</member>
+      <member type="network">net21</member>
+      <address type="mac">00:00:00:aa:03:9f</address>
+      <address type="IPv4">10.0.22.1/24</address>
+      <address type="IPv6">2001:22::1/64</address>
+    </interface>
+    <alias domain="COREID">11</alias>
+    <point lat="47.5751793194" lon="-122.130393296" type="gps"/>
+    <CORE:services name="n11">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n11.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n11.eth1.pcap -i eth1 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n11.eth2.pcap -i eth2 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+elif [ `uname` = &quot;FreeBSD&quot; ]; then
+  SCRIPTDIR=/tmp/e0_$HN
+  LOGDIR=$SCRIPTDIR
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n12" name="n12">
+    <type domain="CORE">router</type>
+    <interface id="n12/eth0" name="eth0">
+      <member index="1" type="channel">net28/chan0</member>
+      <member type="network">net28</member>
+      <address type="mac">00:00:00:aa:03:90</address>
+      <address type="IPv4">10.0.14.2/24</address>
+      <address type="IPv6">2001:14::2/64</address>
+    </interface>
+    <interface id="n12/eth1" name="eth1">
+      <member index="1" type="channel">net2/chan0</member>
+      <member type="network">net2</member>
+      <address type="mac">00:00:00:aa:03:92</address>
+      <address type="IPv4">10.0.15.2/24</address>
+      <address type="IPv6">2001:15::2/64</address>
+    </interface>
+    <interface id="n12/eth2" name="eth2">
+      <member index="0" type="channel">net27/chan0</member>
+      <member type="network">net27</member>
+      <address type="mac">00:00:00:aa:03:93</address>
+      <address type="IPv4">10.0.16.1/24</address>
+      <address type="IPv6">2001:16::1/64</address>
+    </interface>
+    <interface id="n12/eth3" name="eth3">
+      <member index="0" type="channel">net35/chan0</member>
+      <member type="network">net35</member>
+      <address type="mac">00:00:00:aa:03:a3</address>
+      <address type="IPv4">10.0.24.1/24</address>
+      <address type="IPv6">2001:24::1/64</address>
+    </interface>
+    <alias domain="COREID">12</alias>
+    <point lat="47.5751641815" lon="-122.128399001" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n13" name="n13">
+    <type domain="CORE">router</type>
+    <interface id="n13/eth0" name="eth0">
+      <member index="1" type="channel">net27/chan0</member>
+      <member type="network">net27</member>
+      <address type="mac">00:00:00:aa:03:94</address>
+      <address type="IPv4">10.0.16.2/24</address>
+      <address type="IPv6">2001:16::2/64</address>
+    </interface>
+    <interface id="n13/eth1" name="eth1">
+      <member index="1" type="channel">net4/chan0</member>
+      <member type="network">net4</member>
+      <address type="mac">00:00:00:aa:03:96</address>
+      <address type="IPv4">10.0.17.2/24</address>
+      <address type="IPv6">2001:17::2/64</address>
+    </interface>
+    <interface id="n13/eth2" name="eth2">
+      <member index="0" type="channel">net33/chan0</member>
+      <member type="network">net33</member>
+      <address type="mac">00:00:00:aa:03:97</address>
+      <address type="IPv4">10.0.18.1/24</address>
+      <address type="IPv6">2001:18::1/64</address>
+    </interface>
+    <interface id="n13/eth3" name="eth3">
+      <member index="0" type="channel">net17/chan0</member>
+      <member type="network">net17</member>
+      <address type="mac">00:00:00:aa:03:a7</address>
+      <address type="IPv4">10.0.26.1/24</address>
+      <address type="IPv6">2001:26::1/64</address>
+    </interface>
+    <alias domain="COREID">13</alias>
+    <point lat="47.575149009" lon="-122.126404707" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n14" name="n14">
+    <type domain="CORE">router</type>
+    <interface id="n14/eth0" name="eth0">
+      <member index="1" type="channel">net33/chan0</member>
+      <member type="network">net33</member>
+      <address type="mac">00:00:00:aa:03:98</address>
+      <address type="IPv4">10.0.18.2/24</address>
+      <address type="IPv6">2001:18::2/64</address>
+    </interface>
+    <interface id="n14/eth1" name="eth1">
+      <member index="1" type="channel">net39/chan0</member>
+      <member type="network">net39</member>
+      <address type="mac">00:00:00:aa:03:9a</address>
+      <address type="IPv4">10.0.19.2/24</address>
+      <address type="IPv6">2001:19::2/64</address>
+    </interface>
+    <interface id="n14/eth2" name="eth2">
+      <member index="0" type="channel">net24/chan0</member>
+      <member type="network">net24</member>
+      <address type="mac">00:00:00:aa:03:9b</address>
+      <address type="IPv4">10.0.20.1/24</address>
+      <address type="IPv6">2001:20::1/64</address>
+    </interface>
+    <interface id="n14/eth3" name="eth3">
+      <member index="0" type="channel">net6/chan0</member>
+      <member type="network">net6</member>
+      <address type="mac">00:00:00:aa:03:ab</address>
+      <address type="IPv4">10.0.28.1/24</address>
+      <address type="IPv6">2001:28::1/64</address>
+    </interface>
+    <alias domain="COREID">14</alias>
+    <point lat="47.5751338018" lon="-122.124410416" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n15" name="n15">
+    <type domain="CORE">router</type>
+    <interface id="n15/eth0" name="eth0">
+      <member index="1" type="channel">net24/chan0</member>
+      <member type="network">net24</member>
+      <address type="mac">00:00:00:aa:03:9c</address>
+      <address type="IPv4">10.0.20.2/24</address>
+      <address type="IPv6">2001:20::2/64</address>
+    </interface>
+    <interface id="n15/eth1" name="eth1">
+      <member index="1" type="channel">net9/chan0</member>
+      <member type="network">net9</member>
+      <address type="mac">00:00:00:aa:03:9e</address>
+      <address type="IPv4">10.0.21.2/24</address>
+      <address type="IPv6">2001:21::2/64</address>
+    </interface>
+    <interface id="n15/eth2" name="eth2">
+      <member index="0" type="channel">net30/chan0</member>
+      <member type="network">net30</member>
+      <address type="mac">00:00:00:aa:03:af</address>
+      <address type="IPv4">10.0.30.1/24</address>
+      <address type="IPv6">2001:30::1/64</address>
+    </interface>
+    <alias domain="COREID">15</alias>
+    <point lat="47.57511856" lon="-122.122416126" type="gps"/>
+    <CORE:services name="n15">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n15.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n15.eth1.pcap -i eth1 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n15.eth2.pcap -i eth2 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n16" name="n16">
+    <type domain="CORE">router</type>
+    <interface id="n16/eth0" name="eth0">
+      <member index="1" type="channel">net21/chan0</member>
+      <member type="network">net21</member>
+      <address type="mac">00:00:00:aa:03:a0</address>
+      <address type="IPv4">10.0.22.2/24</address>
+      <address type="IPv6">2001:22::2/64</address>
+    </interface>
+    <interface id="n16/eth1" name="eth1">
+      <member index="0" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:03:a1</address>
+      <address type="IPv4">10.0.23.1/24</address>
+      <address type="IPv6">2001:23::1/64</address>
+    </interface>
+    <interface id="n16/eth2" name="eth2">
+      <member index="0" type="channel">net13/chan0</member>
+      <member type="network">net13</member>
+      <address type="mac">00:00:00:aa:03:b1</address>
+      <address type="IPv4">10.0.31.1/24</address>
+      <address type="IPv6">2001:31::1/64</address>
+    </interface>
+    <alias domain="COREID">16</alias>
+    <point lat="47.5738297767" lon="-122.13041564" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n17" name="n17">
+    <type domain="CORE">router</type>
+    <interface id="n17/eth0" name="eth0">
+      <member index="1" type="channel">net3/chan0</member>
+      <member type="network">net3</member>
+      <address type="mac">00:00:00:aa:03:a2</address>
+      <address type="IPv4">10.0.23.2/24</address>
+      <address type="IPv6">2001:23::2/64</address>
+    </interface>
+    <interface id="n17/eth1" name="eth1">
+      <member index="1" type="channel">net35/chan0</member>
+      <member type="network">net35</member>
+      <address type="mac">00:00:00:aa:03:a4</address>
+      <address type="IPv4">10.0.24.2/24</address>
+      <address type="IPv6">2001:24::2/64</address>
+    </interface>
+    <interface id="n17/eth2" name="eth2">
+      <member index="0" type="channel">net14/chan0</member>
+      <member type="network">net14</member>
+      <address type="mac">00:00:00:aa:03:a5</address>
+      <address type="IPv4">10.0.25.1/24</address>
+      <address type="IPv6">2001:25::1/64</address>
+    </interface>
+    <interface id="n17/eth3" name="eth3">
+      <member index="0" type="channel">net16/chan0</member>
+      <member type="network">net16</member>
+      <address type="mac">00:00:00:aa:03:b5</address>
+      <address type="IPv4">10.0.33.1/24</address>
+      <address type="IPv6">2001:33::1/64</address>
+    </interface>
+    <alias domain="COREID">17</alias>
+    <point lat="47.5738146396" lon="-122.128421396" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n18" name="n18">
+    <type domain="CORE">router</type>
+    <interface id="n18/eth0" name="eth0">
+      <member index="1" type="channel">net14/chan0</member>
+      <member type="network">net14</member>
+      <address type="mac">00:00:00:aa:03:a6</address>
+      <address type="IPv4">10.0.25.2/24</address>
+      <address type="IPv6">2001:25::2/64</address>
+    </interface>
+    <interface id="n18/eth1" name="eth1">
+      <member index="1" type="channel">net17/chan0</member>
+      <member type="network">net17</member>
+      <address type="mac">00:00:00:aa:03:a8</address>
+      <address type="IPv4">10.0.26.2/24</address>
+      <address type="IPv6">2001:26::2/64</address>
+    </interface>
+    <interface id="n18/eth2" name="eth2">
+      <member index="0" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:03:a9</address>
+      <address type="IPv4">10.0.27.1/24</address>
+      <address type="IPv6">2001:27::1/64</address>
+    </interface>
+    <interface id="n18/eth3" name="eth3">
+      <member index="0" type="channel">net11/chan0</member>
+      <member type="network">net11</member>
+      <address type="mac">00:00:00:aa:03:b9</address>
+      <address type="IPv4">10.0.35.1/24</address>
+      <address type="IPv6">2001:35::1/64</address>
+    </interface>
+    <alias domain="COREID">18</alias>
+    <point lat="47.5737994678" lon="-122.126427154" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n19" name="n19">
+    <type domain="CORE">router</type>
+    <interface id="n19/eth0" name="eth0">
+      <member index="1" type="channel">net1/chan0</member>
+      <member type="network">net1</member>
+      <address type="mac">00:00:00:aa:03:aa</address>
+      <address type="IPv4">10.0.27.2/24</address>
+      <address type="IPv6">2001:27::2/64</address>
+    </interface>
+    <interface id="n19/eth1" name="eth1">
+      <member index="1" type="channel">net6/chan0</member>
+      <member type="network">net6</member>
+      <address type="mac">00:00:00:aa:03:ac</address>
+      <address type="IPv4">10.0.28.2/24</address>
+      <address type="IPv6">2001:28::2/64</address>
+    </interface>
+    <interface id="n19/eth2" name="eth2">
+      <member index="0" type="channel">net38/chan0</member>
+      <member type="network">net38</member>
+      <address type="mac">00:00:00:aa:03:ad</address>
+      <address type="IPv4">10.0.29.1/24</address>
+      <address type="IPv6">2001:29::1/64</address>
+    </interface>
+    <interface id="n19/eth3" name="eth3">
+      <member index="0" type="channel">net31/chan0</member>
+      <member type="network">net31</member>
+      <address type="mac">00:00:00:aa:03:bd</address>
+      <address type="IPv4">10.0.37.1/24</address>
+      <address type="IPv6">2001:37::1/64</address>
+    </interface>
+    <alias domain="COREID">19</alias>
+    <point lat="47.5737842613" lon="-122.124432914" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n20" name="n20">
+    <type domain="CORE">router</type>
+    <interface id="n20/eth0" name="eth0">
+      <member index="1" type="channel">net38/chan0</member>
+      <member type="network">net38</member>
+      <address type="mac">00:00:00:aa:03:ae</address>
+      <address type="IPv4">10.0.29.2/24</address>
+      <address type="IPv6">2001:29::2/64</address>
+    </interface>
+    <interface id="n20/eth1" name="eth1">
+      <member index="1" type="channel">net30/chan0</member>
+      <member type="network">net30</member>
+      <address type="mac">00:00:00:aa:03:b0</address>
+      <address type="IPv4">10.0.30.2/24</address>
+      <address type="IPv6">2001:30::2/64</address>
+    </interface>
+    <interface id="n20/eth2" name="eth2">
+      <member index="0" type="channel">net23/chan0</member>
+      <member type="network">net23</member>
+      <address type="mac">00:00:00:aa:03:c1</address>
+      <address type="IPv4">10.0.39.1/24</address>
+      <address type="IPv6">2001:39::1/64</address>
+    </interface>
+    <alias domain="COREID">20</alias>
+    <point lat="47.5737690202" lon="-122.122438675" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n21" name="n21">
+    <type domain="CORE">router</type>
+    <interface id="n21/eth0" name="eth0">
+      <member index="1" type="channel">net13/chan0</member>
+      <member type="network">net13</member>
+      <address type="mac">00:00:00:aa:03:b2</address>
+      <address type="IPv4">10.0.31.2/24</address>
+      <address type="IPv6">2001:31::2/64</address>
+    </interface>
+    <interface id="n21/eth1" name="eth1">
+      <member index="0" type="channel">net32/chan0</member>
+      <member type="network">net32</member>
+      <address type="mac">00:00:00:aa:03:b3</address>
+      <address type="IPv4">10.0.32.1/24</address>
+      <address type="IPv6">2001:32::1/64</address>
+    </interface>
+    <alias domain="COREID">21</alias>
+    <point lat="47.5724802338" lon="-122.130437983" type="gps"/>
+    <CORE:services name="n21">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n21.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n21.eth1.pcap -i eth1 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n22" name="n22">
+    <type domain="CORE">router</type>
+    <interface id="n22/eth0" name="eth0">
+      <member index="1" type="channel">net32/chan0</member>
+      <member type="network">net32</member>
+      <address type="mac">00:00:00:aa:03:b4</address>
+      <address type="IPv4">10.0.32.2/24</address>
+      <address type="IPv6">2001:32::2/64</address>
+    </interface>
+    <interface id="n22/eth1" name="eth1">
+      <member index="1" type="channel">net16/chan0</member>
+      <member type="network">net16</member>
+      <address type="mac">00:00:00:aa:03:b6</address>
+      <address type="IPv4">10.0.33.2/24</address>
+      <address type="IPv6">2001:33::2/64</address>
+    </interface>
+    <interface id="n22/eth2" name="eth2">
+      <member index="0" type="channel">net36/chan0</member>
+      <member type="network">net36</member>
+      <address type="mac">00:00:00:aa:03:b7</address>
+      <address type="IPv4">10.0.34.1/24</address>
+      <address type="IPv6">2001:34::1/64</address>
+    </interface>
+    <alias domain="COREID">22</alias>
+    <point lat="47.5724650973" lon="-122.12844379" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n23" name="n23">
+    <type domain="CORE">router</type>
+    <interface id="n23/eth0" name="eth0">
+      <member index="1" type="channel">net36/chan0</member>
+      <member type="network">net36</member>
+      <address type="mac">00:00:00:aa:03:b8</address>
+      <address type="IPv4">10.0.34.2/24</address>
+      <address type="IPv6">2001:34::2/64</address>
+    </interface>
+    <interface id="n23/eth1" name="eth1">
+      <member index="1" type="channel">net11/chan0</member>
+      <member type="network">net11</member>
+      <address type="mac">00:00:00:aa:03:ba</address>
+      <address type="IPv4">10.0.35.2/24</address>
+      <address type="IPv6">2001:35::2/64</address>
+    </interface>
+    <interface id="n23/eth2" name="eth2">
+      <member index="0" type="channel">net5/chan0</member>
+      <member type="network">net5</member>
+      <address type="mac">00:00:00:aa:03:bb</address>
+      <address type="IPv4">10.0.36.1/24</address>
+      <address type="IPv6">2001:36::1/64</address>
+    </interface>
+    <alias domain="COREID">23</alias>
+    <point lat="47.5724499263" lon="-122.126449599" type="gps"/>
+    <CORE:services name="n23">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n23.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n23.eth1.pcap -i eth1 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n23.eth2.pcap -i eth2 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n24" name="n24">
+    <type domain="CORE">router</type>
+    <interface id="n24/eth0" name="eth0">
+      <member index="1" type="channel">net5/chan0</member>
+      <member type="network">net5</member>
+      <address type="mac">00:00:00:aa:03:bc</address>
+      <address type="IPv4">10.0.36.2/24</address>
+      <address type="IPv6">2001:36::2/64</address>
+    </interface>
+    <interface id="n24/eth1" name="eth1">
+      <member index="1" type="channel">net31/chan0</member>
+      <member type="network">net31</member>
+      <address type="mac">00:00:00:aa:03:be</address>
+      <address type="IPv4">10.0.37.2/24</address>
+      <address type="IPv6">2001:37::2/64</address>
+    </interface>
+    <interface id="n24/eth2" name="eth2">
+      <member index="0" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:03:bf</address>
+      <address type="IPv4">10.0.38.1/24</address>
+      <address type="IPv6">2001:38::1/64</address>
+    </interface>
+    <alias domain="COREID">24</alias>
+    <point lat="47.5724347205" lon="-122.12445541" type="gps"/>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <router id="n25" name="n25">
+    <type domain="CORE">router</type>
+    <interface id="n25/eth0" name="eth0">
+      <member index="1" type="channel">net0/chan0</member>
+      <member type="network">net0</member>
+      <address type="mac">00:00:00:aa:03:c0</address>
+      <address type="IPv4">10.0.38.2/24</address>
+      <address type="IPv6">2001:38::2/64</address>
+    </interface>
+    <interface id="n25/eth1" name="eth1">
+      <member index="1" type="channel">net23/chan0</member>
+      <member type="network">net23</member>
+      <address type="mac">00:00:00:aa:03:c2</address>
+      <address type="IPv4">10.0.39.2/24</address>
+      <address type="IPv6">2001:39::2/64</address>
+    </interface>
+    <alias domain="COREID">25</alias>
+    <point lat="47.5724194801" lon="-122.122461222" type="gps"/>
+    <CORE:services name="n25">
+      <service name="zebra" startup_idx="35"/>
+      <service name="OSPFv2" startup_idx="40"/>
+      <service name="OSPFv3" startup_idx="40"/>
+      <service name="vtysh" startup_idx="45"/>
+      <service name="IPForward" startup_idx="5"/>
+      <service custom="True" name="pcap" startup_idx="35">
+        <file name="pcap.sh">
+#!/bin/sh
+# set tcpdump options here (see 'man tcpdump' for help)
+# (-s snap length, -C limit pcap file length, -n disable name resolution)
+DUMPOPTS=&quot;-n&quot;
+TSHARK_PATH=/home/seraph/Desktop/tshark_output
+HN=`hostname`
+SCRIPTDIR=$SESSION_DIR
+LOGDIR=/var/log
+
+if [ &quot;x$1&quot; = &quot;xstart&quot; ]; then
+
+tcpdump ${DUMPOPTS} -w n25.eth0.pcap -i eth0 &lt; /dev/null &amp;
+tcpdump ${DUMPOPTS} -w n25.eth1.pcap -i eth1 &lt; /dev/null &amp;
+
+elif [ &quot;x$1&quot; = &quot;xstop&quot; ]; then
+    mkdir -p ${TSHARK_PATH}/pcap
+    mv *.pcap ${TSHARK_PATH}/pcap
+
+fi
+
+</file>
+        <command type="start">sh pcap.sh start</command>
+        <command type="stop">sh pcap.sh stop</command>
+        <command type="validate">pidof tcpdump</command>
+      </service>
+    </CORE:services>
+    <CORE:presentation icon="router.gif"/>
+  </router>
+  <CORE:defaultservices>
+    <device type="router">
+      <service name="zebra"/>
+      <service name="OSPFv2"/>
+      <service name="OSPFv3"/>
+      <service name="vtysh"/>
+      <service name="IPForward"/>
+    </device>
+  </CORE:defaultservices>
+  <CORE:sessionconfig>
+    <origin alt="2.0" lat="47.5791667" lon="-122.132322" scale100="150.0"/>
+    <metadata>
+      <parameter name="global_options">interface_names=no ip_addresses=no ipv6_addresses=no node_labels=yes link_labels=yes show_api=no background_images=no annotations=yes grid=yes traffic_start=1</parameter>
+      <parameter name="canvas c1">{name {Canvas1}}</parameter>
+    </metadata>
+  </CORE:sessionconfig>
+</scenario>
