@@ -813,7 +813,9 @@ void patchApp(ptree pt, double d, string trace_prefix){
     // ns3 segment size default of 536 where we need it to adapt
     // to requested MGEN data size but not exceed a logical value,
     // suggested to be 1448.
-    uint32_t segment_size = (packetSize <= 1448)? packetSize : 1448;
+
+    //uint32_t segment_size = (packetSize <= 1448)? packetSize : 1448;
+    uint32_t segment_size = 1448;
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (segment_size));
   }
 

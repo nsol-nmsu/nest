@@ -68,6 +68,9 @@ int main (int argc, char *argv[]) {
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate", DataRateValue(ULLONG_MAX));
   Config::SetDefault("ns3::CsmaChannel::DataRate", DataRateValue(ULLONG_MAX));
 
+  // testing
+  //Config::SetDefault("ns3::TcpSocket::InitialCwnd", UintegerValue(2));
+
   if(real_time){
     GlobalValue::Bind ("SimulatorImplementationType", 
                        StringValue ("ns3::RealtimeSimulatorImpl"));
