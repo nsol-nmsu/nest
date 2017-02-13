@@ -283,6 +283,7 @@ int main (int argc, char *argv[]) {
       double dist = 0.0;
       bool twoRay_set = false;
       bool freespace_set = false;
+      bool oneWarning = true;
 
       peer = nod.second.get<string>("<xmlattr>.name");
       NodeContainer wifiNodes;
@@ -574,6 +575,7 @@ int main (int argc, char *argv[]) {
         }
       }
 
+      wifiPhyHelper.SetChannel(wifiChannel.Create());
       cout << "\nCreating new wlan network named " << peer << endl;
       // Go through peer list and add them to the network
       BOOST_FOREACH(ptree::value_type const& p, child.get_child("channel")){
@@ -615,8 +617,12 @@ int main (int argc, char *argv[]) {
           // add internet stack if not yet created, add routing if found
           if(!p2flag){
             getRoutingProtocols(pt, peer2, p2Type);
-            cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
-                 << " NS-3 recommends using OLSR if routing is of on consequence." << endl; 
+
+            if(oneWarning){
+              cout << "Note: OSPFv2 routing unavailable for wireless nodes. \n"
+                   << "      NS-3 recommends using OLSR if routing is of on consequence." << endl; 
+              oneWarning = false;
+            }
           }
           bool gateway = false;
           if(!infrastructure.empty()){

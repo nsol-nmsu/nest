@@ -1784,8 +1784,8 @@ int main (int argc, char *argv[]) {
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
                       list.Add(globalRouting, -10);
-                      cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
-                           << " NS-3 recommends using OLSR if routing is of no consequence." << endl; 
+                      cout << "Note: OSPFv2 routing unavailable for wireless nodes. \n"
+                           << "      NS-3 recommends using OLSR if routing is of on consequence." << endl;  
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
@@ -1816,8 +1816,8 @@ int main (int argc, char *argv[]) {
                     }
                     else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
                       list.Add(globalRouting, -10);
-                      cout << "Warning: OSPFv2 routing unavailable for wireless nodes. \n"
-                           << " NS-3 recommends using OLSR if routing is of no consequence." << endl; 
+                      cout << "Note: OSPFv2 routing unavailable for wireless nodes. \n"
+                           << "      NS-3 recommends using OLSR if routing is of on consequence." << endl; 
                     }
                     //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
                     //  list.Add(ripNgRouting, 0);
