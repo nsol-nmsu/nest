@@ -89,8 +89,8 @@ int main (int argc, char *argv[]) {
   	cout << "Writing traces to directory `" << trace_check << "`." << endl;
   }
 
-  AsciiTraceHelper ascii;
-  Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (trace_prefix + "core-to-ns3.tr");
+  //AsciiTraceHelper ascii;
+  //Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream (trace_prefix + "core-to-ns3.tr");
 
   //holds entire list of nodes and list links containers  
   ptree pt;
