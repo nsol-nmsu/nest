@@ -45,7 +45,7 @@ the following sample for confirmation:
 #!terminal
 
 cd ..
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml"
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/core-files/sample1.xml"
 ```
 
 This program supports generating traffic flow using a simple XML Schema.
@@ -128,7 +128,7 @@ An example of this will look is as follows
 ```
 #!terminal
 
-./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/CORE-XML-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/NS2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
+./waf --run "scratch/core_to_ns3_scenario --topo=imn2ns3/core-files/sample1.xml --apps=imn2ns3/apps-files/sample1-apps.xml --ns2=imn2ns3/ns2-mobility-files/sample1.ns_movements --duration=27.0 --pcap=true --traceDir=core2ns3_Logs/"
 ```
 
 When pcap is enabled, all pcap files will be placed in `*/ns-3.25/core2ns3Logs/` directory along with a trace file 
