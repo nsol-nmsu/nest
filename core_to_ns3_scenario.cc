@@ -626,7 +626,8 @@ int main (int argc, char *argv[]) {
           }
           bool gateway = false;
           if(!infrastructure.empty()){
-            if(access_point.find(peer2) != string::npos){
+            // if peer2 in access_point, go to else
+            if(access_point.find(peer2) == string::npos){
               // setup sta.
               wifiMac.SetType ("ns3::StaWifiMac",
                                "Ssid", SsidValue (peer),
@@ -639,6 +640,7 @@ int main (int argc, char *argv[]) {
                                "BeaconGeneration", BooleanValue (true),
                                "BeaconInterval", TimeValue(Seconds(2.5)));
               gateway = true;
+              cout << peer2 << " declared as access point." << endl;
             }
           }
           else{
