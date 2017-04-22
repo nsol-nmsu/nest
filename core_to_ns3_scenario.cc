@@ -300,7 +300,7 @@ int main (int argc, char *argv[]) {
 
       BOOST_FOREACH(ptree::value_type const& p0, child.get_child("channel")){
         if(p0.first == "type" && p0.second.data() == "basic_range"){
-          BOOST_FOREACH(ptree::value_type const& p1, p0.second){
+          BOOST_FOREACH(ptree::value_type const& p1, child.get_child("channel")){
             if(p1.first == "parameter"){
               if(p1.second.get<string>("<xmlattr>.name") == "range"){
                 dist = stod(p1.second.data());
