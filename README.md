@@ -171,3 +171,9 @@ Instructions on how to use NetAnim and its correlating files can be found in
       attributes. These may include multiple attributes for queue, contention window,
       arbitration inter frame, txop, and retry limits among others. Currently, only the 
       first attribute will be taken from each.
+    - Global Routing is used when OSPFv2 is detected being used on CORE. This is purely for
+      linking nodes to one another. NS-3 Global Routing links nodes according to shortest path
+      discovered. This differs to the actual OSPF as there is no load balancing and new path
+      discovery done in NS-3 as appose to a real network. If Traffic path is of importance,
+      we recommend using OLSR or RIP, currently the only two routing protocols supported on
+      both platforms.
