@@ -840,6 +840,10 @@ void patchApp(ptree pt, double d, string trace_prefix){
     //uint32_t segment_size = (packetSize <= 1448)? packetSize : 1448;
     uint32_t segment_size = 1448;
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue (segment_size));
+    Config::SetDefault("ns3::TcpSocket::DelAckCount", UintegerValue (1));
+    Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (187380));
+    Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (16384));
+    Config::SetDefault("ns3::TcpSocket::ConnTimeout", TimeValue (Seconds(1)));
   }
 
   if_exists = pt.get_child_optional("special.pcap");
