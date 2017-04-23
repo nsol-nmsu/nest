@@ -1,5 +1,5 @@
-# CORE To NS-3 Translator #
-The CORE to NS-3 translator aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
+# Network Emulation to Simulation Tool #
+The Network Emulation to Simulation Tool (NEST) is a CORE to NS-3 translator that aims to provide a quick and easy way to validate a CORE emulation with an NS-3 simulation. 
 It is an intermediate program that can take a CORE XML file and dynamically create an NS3 scenario.
 
 ## 1) Build / Install ##
