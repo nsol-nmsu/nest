@@ -17,7 +17,7 @@ class MyFirstGUI:
             if name in files:
                 return os.path.join(root, name)
 
-    def addOptions(self, topo, traceDir, ns2, duration, apps, pcap):
+    def addOptions(self, topo, traceDir, ns2, duration, apps, pcap, ap, infra):
         run_command = "scratch/core_to_ns3_scenario"
         if topo != "":
             run_command = run_command + " --topo=" + topo
@@ -29,6 +29,10 @@ class MyFirstGUI:
             run_command = run_command + " --ns2=" + ns2
         if duration != "":
             run_command = run_command + " --duration=" + duration
+        if ap != "":
+            run_command = run_command + " --ap=" + ap
+        if infra != "":
+            run_command = run_command + " --infra=" + infra
         if pcap != "":
             run_command = run_command + " --pcap=" + pcap
         run_command = '"' + run_command + '"'
@@ -48,13 +52,15 @@ class MyFirstGUI:
         #global topoPath
         #global patchPath
         #global outputPath
-        #global pcapValue
+        global pcapValue
         #global durationValue
+        self.ap = ""
+        self.infra = ""
         self.ns2Path = ""
         self.topoPath = ""
         self.patchPath = ""
         self.outputPath = ""
-        self.pcapValue = ""
+        pcapValue = StringVar(None)
         self.durationValue = ""
 
         master.title("NEST")
@@ -66,8 +72,10 @@ class MyFirstGUI:
         L2 = Label(master, text="Select Application").grid(row=1, column=0, sticky=W)
         L3 = Label(master, text="Select Ouput Directory").grid(row=2, column=0, sticky=W)
         L4 = Label(master, text="Select Mobility File").grid(row=3, column=0, sticky=W)
-        L5 = Label(master, text="Sim Duration (seconds)").grid(row=4, column=0, sticky=W)
-        L6 = Label(master, text="Run Simulation").grid(row=5, column=0, sticky=W)
+        L51 = Label(master, text="Sim Duration (seconds)").grid(row=4, column=0, sticky=W)
+        L52 = Label(master, text="Access Points (n1:n2:...)").grid(row=4, column=1, sticky=W)
+        L53 = Label(master, text="Infrastructure Mode (wlan1:wlan2:...)").grid(row=4, column=2, sticky=W)
+        L6 = Label(master, text="Run Simulation").grid(row=6, column=0, sticky=W)
 
         self.selectT_button = Button(master, text="Select File", command=self.topo)
         #self.selectT_button.pack()
@@ -77,30 +85,34 @@ class MyFirstGUI:
         #self.selectD_button.pack()
         self.selectN_button = Button(master, text="Select File", command=self.ns2)
         #self.selectN_button.pack()
-        self.entry = Entry(master, textvariable=self.durationValue, width=12)
+        self.entry1 = Entry(master, textvariable=self.durationValue, width=12)
+        self.entry2 = Entry(master, textvariable=self.ap, width=12)
+        self.entry3 = Entry(master, textvariable=self.infra, width=12)
         #self.entry.pack()
         self.selectR_button = Button(master, text="Run", command=self.runWaf)
         #self.selectN_button.pack()
-        C1 = Checkbutton(master, text="Activate PCAPs?", variable=self.pcapValue, onvalue="true", offvalue="false")
+        C1 = Checkbutton(master, text="Activate PCAPs?", variable=pcapValue, onvalue="true", offvalue="false")
         #C1.pack()
         self.close_button = Button(master, text="Close", command=master.quit)
         #self.close_button.pack()
-
+        print pcapValue.get()
         self.selectT_button.grid(row=0, column=1, sticky=W)
         self.selectX_button.grid(row=1, column=1, sticky=W)
+        C1.grid(row=1,column=2, sticky=W)
         self.selectD_button.grid(row=2, column=1, sticky=W)
         self.selectN_button.grid(row=3, column=1, sticky=W)
-        self.entry.grid(row=4, column=1, sticky=W)
-        C1.grid(row=1,column=2, sticky=W)
-        self.selectR_button.grid(row=5, column=1)
-        self.close_button.grid(row=6, column=0, sticky=W)
+        self.entry1.grid(row=5, column=0, sticky=W)
+        self.entry2.grid(row=5, column=1, sticky=W)
+        self.entry3.grid(row=5, column=2, sticky=W)
+        self.selectR_button.grid(row=6, column=1, sticky=W)
+        self.close_button.grid(row=7, column=0, sticky=W)
 
     def runWaf(self):
         if self.topoPath == "":
             print self.topoPath + "\n\n\n"
             tkMessageBox.showerror("Error","You must select a topology file before running.")
         else:
-            os.system(self.addOptions(self.topoPath,self.outputPath,self.ns2Path,self.durationValue,self.patchPath,self.pcapValue))
+            os.system(self.addOptions(self.topoPath, self.outputPath, self.ns2Path, self.entry1.get(), self.patchPath, pcapValue.get(), self.entry2.get(), self.entry3.get()))
             self.master.quit()
 
     def output(self):
