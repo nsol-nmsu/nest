@@ -235,9 +235,9 @@ void getRoutingProtocols(ptree pt, string peer, string pType){
               //}
             }
           }
+          internetStack.SetRoutingHelper(list);
+          internetStack.Install(peer);
         }
-        internetStack.SetRoutingHelper(list);
-        internetStack.Install(peer);
       }
     }
   }

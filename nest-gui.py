@@ -44,11 +44,12 @@ class MyFirstGUI:
 
     def __init__(self, master):
         self.master = master
-        f = self.find("core_to_ns3_scenario.cc", os.path.expanduser('~'))
-        if "imn2ns3" in f:
-            path_to_file = f.replace('/imn2ns3/core_to_ns3_scenario.cc','')
-        if "scratch" in f:
-            path_to_file = f.replace('/scratch/core_to_ns3_scenario.cc','')
+        path_to_file = os.path.realpath(__file__)
+        #f = self.find("core_to_ns3_scenario.cc", os.path.expanduser('~'))
+        if "imn2ns3" in path_to_file:
+            path_to_file = path_to_file.replace('/imn2ns3/nest-gui.py','')
+        #if "scratch" in f:
+            #path_to_file = f.replace('/scratch/core_to_ns3_scenario.cc','')
         print path_to_file
         os.chdir(path_to_file)
         #global ns2Path
