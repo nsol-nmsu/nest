@@ -210,28 +210,30 @@ void getRoutingProtocols(ptree pt, string peer, string pType){
   }
   // if there were no local, set default services according to type
   BOOST_FOREACH(ptree::value_type const& pl1, pt.get_child("scenario")){
-    if(pl1.first == "CORE:defaultservices"){
-      if(applyDefaultServices && pl1.second.get<string>("device.<xmlattr>.type") == pType){
-        Ipv4ListRoutingHelper list;
+    if(applyDefaultServices && pl1.first == "CORE:defaultservices"){
+      BOOST_FOREACH(ptree::value_type const& pl2, pl1.second){
+        if(pl2.second.get<string>("<xmlattr>.type") == pType){
+          Ipv4ListRoutingHelper list;
 
-        BOOST_FOREACH(ptree::value_type const& pl2, pl1.second.get_child("device")){
-          if(pl2.first == "service"){
-            if(pl2.second.get<string>("<xmlattr>.name") == "StaticRoute"){
-              list.Add (staticRouting, 0);
+          BOOST_FOREACH(ptree::value_type const& pl3, pl2.second){
+            if(pl3.first == "service"){
+              if(pl3.second.get<string>("<xmlattr>.name") == "StaticRoute"){
+                list.Add (staticRouting, 0);
+              }
+              else if(pl3.second.get<string>("<xmlattr>.name") == "OLSR" ||
+                      pl3.second.get<string>("<xmlattr>.name") == "OLSRORG"){
+                list.Add(olsr, 10);
+              }
+              else if(pl3.second.get<string>("<xmlattr>.name") == "RIP"){
+                list.Add(ripRouting, 5);
+              }
+              else if(pl3.second.get<string>("<xmlattr>.name") == "OSPFv2"){
+                list.Add(globalRouting, -10);
+              }
+              //else if(pl3.second.get<string>("<xmlattr>.name") == "RIPNG"){
+              //  list.Add(ripNgRouting, 0);
+              //}
             }
-            else if(pl2.second.get<string>("<xmlattr>.name") == "OLSR" ||
-                    pl2.second.get<string>("<xmlattr>.name") == "OLSRORG"){
-              list.Add(olsr, 10);
-            }
-            else if(pl2.second.get<string>("<xmlattr>.name") == "RIP"){
-              list.Add(ripRouting, 5);
-            }
-            else if(pl2.second.get<string>("<xmlattr>.name") == "OSPFv2"){
-              list.Add(globalRouting, -10);
-            }
-            //else if(pl2.second.get<string>("<xmlattr>.name") == "RIPNG"){
-            //  list.Add(ripNgRouting, 0);
-            //}
           }
         }
         internetStack.SetRoutingHelper(list);
