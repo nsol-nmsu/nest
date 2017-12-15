@@ -10,7 +10,7 @@ from tkFileDialog import askopenfilename
 
 
 
-class MyFirstGUI:
+class MyGUI:
     ##find path to program to run
     def find(self, name, path):
         for root, dirs, files in os.walk(path):
@@ -45,13 +45,10 @@ class MyFirstGUI:
     def __init__(self, master):
         self.master = master
         path_to_file = os.path.realpath(__file__)
-        #f = self.find("core_to_ns3_scenario.cc", os.path.expanduser('~'))
-        if "imn2ns3" in path_to_file:
-            path_to_file = path_to_file.replace('/imn2ns3/nest-gui.py','')
-        #if "scratch" in f:
-            #path_to_file = f.replace('/scratch/core_to_ns3_scenario.cc','')
-        print path_to_file
-        os.chdir(path_to_file)
+        path_to_dir = os.path.abspath(os.path.join(path_to_file, os.pardir))
+        path_to_dir2 = os.path.abspath(os.path.join(path_to_dir, os.pardir))
+        print path_to_dir2
+        os.chdir(path_to_dir2)
         #global ns2Path
         #global topoPath
         #global patchPath
@@ -148,7 +145,7 @@ class MyFirstGUI:
 
 
 root = Tk()
-my_gui = MyFirstGUI(root)
+my_gui = MyGUI(root)
 root.mainloop()
 
 
