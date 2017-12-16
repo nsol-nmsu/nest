@@ -11,6 +11,7 @@ int main (int argc, char *argv[]) {
 
   // config locals
   bool pcap = false;
+  bool random = false;
   bool real_time = false;
   double duration = 10.0;
 
@@ -40,6 +41,7 @@ int main (int argc, char *argv[]) {
   cmd.AddValue("duration","Duration of Simulation",duration);
   cmd.AddValue("pcap","Enable pcap files",pcap);
   cmd.AddValue("rt","Enable real time simulation",real_time);
+  cmd.AddValue("random","Enable random simulation",random);
   cmd.AddValue("infra","Declare WLAN as infrastructure",infrastructure);
   cmd.AddValue("ap","Declare node as an access point/gateway",access_point);
   cmd.AddValue ("traceDir", "Directory in which to store trace files", trace_prefix);
@@ -55,6 +57,7 @@ int main (int argc, char *argv[]) {
     " --traceDir=core2ns3_Logs/"
     " --pcap=[true/false]"
     " --rt=[true/false]"
+    " --random=[true/false]"
     " --infra=wlan1::wlan2::..."
     " --ap=n1::n2::..."
     //" --logFile=ns2-mob.log"
@@ -74,6 +77,13 @@ int main (int argc, char *argv[]) {
   if(real_time){
     GlobalValue::Bind ("SimulatorImplementationType", 
                        StringValue ("ns3::RealtimeSimulatorImpl"));
+  }
+
+  if(random){
+    SeedManager::SetSeed(10);
+    srand(time(NULL));
+    int runNumber = rand() % 100;
+    SeedManager::SetRun(runNumber);
   }
 
   string trace_check = trace_prefix;
@@ -620,7 +630,7 @@ int main (int argc, char *argv[]) {
 
             if(oneWarning){
               cout << "Note: OSPFv2 routing unavailable for wireless nodes. \n"
-                   << "      NS-3 recommends using OLSR if routing is of on consequence." << endl; 
+                   << "      NS-3 recommends using OLSR if routing is of no consequence." << endl; 
               oneWarning = false;
             }
           }
@@ -761,7 +771,7 @@ int main (int argc, char *argv[]) {
             AnimationInterface::SetConstantPosition(Names::Find<Node>(tempName), x, y);
           }
         }
-        else if(p0.first == "hub" || p0.first == "switch" || p0.first == "host" && p0.second.get<string>("<xmlattr>.name") == peer){
+        else if((p0.first == "hub" || p0.first == "switch" || p0.first == "host") && (p0.second.get<string>("<xmlattr>.name") == peer)){
           type = p0.second.get<string>("type");
           ethId = p0.second.get<string>("<xmlattr>.id");
 
@@ -1158,7 +1168,7 @@ int main (int argc, char *argv[]) {
 
   cout << endl << nodes.GetN() << " defined node names with their respective id's..." << endl;
 
-  int nNodes = nodes.GetN(), extra = 0, bNodes = bridges.GetN();
+  int nNodes = nodes.GetN(), extra = 0;//, bNodes = bridges.GetN();
   string nodeName;
 
   // Set node coordinates for rouge nodes
@@ -1168,7 +1178,7 @@ int main (int argc, char *argv[]) {
     }
 
     nodeName = nod.second.get<string>("<xmlattr>.name");
-    int Locx, Locy;
+    //int Locx, Locy;
 
     bool nflag = false;
     for(int x = 0; x < nNodes; x++){
@@ -1223,7 +1233,7 @@ int main (int argc, char *argv[]) {
 
   // enable pcap
   if(pcap){
-    for(int i = 0; i < nd.GetN(); i++){
+    for(unsigned int i = 0; i < nd.GetN(); i++){
       enablePcapAll(trace_prefix, nd.Get(i));
     }
   }
