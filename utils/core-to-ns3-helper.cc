@@ -846,6 +846,7 @@ void patchApp(ptree pt, double d, string trace_prefix){
     Config::SetDefault("ns3::TcpSocket::SndBufSize", UintegerValue (187380));
     Config::SetDefault("ns3::TcpSocket::RcvBufSize", UintegerValue (16384));
     Config::SetDefault("ns3::TcpSocket::ConnTimeout", TimeValue (Seconds(1)));
+    Config::SetDefault("ns3::TcpSocketBase::MinRto", TimeValue(Seconds(0.2)));
   }
 
   if_exists = pt.get_child_optional("special.pcap");
