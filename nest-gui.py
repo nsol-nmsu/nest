@@ -89,8 +89,8 @@ class MyGUI:
         self.selectR_button = Button(master, text="Run", command=self.runWaf)
         self.close_button = Button(master, text="Close", command=master.quit)
 
-        print "pcap active? " + pcapValue.get()
-        print "rng active? " + rngValue.get()
+        #print "pcap active? " + pcapValue.get()
+        #print "rng active? " + rngValue.get()
 
         self.selectT_button.grid(row=0, column=1, sticky=W)
         self.selectX_button.grid(row=1, column=1, sticky=W)
