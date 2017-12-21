@@ -291,6 +291,7 @@ int main (int argc, char *argv[]) {
       //global_is_safe = false;
       int j = 0;
       double dist = 0.0;
+      double antZ = 0.0;
       bool twoRay_set = false;
       bool freespace_set = false;
       bool oneWarning = true;
@@ -400,9 +401,12 @@ int main (int argc, char *argv[]) {
           break;
         }
         else if(p0.first == "type" && p0.second.data() == "emane_ieee80211abg"){
-          BOOST_FOREACH(ptree::value_type const& p1, p0.second){
+
+          BOOST_FOREACH(ptree::value_type const& p1, child.get_child("channel")){
             if(p1.first == "parameter"){
-              if(p1.second.get<string>("<xmlattr>.name") == "mode"){
+              string name0 = p1.second.get<string>("<xmlattr>.name");
+
+              if(name0 == "mode"){
                 switch(stoi(p1.second.data())){
                   case 0 :
                   case 1 : wifi.SetStandard(WIFI_PHY_STANDARD_80211b);
@@ -414,12 +418,15 @@ int main (int argc, char *argv[]) {
                             exit(-2);
                 }
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "distance"){
+              else if(name0 == "distance"){
                 // capture distance in meters and conver to pixel distance
                 // to match CORE scenario
                 dist = 100.0 * (stod(p1.second.data()) / refScale);
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "unicastrate"){
+              else if(name0 == "antennaelevation"){
+                antZ = stod(p1.second.data());
+              }
+              else if(name0 == "unicastrate"){
                 switch(stoi(p1.second.data())){
                   case 1 : wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                                          "DataMode", StringValue ("DsssRate1Mbps"),
@@ -473,33 +480,81 @@ int main (int argc, char *argv[]) {
                             exit(-3);
                 }
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "rtsthreshold"){
+              else if(name0 == "multicastrate"){
+                switch(stoi(p1.second.data())){
+                  case 1 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("DsssRate1Mbps"));
+                           break;
+                  case 2 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("DsssRate2Mbps"));
+                           break;
+                  case 3 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("DsssRate5_5Mbps"));
+                           break;
+                  case 4 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("DsssRate11Mbps"));
+                           break;
+                  case 5 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("OfdmRate6Mbps"));
+                           break;
+                  case 6 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("OfdmRate9Mbps"));
+                           break;
+                  case 7 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("OfdmRate12Mbps"));
+                           break;
+                  case 8 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("OfdmRate18Mbps"));
+                           break;
+                  case 9 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                StringValue ("OfdmRate24Mbps"));
+                           break;
+                  case 10 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                 StringValue ("OfdmRate36Mbps"));
+                           break;
+                  case 11 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                 StringValue ("OfdmRate48Mbps"));
+                           break;
+                  case 12 : Config::SetDefault ("ns3::WifiRemoteStationManager::NonUnicastMode",
+                                                 StringValue ("OfdmRate54Mbps"));
+                           break;
+                  default : cout << "Incorrect wireless multicast rate detected " << p1.second.data() << endl;
+                            exit(-3);
+                }
+              }
+              else if(name0 == "rtsthreshold"){
                 wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
                                               "RtsCtsThreshold", UintegerValue(stoi(p1.second.data())));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "retrylimit"){
+              else if(name0 == "retrylimit"){
+                string tempRetry, retry;
+                tempRetry = p1.second.data();
+                regex_search(tempRetry, r_match, category);
+                retry = r_match.str();
+                retry.erase(0,2);
+
                 wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                              "MaxSlrc", StringValue (p1.second.data()));
+                                              "MaxSlrc", StringValue (retry));
                 wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager",
-                                              "MaxSsrc", StringValue (p1.second.data()));
+                                              "MaxSsrc", StringValue (retry));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "antennagain"){
+              else if(name0 == "antennagain"){
                 wifiPhyHelper.Set("RxGain", DoubleValue(stod(p1.second.data())));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "txpower"){
+              else if(name0 == "txpower"){
                 wifiPhyHelper.Set("TxPowerStart", DoubleValue(stod(p1.second.data())));
                 wifiPhyHelper.Set("TxPowerEnd", DoubleValue(stod(p1.second.data())));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "frequency"){
+              else if(name0 == "frequency"){
                 string tempHz, unit;
-                uint32_t Hz = 0;
+                double Hz = 0;
                 tempHz = p1.second.data();
-                regex_search(tempHz, r_match, category);
-                Hz = stoi(r_match.str());
+                regex_search(tempHz, r_match, rateUnit);
+                Hz = stod(r_match.str());
                 unit = r_match.suffix().str();
 
                 if(unit == "G"){
-                  Hz = Hz * 1000;
+                  Hz = Hz * 1000.0;
                 }
                 else if(unit == "M"){
                   // keep value
@@ -508,9 +563,37 @@ int main (int argc, char *argv[]) {
                   Hz = 0;
                 }
 
-                wifiPhyHelper.Set("Frequency", UintegerValue(Hz));
+                wifiPhyHelper.Set("Frequency", UintegerValue((uint32_t)Hz));
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "pathlossmode"){
+              else if(name0 == "systemnoisefigure"){
+                double Rx = stod(p1.second.data());
+                wifiPhyHelper.Set("RxNoiseFigure", DoubleValue(Rx));
+              }
+              else if(name0 == "bandwidth"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version under this context." << endl;
+                //string tempBw, unit;
+                //double Bw = 0;
+                //tempBw = p1.second.data();
+                //regex_search(tempBw, r_match, rateUnit);
+                //Bw = stod(r_match.str());
+                //unit = r_match.suffix().str();
+
+                //if(unit == "G"){
+                  //Bw = Bw * 1000000000.0;
+                //}
+                //else if(unit == "M"){
+                  //Bw = Bw * 1000000.0;
+                //}
+                //else if(unit == "K"){
+                  //Bw = Bw * 1000.0;
+                //}
+                //else{
+                  //Keep value
+                //}
+
+                //Config::SetDefault("ns3::WimaxPhy::Bandwidth", UintegerValue((uint32_t)Bw));
+              }
+              else if(name0 == "pathlossmode"){
                 if(p1.second.data() == "2ray"){
                   twoRay_set = true;
                 }
@@ -518,44 +601,88 @@ int main (int argc, char *argv[]) {
                   freespace_set = true;
                 }
               }
-              else if(p1.second.get<string>("<xmlattr>.name") == "queuesize"){
+              else if(name0 == "queuesize"){
                 string tempQ, Q;
                 tempQ = p1.second.data();
-                regex_search(tempQ, r_match, rateUnit);
+                regex_search(tempQ, r_match, category);
                 Q = r_match.str();
+                Q.erase(0,2);
 
-                Config::SetDefault("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (atoi(Q.c_str()+1))); 
+                Config::SetDefault("ns3::WifiMacQueue::MaxPacketNumber", UintegerValue (stoi(Q))); 
               }
-              else if(p0.second.get<string>("<xmlattr>.name") == "cwmin"){
+              else if(name0 == "cwmin"){
                 string tempCw, Cw;
                 tempCw = p1.second.data();
-                regex_search(tempCw, r_match, rateUnit);
+                regex_search(tempCw, r_match, category);
                 Cw = r_match.str();
+                Cw.erase(0,2);
 
-                Config::SetDefault("ns3::Dcf::MinCw", UintegerValue (atoi(Cw.c_str()+1))); 
-                Config::SetDefault("ns3::EdcaTxopN::MinCw", UintegerValue (atoi(Cw.c_str()+1)));
+                Config::SetDefault("ns3::Dcf::MinCw", UintegerValue (stoi(Cw))); 
               }
-              else if(p0.second.get<string>("<xmlattr>.name") == "cwmax"){
+              else if(name0 == "cwmax"){
                 string tempCw, Cw;
                 tempCw = p1.second.data();
-                regex_search(tempCw, r_match, rateUnit);
+                regex_search(tempCw, r_match, category);
                 Cw = r_match.str();
+                Cw.erase(0,2);
 
-                Config::SetDefault("ns3::Dcf::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
-                Config::SetDefault("ns3::EdcaTxopN::MaxCw", UintegerValue (atoi(Cw.c_str()+1)));
+                Config::SetDefault("ns3::Dcf::MaxCw", UintegerValue (stoi(Cw)));
               }
-              else if(p0.second.get<string>("<xmlattr>.name") == "aifs"){
+              else if(name0 == "aifs"){
                 string tempAifs, Aifs;
                 tempAifs = p1.second.data();
-                regex_search(tempAifs, r_match, rateUnit);
+                regex_search(tempAifs, r_match, category);
                 Aifs = r_match.str();
+                Aifs.erase(0,2);
 
-                Config::SetDefault("ns3::Dcf::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
-                Config::SetDefault("ns3::EdcaTxopN::Aifs", UintegerValue (atoi(Aifs.c_str()+1))); 
+                Config::SetDefault("ns3::Dcf::Aifsn", UintegerValue (stoi(Aifs))); 
               }
-          //else if(p0.second.get<string>("<xmlattr>.name") == "flowcontroltokens"){
-            //Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (stoi(p0.second.data())));
-          //}
+              else if(name0 == "flowcontroltokens"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+                //Config::SetDefault("ns3::tdtbfqsFlowPerf_t::debtLimit", UintegerValue (stoi(p0.second.data())));
+              }
+              else if(name0 == "flowcontrolenable"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "flowcontrolenable"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "enablepromiscuousmode"){
+                cout << "NOTE: " << name0 << " is currently not controlled through this setting." << endl;
+              }
+              else if(name0 == "pcrcurveuri"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "wmmenable"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "txop"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "frequencyofinterest"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "subid"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "antennaazimuth"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "antennaprofileid"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "antennaprofileenable"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "defaultconnectivitymode"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "frequencyofinterestfilterenable"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
+              else if(name0 == "noiseprocessingmode"){
+                cout << "NOTE: " << name0 << " is currently not supported in this version." << endl;
+              }
             }
           }
           break;
@@ -566,7 +693,8 @@ int main (int argc, char *argv[]) {
       if(dist > 0.0){
         if(twoRay_set){
           wifiChannel.AddPropagationLoss("ns3::TwoRayGroundPropagationLossModel",
-                                         "minDistance", UintegerValue (dist));
+                                         "HeightAboveZ", DoubleValue(antZ));//,
+                                         //"minDistance", UintegerValue (dist));
         }
         else if(freespace_set){
           wifiChannel.AddPropagationLoss("ns3::FriisPropagationLossModel");
