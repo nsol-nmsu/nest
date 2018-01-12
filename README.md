@@ -5,14 +5,14 @@ It is an intermediate program that can take a CORE XML file and dynamically crea
 ## 1) Build / Install ##
 
 You need BOOST and C++11 libraries to compile and use core to ns-3 translator.
-Tested in ns-3.25 and CORE version 4.8.
+Tested in ns-3.25, ns-3.26 and CORE version 4.8.
 
-The program folder must exist inside the ns-3.25 folder to properly install using only the makefile.
+The program directory must exist inside the ns-3 directory to properly install using only the makefile.
 
 We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
 [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-To use our program, enter the imn2ns3 folder and run the `make configure`.
+To use our program, enter the imn2ns3 (or other name you gave the NEST directory) directory and run `make configure`.
 
 ```
 #!terminal
@@ -34,11 +34,11 @@ Here is a makefile short description:
 * typing `make configure` Copies files to their destination, configures flags and compiles/links NS3 files.
 * typing `make`           Copies files to their destination, and runs ./waf to compile/link NS3 files.
 * typing `make clean`     Removes <some of> the added files.
-* typing `make cleanLogs` Removes all files and directories inside core2ns3_Logs folder
+* typing `make cleanLogs` Removes all files and directories inside core2ns3_Logs directory
 
 ## 2) Execute ##
 
-Once all files have been placed and compiled, return to ns3.25 directory and run
+Once all files have been placed and compiled, return to ns3 directory and run
 the following sample for confirmation:
 
 ```
@@ -52,7 +52,7 @@ This program supports generating traffic flow using a simple XML Schema.
 Examples of the schema exist inside the `*/ns-3.25/imn2ns3/apps-files/` directory.
 
 This program also supports NS2 mobility scripts.
-*Note:* Node ID for NS3 nodes will differ as they are assigned at the time  they are
+*Note:* Node ID for NS3 nodes will differ as they are assigned at the time they are
 created. The NS2 script used for CORE will have be to altered to mirror this change.
 A map is given every time the topology finishes being created to help identify the changes.
 Currently this can only be done by the user.
@@ -97,6 +97,22 @@ The following is a list of the commands supported by the core to ns-3 translator
 #!terminal
 
 --pcap=[true|false]
+```
+
+"rt" Enable real time
+
+```
+#!terminal
+
+--rt=[true|false]
+```
+
+"random" Enable randomness in simulation
+
+```
+#!terminal
+
+--random=[true|false]
 ```
 
 "traceDir" Directory in which to store trace files. Note: always end with '/'
