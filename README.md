@@ -12,7 +12,7 @@ The program directory must exist inside the ns-3 directory to properly install u
 We do encourage using NetAnim to visualize the scenario output. Build instructions can be found in
 [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
 
-To use our program, enter the imn2ns3 (or other name you gave the NEST directory) directory and run `make configure`.
+To use our program, enter the NEST directory and run `make configure`.
 
 ```
 #!terminal
@@ -155,7 +155,7 @@ If pcap is enabled through an application patch file, only named nodes will outp
 
 ## 3) NetAnim ##
 
-Every scenario will output an XML file for NetAnim use named *NetAnim-core-to-ns3.xml* in the ns-3.25 directory.
+Every scenario will output an XML file for NetAnim use named *NetAnim-core-to-ns3.xml* in the ns-3 directory.
 
 Instructions on how to use NetAnim and its correlating files can be found in 
 [https://www.nsnam.org/wiki/NetAnim_3.107](Link URL)
@@ -172,7 +172,7 @@ Instructions on how to use NetAnim and its correlating files can be found in
       all hubs and switches are declared as bridges.
 
 * **Has limited application settings enabled.**
-    - Routing protocols available in CORE may not be available in NS-3.25.
+    - Routing protocols available in CORE may not be available in NS-3.
     - GlobalRoutingProtocol which behaves as OSPF in NS3 is not suitable for wireless
       nodes. If there is a wireless network in your topology, it is suggested to use OLSR
       versus OSPF.

@@ -421,6 +421,7 @@ int main (int argc, char *argv[]) {
               else if(name0 == "distance"){
                 // capture distance in meters and conver to pixel distance
                 // to match CORE scenario
+                cout << "NOTE: " << name0 << " currently does not properly translate using EMANE settings." << endl;
                 dist = 100.0 * (stod(p1.second.data()) / refScale);
               }
               else if(name0 == "antennaelevation"){
